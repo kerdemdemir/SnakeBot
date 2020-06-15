@@ -1,5 +1,7 @@
 import Input as input
 import numpy as np
+import json
+import TransactionHelper
 
 class ReShapeManager:
     maxFeatureCount = 7
@@ -12,8 +14,34 @@ class ReShapeManager:
             self.inputs.append( input.ReShapedInput(curBinCount) )
         self.scoreList = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
         self.features = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
+        self.transactionHelper = TransactionHelper()
+
+    def addANewCurrency( self, jsonIn ):
+        peakData = jsonIn["peak"]
+        riseAndTimeStrList = peakData.split(",")
+        if len(riseAndTimeStrList) < 2:
+            return
+
+        transactionData = jsonIn["transactionList"]
+        peakSize = len(peakData)
+        transactionDataSize = len(transactionData)
+        assert peakSize == transactionDataSize
+        riseAndTimeList = []
+        for x in range(peakSize):
+            riseMinute = input.RiseMinute(riseAndTimeStrList[x])
+            riseAndTimeList.append(riseMinute)
+        self.addLinePeaks( riseAndTimeList )
+        self.transactionHelper( transactionData, riseAndTimeList)
 
     def addLinePeaks(self, riseAndTimeList):
+        for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
+            curBinIndex = curBinCount - self.minFeatureCount
+            if len(riseAndTimeList) >= curBinCount:
+                self.inputs[curBinIndex].concanate(riseAndTimeList)
+
+    def addTransactions(self, inJson):
+        for jsonElem in inJson:
+            peakData = jsonElem["peak"]
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             curBinIndex = curBinCount - self.minFeatureCount
             if len(riseAndTimeList) >= curBinCount:

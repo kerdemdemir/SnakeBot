@@ -25,29 +25,31 @@ def ReadFileAndCreateReshaper( fileName ):
 
     for jsonElem in jsonDictionary:
         peakData = jsonElem["peak"]
+        transactionData = jsonElem["transactionList"]
+
         riseAndTimeStrList = peakData.split(",")
         if len(riseAndTimeStrList) < 2:
             continue
+
         riseAndTimeList = list(map(lambda x: input.RiseMinute(x), riseAndTimeStrList))
         reshaper.addLinePeaks(riseAndTimeList)
+        reshaper.addTransactions(transactionData)
     file.close()
     return  reshaper
 
 
-trainingReshaper = ReadFileAndCreateReshaper("C:\\Users\\Erdem\\Downloads\\learning.txt")
+trainingReshaper = ReadFileAndCreateReshaper("C:\\Users\\Erdem\\Downloads\\learningNew.txt")
 trainingReshaper.assignScores()
-
-testReshaper = ReadFileAndCreateReshaper("C:\\Users\\Erdem\\Downloads\\learningNew.txt")
 
 
 for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount):
     numpyArr = trainingReshaper.toFeaturesNumpy(binCount)
 
-    X_train = numpyArr
-    y_train = trainingReshaper.toResultsNumpy(binCount)
+    X = numpyArr
+    y = trainingReshaper.toResultsNumpy(binCount)
 
-    X_test = testReshaper.toFeaturesNumpy(binCount)
-    y_test = testReshaper.toResultsNumpy(binCount)
+    #print( X.shape, " ", y.shape,  X.shape, " ", y_1.shape,  X_2.shape, " ", y_2.shape)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=40)
 
     mlp = MLPClassifier(hidden_layer_sizes=(binCount*2,binCount*2,binCount*2), activation='relu', solver='adam', max_iter=500)
     mlp.fit(X_train,y_train)
@@ -55,5 +57,5 @@ for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager
     predict_train = mlp.predict(X_train)
     predict_test = mlp.predict(X_test)
 
-    print(confusion_matrix(y_train,predict_train))
-    print(classification_report(y_train,predict_train))
+    print("bin count:", binCount, " ", confusion_matrix(y_train,predict_train))
+    print("bin count:", binCount, " ", classification_report(y_train,predict_train))
