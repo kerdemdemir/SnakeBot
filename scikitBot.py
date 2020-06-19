@@ -16,7 +16,8 @@ from math import sqrt
 from sklearn.metrics import r2_score
 from sklearn.metrics import classification_report,confusion_matrix
 
-
+transactionBinCount = 4
+msecs = 3000
 def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")
     jsonDictionary = json.load(file)
@@ -24,26 +25,19 @@ def ReadFileAndCreateReshaper( fileName ):
     reshaper = inputManager.ReShapeManager()
 
     for jsonElem in jsonDictionary:
-        peakData = jsonElem["peak"]
-        transactionData = jsonElem["transactionList"]
-
-        riseAndTimeStrList = peakData.split(",")
-        if len(riseAndTimeStrList) < 2:
-            continue
-
-        riseAndTimeList = list(map(lambda x: input.RiseMinute(x), riseAndTimeStrList))
-        reshaper.addLinePeaks(riseAndTimeList)
-        reshaper.addTransactions(transactionData)
+        reshaper.addANewCurrency(jsonElem,msecs,transactionBinCount)
     file.close()
     return  reshaper
 
 
 trainingReshaper = ReadFileAndCreateReshaper("C:\\Users\\Erdem\\Downloads\\learningNew.txt")
-trainingReshaper.assignScores()
+print("All added now scores")
+trainingReshaper.transactionHelper.Print()
+#trainingReshaper.assignScores()
 
 
 for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount):
-    numpyArr = trainingReshaper.toFeaturesNumpy(binCount)
+    numpyArr = trainingReshaper.toTransactionFeaturesNumpy(binCount,transactionBinCount)
 
     X = numpyArr
     y = trainingReshaper.toResultsNumpy(binCount)
@@ -54,8 +48,7 @@ for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager
     mlp = MLPClassifier(hidden_layer_sizes=(binCount*2,binCount*2,binCount*2), activation='relu', solver='adam', max_iter=500)
     mlp.fit(X_train,y_train)
 
-    predict_train = mlp.predict(X_train)
     predict_test = mlp.predict(X_test)
-
-    print("bin count:", binCount, " ", confusion_matrix(y_train,predict_train))
-    print("bin count:", binCount, " ", classification_report(y_train,predict_train))
+    print("bin count:", binCount, " transaction seconds ", msecs, " transaction count ", transactionBinCount)
+    print( confusion_matrix(y_test,predict_test))
+    #print("bin count:", binCount, " ", classification_report(y_test,predict_test))

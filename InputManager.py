@@ -14,41 +14,35 @@ class ReShapeManager:
             self.inputs.append( input.ReShapedInput(curBinCount) )
         self.scoreList = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
         self.features = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
-        self.transactionHelper = TransactionHelper()
+        self.transactionHelper = TransactionHelper.TransactionAnalyzer()
 
-    def addANewCurrency( self, jsonIn ):
+    def addANewCurrency( self, jsonIn, transactionMSec, transactionCount ):
         peakData = jsonIn["peak"]
         riseAndTimeStrList = peakData.split(",")
         if len(riseAndTimeStrList) < 2:
             return
 
         transactionData = jsonIn["transactionList"]
-        peakSize = len(peakData)
+        peakSize = len(riseAndTimeStrList)
         transactionDataSize = len(transactionData)
         assert peakSize == transactionDataSize
         riseAndTimeList = []
         for x in range(peakSize):
             riseMinute = input.RiseMinute(riseAndTimeStrList[x])
             riseAndTimeList.append(riseMinute)
-        self.addLinePeaks( riseAndTimeList )
-        self.transactionHelper( transactionData, riseAndTimeList)
 
-    def addLinePeaks(self, riseAndTimeList):
+        self.transactionHelper.AddPeak( transactionData, riseAndTimeList,transactionMSec,transactionCount )
+        self.addLinePeaks(riseAndTimeList, self.transactionHelper.peakFeatures )
+
+    def addLinePeaks(self, riseAndTimeList, lastTransactionFeatures):
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             curBinIndex = curBinCount - self.minFeatureCount
             if len(riseAndTimeList) >= curBinCount:
-                self.inputs[curBinIndex].concanate(riseAndTimeList)
+                self.inputs[curBinIndex].concanate(riseAndTimeList,lastTransactionFeatures)
 
-    def addTransactions(self, inJson):
-        for jsonElem in inJson:
-            peakData = jsonElem["peak"]
-        for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
-            curBinIndex = curBinCount - self.minFeatureCount
-            if len(riseAndTimeList) >= curBinCount:
-                self.inputs[curBinIndex].concanate(riseAndTimeList)
 
     def assignScores(self):
-        self.resetScores();
+        self.resetScores()
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             curBinIndex = curBinCount - self.minFeatureCount
             for currentElemIndex in range(len(self.inputs[curBinIndex].inputRise)):
@@ -62,10 +56,14 @@ class ReShapeManager:
         curBinIndex = binCount - self.minFeatureCount
         return self.inputs[curBinIndex].toNumpy()
 
+    def toTransactionFeaturesNumpy(self, binCount, transactionCount):
+        curBinIndex = binCount - self.minFeatureCount
+        return self.inputs[curBinIndex].toTransactionNumpy(transactionCount)
+
     def toResultsNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
-        newArray = list(map ( lambda elem: 0.0 if elem < 2.0 else 1.0, self.scoreList[curBinIndex] ))
-        return np.array(newArray)
+        #newArray = list(map ( lambda elem: 0.0 if elem < 2.0 else 1.0, self.scoreList[curBinIndex] ))
+        return np.array(self.inputs[curBinIndex].output)
 
     def resetScores(self):
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
