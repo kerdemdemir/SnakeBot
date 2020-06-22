@@ -4,7 +4,7 @@ import json
 import TransactionHelper
 
 class ReShapeManager:
-    maxFeatureCount = 7
+    maxFeatureCount = 6
     minFeatureCount = 3
 
     def __init__( self ):
@@ -56,11 +56,16 @@ class ReShapeManager:
         curBinIndex = binCount - self.minFeatureCount
         return self.inputs[curBinIndex].toNumpy()
 
+    def toResultsNumpy(self, binCount):
+        curBinIndex = binCount - self.minFeatureCount
+        newArray = list(map ( lambda elem: 0.0 if elem < 2.0 else 1.0, self.scoreList[curBinIndex] ))
+        return np.array(newArray)
+
     def toTransactionFeaturesNumpy(self, binCount, transactionCount):
         curBinIndex = binCount - self.minFeatureCount
         return self.inputs[curBinIndex].toTransactionNumpy(transactionCount)
 
-    def toResultsNumpy(self, binCount):
+    def toTransactionResultsNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
         #newArray = list(map ( lambda elem: 0.0 if elem < 2.0 else 1.0, self.scoreList[curBinIndex] ))
         return np.array(self.inputs[curBinIndex].output)
@@ -72,13 +77,13 @@ class ReShapeManager:
             self.scoreList[curBinIndex] = [0.0]*len(self.inputs[curBinIndex].inputRise);
 
     def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteList):
-        score = 0.0
+        score = 2.0
         for elemList in nPlusOneCompleteList.inputRise:
             score+= self.__getScoreForButtom(oneSampleNBin, elemList)
         return score
 
     def __getScoreForRisingElement(self, oneSampleNBin, nBinCompleteList):
-        score = 0.0
+        score = -3.0
         for elemList in nBinCompleteList.inputRise :
             score+= self.__getScoreForRising(oneSampleNBin, elemList)
         return score
@@ -104,11 +109,11 @@ class ReShapeManager:
         if oneSampleNBin == oneSampleOtherBin:
             return 0
         #print( "Score will change ", *oneSampleNBin, " " , *oneSampleOtherBin)
-        return oneSampleOtherBin[-1] - oneSampleNBin[-1]
+        return max( -5.0, min(oneSampleOtherBin[-1] - oneSampleNBin[-1] - 2.5, 5.0) )
 
     def __getScoreForButtom(self, oneSampleNBin, oneSampleNPluseOneBin):
         isAllValid = all([self.__checkPositivitySingleVal(x, y) for x, y in zip(oneSampleNBin, oneSampleNPluseOneBin)])
         if  not isAllValid :
             return 0
         #print("Buttom repeat Score will change ", *oneSampleNBin, " ", *oneSampleNPluseOneBin)
-        return oneSampleNPluseOneBin[-1]
+        return min( 5.0, max( oneSampleNPluseOneBin[-1], -5.0 ) )

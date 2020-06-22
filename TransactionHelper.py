@@ -150,9 +150,8 @@ class TransactionPeakHelper:
         for x in range( 0, lenArray ):
             curElement = self.dataList[x]
             curElement.NormalizeTransactionCount()
-            if curElement.normalizedCount >= TransactionPeakHelper.lowestAcceptedNormalizedTransactionCount:
-                for curBin in range(self.maxFeatureCount - self.minFeatureCount):
-                    self.__AppendToPatternList(curBin, x, lenArray)
+            for curBin in range(self.maxFeatureCount - self.minFeatureCount):
+                self.__AppendToPatternList(curBin, x, lenArray)
 
     def __FindIndexWithPriceAndPercent(self, jsonIn, curStartIndex, curStopIndex, step):
         for x in range(curStartIndex, curStopIndex, step ):
@@ -192,8 +191,13 @@ class TransactionPeakHelper:
             endBin = curIndex + 1 + index
             if startBin < 0 or endBin > lenArray:
                 continue
+
             pattern = TransactionPattern()
             pattern.Append(self.dataList[startBin:endBin])
+
+            if pattern.maxNormalizedCount < TransactionPeakHelper.lowestAcceptedNormalizedTransactionCount:
+                continue
+
             if pattern in self.patternList[curBin]:
                 #print("Adding a existing element: ", self.dataList[startBin:endBin])
                 self.patternList[curBin][pattern] += 1 if self.isBottom else -1
