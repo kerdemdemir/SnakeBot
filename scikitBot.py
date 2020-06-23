@@ -32,7 +32,7 @@ def AddExtraToShaper ( fileName, shaper):
         shaper.addANewCurrency(jsonElem,msecs,transactionBinCount)
     file.close()
 
-trainingReshaper = ReadFileAndCreateReshaper("learning_21_06_2.txt")
+trainingReshaper = ReadFileAndCreateReshaper("learning_23_06.txt")
 #AddExtraToShaper("learningNew.txt",trainingReshaper)
 #AddExtraToShaper("learning_22_06.txt",trainingReshaper)
 print("All added now scores")

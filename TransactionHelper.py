@@ -17,28 +17,28 @@ class TransactionData:
                                                                                               self.normalizedCount)
 
     def NormalizeTransactionCount(self):
-        if self.transactionCount < 5:
+        if self.transactionCount < 2:
             self.normalizedCount = 0
             return
-        elif self.transactionCount < 10:
+        elif self.transactionCount < 5:
             self.normalizedCount = 1
             return
-        elif self.transactionCount < 15:
+        elif self.transactionCount < 10:
             self.normalizedCount = 2
             return
-        elif self.transactionCount < 25:
+        elif self.transactionCount < 15:
             self.normalizedCount = 3
             return
-        elif self.transactionCount < 50:
+        elif self.transactionCount < 25:
             self.normalizedCount = 4
             return
-        elif self.transactionCount < 100:
+        elif self.transactionCount < 50:
             self.normalizedCount = 5
             return
-        elif self.transactionCount < 200:
+        elif self.transactionCount < 100:
             self.normalizedCount = 6
             return
-        elif self.transactionCount < 500:
+        elif self.transactionCount < 200:
             self.normalizedCount = 7
             return
         self.normalizedCount = 8
@@ -109,7 +109,7 @@ class TransactionPattern:
 
 class TransactionPeakHelper:
     percent = 0.01
-    lowestAcceptedNormalizedTransactionCount = 1
+    lowestAcceptedNormalizedTransactionCount = 2
     maxFeatureCount = 7
     minFeatureCount = 3
 
