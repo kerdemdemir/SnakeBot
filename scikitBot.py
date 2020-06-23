@@ -98,7 +98,7 @@ while True:
     resultStr = ""
     for binCount in range (inputManager.ReShapeManager.maxFeatureCount-inputManager.ReShapeManager.minFeatureCount-1):
         curCount = binCount + inputManager.ReShapeManager.minFeatureCount
-        totalFeatures = resultsChangeFloat[:curCount] + resultsTimeFloat[:curCount] + resultsTransactionFloat[:transactionBinCount+1]
+        totalFeatures = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:] + resultsTransactionFloat[:transactionBinCount+1]
         print("I will predict: ", totalFeatures)
         npTotalFeatures = np.array(totalFeatures)
         npTotalFeatures = npTotalFeatures.reshape(1,-1)
@@ -106,7 +106,7 @@ while True:
         curResultStr = str(predict_test) + ";"
         resultStr += curResultStr
 
-        totalCurves = resultsChangeFloat[:curCount] + resultsTimeFloat[:curCount]
+        totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
         npTotalCurves = np.array(totalCurves)
         npTotalCurves = npTotalCurves.reshape(1,-1)
         print("I will predict the curves: ", totalCurves)
