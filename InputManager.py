@@ -32,14 +32,14 @@ class ReShapeManager:
             riseAndTimeList.append(riseMinute)
 
         self.transactionHelper.AddPeak( transactionData, riseAndTimeList,transactionMSec,transactionCount )
-        self.addLinePeaks(riseAndTimeList, self.transactionHelper.peakFeatures, False )
+        self.addLinePeaks(riseAndTimeList, self.transactionHelper.peakFeatures, isExtend )
 
     def addLinePeaks(self, riseAndTimeList, lastTransactionFeatures, addOnlyTransactionPeaks):
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             curBinIndex = curBinCount - self.minFeatureCount
             if len(riseAndTimeList) >= curBinCount:
                 if addOnlyTransactionPeaks:
-                    if not lastTransactionFeatures.empty:
+                    if lastTransactionFeatures:
                         self.inputs[curBinIndex].concanate(riseAndTimeList, lastTransactionFeatures)
                 else:
                     self.inputs[curBinIndex].concanate(riseAndTimeList,lastTransactionFeatures)
