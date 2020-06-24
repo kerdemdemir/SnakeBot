@@ -16,7 +16,7 @@ class ReShapeManager:
         self.features = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
         self.transactionHelper = TransactionHelper.TransactionAnalyzer()
 
-    def addANewCurrency( self, jsonIn, transactionMSec, transactionCount ):
+    def addANewCurrency( self, jsonIn, transactionMSec, transactionCount, isExtend ):
         peakData = jsonIn["peak"]
         riseAndTimeStrList = peakData.split(",")
         if len(riseAndTimeStrList) < 2:
@@ -32,13 +32,18 @@ class ReShapeManager:
             riseAndTimeList.append(riseMinute)
 
         self.transactionHelper.AddPeak( transactionData, riseAndTimeList,transactionMSec,transactionCount )
-        self.addLinePeaks(riseAndTimeList, self.transactionHelper.peakFeatures )
+        self.addLinePeaks(riseAndTimeList, self.transactionHelper.peakFeatures, False )
 
-    def addLinePeaks(self, riseAndTimeList, lastTransactionFeatures):
+    def addLinePeaks(self, riseAndTimeList, lastTransactionFeatures, addOnlyTransactionPeaks):
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             curBinIndex = curBinCount - self.minFeatureCount
             if len(riseAndTimeList) >= curBinCount:
-                self.inputs[curBinIndex].concanate(riseAndTimeList,lastTransactionFeatures)
+                if addOnlyTransactionPeaks:
+                    if not lastTransactionFeatures.empty:
+                        self.inputs[curBinIndex].concanate(riseAndTimeList, lastTransactionFeatures)
+                else:
+                    self.inputs[curBinIndex].concanate(riseAndTimeList,lastTransactionFeatures)
+
 
 
     def assignScores(self):

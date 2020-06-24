@@ -20,7 +20,7 @@ def ReadFileAndCreateReshaper( fileName ):
     reshaper = inputManager.ReShapeManager()
 
     for jsonElem in jsonDictionary:
-        reshaper.addANewCurrency(jsonElem,msecs,transactionBinCount)
+        reshaper.addANewCurrency(jsonElem,msecs,transactionBinCount,False)
     file.close()
     return  reshaper
 
@@ -29,11 +29,11 @@ def AddExtraToShaper ( fileName, shaper):
     jsonDictionary = json.load(file)
 
     for jsonElem in jsonDictionary:
-        shaper.addANewCurrency(jsonElem,msecs,transactionBinCount)
+        shaper.addANewCurrency(jsonElem,msecs,transactionBinCount,True)
     file.close()
 
 trainingReshaper = ReadFileAndCreateReshaper("learning_23_06.txt")
-#AddExtraToShaper("learningNew.txt",trainingReshaper)
+AddExtraToShaper("learning24_06.txt",trainingReshaper)
 #AddExtraToShaper("learning_22_06.txt",trainingReshaper)
 print("All added now scores")
 trainingReshaper.transactionHelper.Print()
