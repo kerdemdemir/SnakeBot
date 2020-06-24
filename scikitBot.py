@@ -3,6 +3,8 @@ import Input as input
 import InputManager as inputManager
 import zmq
 import numpy as np
+import sys
+
 from sklearn.neural_network import MLPClassifier
 
 # Import necessary modules
@@ -39,7 +41,7 @@ print("All added now scores")
 trainingReshaper.transactionHelper.Print()
 trainingReshaper.assignScores()
 print("Assigned scores")
-
+sys.stdout.flush()
 mlpTransActionsList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
 mlpList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
 
@@ -69,13 +71,13 @@ for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager
     numpyArr = trainingReshaper.toFeaturesNumpy(binCount)
     X = numpyArr
     y = trainingReshaper.toResultsNumpy(binCount)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=40)
     mlpList[curIndex] = MLPClassifier(hidden_layer_sizes=(binCount*2,binCount*2,binCount*2), activation='relu', solver='adam', max_iter=500)
     mlpList[curIndex].fit(X_train,y_train)
     predict_test = mlpList[curIndex] .predict(X_test)
     print( " Curves : ")
     print( confusion_matrix(y_test,predict_test))
-
+    sys.stdout.flush()
 
 
 context = zmq.Context()
