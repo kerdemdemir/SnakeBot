@@ -8,6 +8,7 @@ class TransactionData:
         self.totalBuy = 0.0
         self.totalSell = 0.0
         self.transactionCount = 0.0
+        self.totalTransactionCount = 0.0
         self.normalizedCount = 0.0
         self.score = 0
 
@@ -47,6 +48,7 @@ class TransactionData:
     def AddData(self, jsonIn):
         isSell = jsonIn["m"]
         power  = float(jsonIn["q"]) * float(jsonIn["p"])
+        self.totalTransactionCount += 1
         if not isSell:
             self.transactionCount += 1
             self.totalBuy += power
@@ -57,6 +59,7 @@ class TransactionData:
         self.totalBuy = 0.0
         self.totalSell = 0.0
         self.transactionCount = 0.0
+        self.totalTransactionCount = 0.0
         self.score = 0
 
 class TransactionPattern:
@@ -67,6 +70,7 @@ class TransactionPattern:
         self.transactionCount = 0.0
         self.score = 0.0
         self.maxNormalizedCount = 0
+        self.totalTransactionCount = 0
 
     def Append( self, dataList ):
         for elem in dataList:
@@ -76,6 +80,7 @@ class TransactionPattern:
             self.totalBuy += elem.totalBuy
             self.totalSell += elem.totalSell
             self.transactionCount += elem.transactionCount
+            self.totalTransactionCount += elem.totalTransactionCount
 
     def GetFeatures(self):
         returnval = self.transactionList + [self.BuyVsSellRatio()]
@@ -109,7 +114,7 @@ class TransactionPattern:
 
 class TransactionPeakHelper:
     percent = 0.01
-    lowestAcceptedNormalizedTransactionCount = 2
+    lowestAcceptedTotalTransactionCount = 10
     maxFeatureCount = 7
     minFeatureCount = 3
 
@@ -195,7 +200,7 @@ class TransactionPeakHelper:
             pattern = TransactionPattern()
             pattern.Append(self.dataList[startBin:endBin])
 
-            if pattern.maxNormalizedCount < TransactionPeakHelper.lowestAcceptedNormalizedTransactionCount:
+            if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
                 continue
 
             if pattern in self.patternList[curBin]:

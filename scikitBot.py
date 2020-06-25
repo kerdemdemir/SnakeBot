@@ -36,7 +36,8 @@ def AddExtraToShaper ( fileName, shaper):
 
 trainingReshaper = ReadFileAndCreateReshaper("learning_23_06.txt")
 AddExtraToShaper("learning24_06.txt",trainingReshaper)
-#AddExtraToShaper("learning_22_06.txt",trainingReshaper)
+AddExtraToShaper("learning_25_06.txt",trainingReshaper)
+
 print("All added now scores")
 trainingReshaper.transactionHelper.Print()
 trainingReshaper.assignScores()
