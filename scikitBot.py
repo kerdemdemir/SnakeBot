@@ -13,7 +13,7 @@ from sklearn.metrics import classification_report,confusion_matrix
 
 
 transactionBinCount = 4
-msecs = 1000
+msecs = 1500
 
 def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")

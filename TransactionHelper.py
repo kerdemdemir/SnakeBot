@@ -114,7 +114,7 @@ class TransactionPattern:
 
 class TransactionPeakHelper:
     percent = 0.01
-    lowestAcceptedTotalTransactionCount = 10
+    lowestAcceptedTotalTransactionCount = 20
     maxFeatureCount = 7
     minFeatureCount = 3
 
