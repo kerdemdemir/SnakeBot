@@ -13,7 +13,7 @@ from sklearn.metrics import classification_report,confusion_matrix
 
 
 transactionBinCount = 4
-msecs = 1500
+msecs = 2000
 
 def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")
@@ -101,7 +101,8 @@ while True:
     resultStr = ""
     for binCount in range (inputManager.ReShapeManager.maxFeatureCount-inputManager.ReShapeManager.minFeatureCount-1):
         curCount = binCount + inputManager.ReShapeManager.minFeatureCount
-        totalFeatures = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:] + resultsTransactionFloat[:transactionBinCount+1]
+        transActionCount =  -curCount + 2
+        totalFeatures = resultsChangeFloat[-transActionCount:] + resultsTimeFloat[-transActionCount:] + resultsTransactionFloat[:transactionBinCount+1]
         print("I will predict: ", totalFeatures)
         npTotalFeatures = np.array(totalFeatures)
         npTotalFeatures = npTotalFeatures.reshape(1,-1)
