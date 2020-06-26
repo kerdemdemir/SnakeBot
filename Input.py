@@ -58,11 +58,11 @@ class ReShapedInput:
         temp = []
         for curIndex in range(inputSize):
             for transactions in self.transactionFeatures[curIndex]:
-                newRow = self.inputRise[curIndex][2 - self.featureCount:] + self.inputTime[curIndex][2 - self.featureCount:] + transactions
+                newRow = transactions
                 temp.append(newRow)
                 #print(newRow)
                 outputVal = 1 if 0.0 < self.inputRise[curIndex][-1] else 0
                 self.output.append(outputVal)
         self.featureArr = np.array(temp)
-        self.featureArr.reshape(-1, (self.featureCount-2)*2+transactionCount+1)
+        self.featureArr.reshape(-1, transactionCount+1)
         return self.featureArr

@@ -6,14 +6,14 @@ import numpy as np
 import sys
 
 from sklearn.neural_network import MLPClassifier
-
+from sklearn import preprocessing
 # Import necessary modules
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
 
-transactionBinCount = 4
-msecs = 2000
+transactionBinCount = 5
+msecs = 1000
 
 def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")
@@ -45,6 +45,9 @@ print("Assigned scores")
 sys.stdout.flush()
 mlpTransActionsList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
 mlpList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
+mlpScalerList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
+
+
 
 for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount):
     numpyArr = trainingReshaper.toTransactionFeaturesNumpy(binCount,transactionBinCount)
@@ -61,7 +64,7 @@ for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager
 
     #print( X.shape, " ", y.shape,  X.shape, " ", y_1.shape,  X_2.shape, " ", y_2.shape)
     curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
-    mlpTransActionsList[curIndex] = MLPClassifier(hidden_layer_sizes=(binCount*2,binCount*2,binCount*2), activation='relu', solver='adam', max_iter=500)
+    mlpTransActionsList[curIndex] = MLPClassifier(hidden_layer_sizes=(binCount,binCount,binCount), activation='relu', solver='adam', max_iter=500)
     mlpTransActionsList[curIndex].fit(X_train,y_train)
 
     predict_test = mlpTransActionsList[curIndex] .predict(X_test)
@@ -70,10 +73,12 @@ for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager
     print( confusion_matrix(y_test,predict_test))
 
     numpyArr = trainingReshaper.toFeaturesNumpy(binCount)
-    X = numpyArr
+    mlpScalerList[curIndex] = preprocessing.StandardScaler().fit(numpyArr)
+    X = mlpScalerList[curIndex].transform(numpyArr)
     y = trainingReshaper.toResultsNumpy(binCount)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=40)
-    mlpList[curIndex] = MLPClassifier(hidden_layer_sizes=(binCount*2,binCount*2,binCount*2), activation='relu', solver='adam', max_iter=500)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
+    nodeSize = min(8, binCount*2)
+    mlpList[curIndex] = MLPClassifier(hidden_layer_sizes=(nodeSize,nodeSize,nodeSize), activation='relu', solver='adam', max_iter=500)
     mlpList[curIndex].fit(X_train,y_train)
     predict_test = mlpList[curIndex] .predict(X_test)
     print( " Curves : ")
@@ -101,8 +106,8 @@ while True:
     resultStr = ""
     for binCount in range (inputManager.ReShapeManager.maxFeatureCount-inputManager.ReShapeManager.minFeatureCount-1):
         curCount = binCount + inputManager.ReShapeManager.minFeatureCount
-        transActionCount =  -curCount + 2
-        totalFeatures = resultsChangeFloat[-transActionCount:] + resultsTimeFloat[-transActionCount:] + resultsTransactionFloat[:transactionBinCount+1]
+        transActionCount = -curCount + 2
+        totalFeatures = resultsTransactionFloat[:transactionBinCount+1]
         print("I will predict: ", totalFeatures)
         npTotalFeatures = np.array(totalFeatures)
         npTotalFeatures = npTotalFeatures.reshape(1,-1)
@@ -113,8 +118,9 @@ while True:
         totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
         npTotalCurves = np.array(totalCurves)
         npTotalCurves = npTotalCurves.reshape(1,-1)
+        npTotalCurvesScaled = mlpScalerList[curIndex].transform(npTotalCurves)
         print("I will predict the curves: ", totalCurves)
-        predict_test = mlpList[binCount].predict_proba(npTotalCurves)
+        predict_test = mlpList[binCount].predict_proba(npTotalCurvesScaled)
         curResultStr = str(predict_test) + ";"
         resultStr += curResultStr
 

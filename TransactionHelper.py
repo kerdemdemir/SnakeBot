@@ -204,10 +204,10 @@ class TransactionPeakHelper:
                 continue
 
             if pattern in self.patternList[curBin]:
-                #print("Adding a existing element: ", self.dataList[startBin:endBin])
+                #print("Adding a existing element:  isButtom ", self.isBottom, " ", self.dataList[startBin:endBin])
                 self.patternList[curBin][pattern] += 1 if self.isBottom else -1
             else:
-                #print("Adding a new element: ", self.dataList[startBin:endBin])
+                #print("Adding a new element: isButtom ", self.isBottom, " ", self.dataList[startBin:endBin])
                 self.patternList[curBin][pattern] = 1 if self.isBottom else -1
 
 
@@ -248,9 +248,9 @@ class TransactionAnalyzer :
             peakPatternList = transactionPeakHelper.patternList[index].keys()
             for pattern in peakPatternList:
                 if pattern in self.patternList[index]:
-                    print("Merging a existing element: ", pattern)
+                    #print("Merging a existing element: ", pattern)
                     self.patternList[index][pattern] += (1 if isBottom else -1)
                 else:
-                    print("Merging a new element: ", pattern)
+                    #print("Merging a new element: ", pattern)
                     self.patternList[index][pattern] = (1 if isBottom else -1)
 
