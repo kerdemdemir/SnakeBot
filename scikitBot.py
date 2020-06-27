@@ -39,7 +39,7 @@ AddExtraToShaper("learning24_06.txt",trainingReshaper)
 AddExtraToShaper("learning_25_06.txt",trainingReshaper)
 
 print("All added now scores")
-trainingReshaper.transactionHelper.Print()
+#trainingReshaper.transactionHelper.Print()
 trainingReshaper.assignScores()
 print("Assigned scores")
 sys.stdout.flush()
@@ -50,11 +50,11 @@ mlpScalerList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount -
 
 
 for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount):
-    numpyArr = trainingReshaper.toTransactionFeaturesNumpy(binCount,transactionBinCount)
+    numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionBinCount)
     #numpyArr = trainingReshaper.toTransactionFeaturesNumpy(binCount)
 
     X = numpyArr
-    y = trainingReshaper.toTransactionResultsNumpy(binCount)
+    y = trainingReshaper.toTransactionResultsNumpy()
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
 
     #X_train = trainingReshaper.toTransactionFeaturesNumpy(binCount,transactionBinCount)
@@ -104,17 +104,16 @@ while True:
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
     resultStr = ""
+
+    totalFeatures = resultsTransactionFloat[:transactionBinCount + 1]
+    print("I will predict: ", totalFeatures)
+    npTotalFeatures = np.array(totalFeatures)
+    npTotalFeatures = npTotalFeatures.reshape(1, -1)
+    predict_test = mlpTransActionsList[binCount].predict_proba(npTotalFeatures)
+    curResultStr = str(predict_test) + ";"
+    resultStr += curResultStr
     for binCount in range (inputManager.ReShapeManager.maxFeatureCount-inputManager.ReShapeManager.minFeatureCount-1):
         curCount = binCount + inputManager.ReShapeManager.minFeatureCount
-        transActionCount = -curCount + 2
-        totalFeatures = resultsTransactionFloat[:transactionBinCount+1]
-        print("I will predict: ", totalFeatures)
-        npTotalFeatures = np.array(totalFeatures)
-        npTotalFeatures = npTotalFeatures.reshape(1,-1)
-        predict_test = mlpTransActionsList[binCount].predict_proba(npTotalFeatures)
-        curResultStr = str(predict_test) + ";"
-        resultStr += curResultStr
-
         totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
         npTotalCurves = np.array(totalCurves)
         npTotalCurves = npTotalCurves.reshape(1,-1)

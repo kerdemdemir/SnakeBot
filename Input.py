@@ -19,10 +19,8 @@ class ReShapedInput:
         self.inputTime = []
         self.featureCount = featureCount
         self.featureArr = []
-        self.transactionFeatures = []
-        self.output = []
 
-    def concanate(self, riseAndTimeList,lastTransactionFeatures):
+    def concanate(self, riseAndTimeList):
         riseList = list(map( lambda x: float(x.rise), riseAndTimeList ))
         newList = list(map(lambda x: riseList[x:x+self.featureCount],
                                   range( len( riseList ) - self.featureCount)))
@@ -32,12 +30,9 @@ class ReShapedInput:
                                   range( len( timeList ) - self.featureCount)))
 
 
-        transactionFeatures = list(map(lambda x: itertools.chain(*lastTransactionFeatures[x:x+self.featureCount]),
-                                  range( len( lastTransactionFeatures ) - self.featureCount)))
 
         self.inputRise.extend(newList)
         self.inputTime.extend(newTimeList)
-        self.transactionFeatures.extend(transactionFeatures)
 
     def toNumpy(self):
         inputSize = len(self.inputRise)
@@ -47,22 +42,6 @@ class ReShapedInput:
         for curIndex in range(inputSize):
             newRow = self.inputRise[curIndex] + self.inputTime[curIndex]
             temp.append(newRow)
-            outputVal = 1 if 0.0 < self.inputRise[curIndex][-1] else 0
-            self.output.append(outputVal)
         self.featureArr = np.array(temp)
         self.featureArr.reshape(-1, self.featureCount*2)
-        return self.featureArr
-
-    def toTransactionNumpy(self, transactionCount):
-        inputSize = len(self.inputRise)
-        temp = []
-        for curIndex in range(inputSize):
-            for transactions in self.transactionFeatures[curIndex]:
-                newRow = transactions
-                temp.append(newRow)
-                #print(newRow)
-                outputVal = 1 if 0.0 < self.inputRise[curIndex][-1] else 0
-                self.output.append(outputVal)
-        self.featureArr = np.array(temp)
-        self.featureArr.reshape(-1, transactionCount+1)
         return self.featureArr

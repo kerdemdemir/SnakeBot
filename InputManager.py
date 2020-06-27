@@ -16,7 +16,7 @@ class ReShapeManager:
         self.features = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
         self.transactionHelper = TransactionHelper.TransactionAnalyzer()
 
-    def addANewCurrency( self, jsonIn, transactionMSec, transactionCount, isExtend ):
+    def addANewCurrency( self, jsonIn, transactionMSec, transactionCount, isAddOnlyTransactionPeaks ):
         peakData = jsonIn["peak"]
         riseAndTimeStrList = peakData.split(",")
         if len(riseAndTimeStrList) < 2:
@@ -31,18 +31,16 @@ class ReShapeManager:
             riseMinute = input.RiseMinute(riseAndTimeStrList[x])
             riseAndTimeList.append(riseMinute)
 
+        if not isAddOnlyTransactionPeaks:
+            self.addLinePeaks(riseAndTimeList)
         self.transactionHelper.AddPeak( transactionData, riseAndTimeList,transactionMSec,transactionCount )
-        self.addLinePeaks(riseAndTimeList, self.transactionHelper.peakFeatures, isExtend )
 
-    def addLinePeaks(self, riseAndTimeList, lastTransactionFeatures, addOnlyTransactionPeaks):
+
+    def addLinePeaks(self, riseAndTimeList):
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             curBinIndex = curBinCount - self.minFeatureCount
             if len(riseAndTimeList) >= curBinCount:
-                if addOnlyTransactionPeaks:
-                    if lastTransactionFeatures:
-                        self.inputs[curBinIndex].concanate(riseAndTimeList, lastTransactionFeatures)
-                else:
-                    self.inputs[curBinIndex].concanate(riseAndTimeList,lastTransactionFeatures)
+                self.inputs[curBinIndex].concanate(riseAndTimeList)
 
 
 
@@ -66,14 +64,11 @@ class ReShapeManager:
         newArray = list(map ( lambda elem: 0.0 if elem < 2.0 else 1.0, self.scoreList[curBinIndex] ))
         return np.array(newArray)
 
-    def toTransactionFeaturesNumpy(self, binCount, transactionCount):
-        curBinIndex = binCount - self.minFeatureCount
-        return self.inputs[curBinIndex].toTransactionNumpy(transactionCount)
+    def toTransactionFeaturesNumpy(self, transactionCount):
+        return self.transactionHelper.toTransactionNumpy(transactionCount)
 
-    def toTransactionResultsNumpy(self, binCount):
-        curBinIndex = binCount - self.minFeatureCount
-        #newArray = list(map ( lambda elem: 0.0 if elem < 2.0 else 1.0, self.scoreList[curBinIndex] ))
-        return np.array(self.inputs[curBinIndex].output)
+    def toTransactionResultsNumpy(self):
+        return self.transactionHelper.toTransactionResultsNumpy()
 
     def resetScores(self):
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
