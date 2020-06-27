@@ -43,8 +43,6 @@ print("All added now scores")
 trainingReshaper.assignScores()
 print("Assigned scores")
 sys.stdout.flush()
-mlpList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
-mlpScalerList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
 
 numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionBinCount)
 mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transactionBinCount, transactionBinCount), activation='relu',
@@ -57,6 +55,9 @@ mlpTransaction.fit(X_train, y_train)
 predict_test = mlpTransaction.predict(X_test)
 print(" Transactions : ")
 print(confusion_matrix(y_test, predict_test))
+
+mlpList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
+mlpScalerList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
 
 for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount):
     #numpyArr = trainingReshaper.toTransactionFeaturesNumpy(binCount)
@@ -112,7 +113,7 @@ while True:
         totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
         npTotalCurves = np.array(totalCurves)
         npTotalCurves = npTotalCurves.reshape(1,-1)
-        npTotalCurvesScaled = mlpScalerList[curIndex].transform(npTotalCurves)
+        npTotalCurvesScaled = mlpScalerList[binCount].transform(npTotalCurves)
         print("I will predict the curves: ", totalCurves)
         predict_test = mlpList[binCount].predict_proba(npTotalCurvesScaled)
         curResultStr = str(predict_test) + ";"
