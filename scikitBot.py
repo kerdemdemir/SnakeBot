@@ -37,6 +37,7 @@ def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
 trainingReshaper = ReadFileAndCreateReshaper("learning_23_06.txt")
 AddExtraToShaper("learning24_06.txt",trainingReshaper, True)
 AddExtraToShaper("learning_25_06.txt",trainingReshaper, True)
+AddExtraToShaper("learning_26_28.txt",trainingReshaper, False)
 
 print("All added now scores")
 #trainingReshaper.transactionHelper.Print()
@@ -76,7 +77,7 @@ for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager
     nodeSize = min(8, binCount*2)
     mlpList[curIndex] = MLPClassifier(hidden_layer_sizes=(nodeSize,nodeSize,nodeSize), activation='relu', solver='adam', max_iter=500)
     mlpList[curIndex].fit(X_train,y_train)
-    predict_test = mlpList[curIndex] .predict(X_test)
+    predict_test = mlpList[curIndex].predict(X_test)
     print( " Curves : ")
     print( confusion_matrix(y_test,predict_test))
     sys.stdout.flush()
