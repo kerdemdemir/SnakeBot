@@ -4,7 +4,7 @@ import json
 import TransactionHelper
 
 class ReShapeManager:
-    maxFeatureCount = 6
+    maxFeatureCount = 8
     minFeatureCount = 3
 
     def __init__( self ):

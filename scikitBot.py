@@ -12,7 +12,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
 
-transactionBinCount = 5
+transactionBinCount = 6
 msecs = 1000
 
 def ReadFileAndCreateReshaper( fileName ):
@@ -37,7 +37,7 @@ def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
 trainingReshaper = ReadFileAndCreateReshaper("learning_23_06.txt")
 AddExtraToShaper("learning24_06.txt",trainingReshaper, True)
 AddExtraToShaper("learning_25_06.txt",trainingReshaper, True)
-AddExtraToShaper("learning_26_28.txt",trainingReshaper, False)
+AddExtraToShaper("learning_26_29.txt",trainingReshaper, False)
 
 print("All added now scores")
 #trainingReshaper.transactionHelper.Print()
