@@ -150,7 +150,7 @@ class TransactionPeakHelper:
         lenArray = len(self.dataList)
         if lenArray == 0:
             return
-        print(lenArray, self.dataList)
+        #print(lenArray, self.dataList)
         for x in range( 0, lenArray ):
             curElement = self.dataList[x]
             curElement.NormalizeTransactionCount()
@@ -188,24 +188,22 @@ class TransactionPeakHelper:
         self.dataList.append(copy.deepcopy(transactionData))
 
     def __AppendToPatternList(self, ngramCount, curIndex, lenArray):
-        for index in range(ngramCount):
-            startBin = curIndex + 1 - ngramCount + index
-            endBin = curIndex + 1 + index
-            if startBin < 0 or endBin > lenArray:
-                continue
+        startBin = curIndex + 1 - ngramCount
+        endBin = curIndex + 1
+        if startBin < 0 or endBin > lenArray:
+            return
 
-            pattern = TransactionPattern()
-            pattern.Append(self.dataList[startBin:endBin])
+        pattern = TransactionPattern()
+        pattern.Append(self.dataList[startBin:endBin])
+        if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
+            return
 
-            if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
-                continue
-
-            if pattern in self.patternList:
-                #print("Adding a existing element:  isButtom ", self.isBottom, " ", self.dataList[startBin:endBin])
-                self.patternList[pattern] += 1 if self.isBottom else -1
-            else:
-                #print("Adding a new element: isButtom ", self.isBottom, " ", self.dataList[startBin:endBin])
-                self.patternList[pattern] = 1 if self.isBottom else -1
+        if pattern in self.patternList:
+            print("Adding a existing element:  isButtom ", self.isBottom, " ", pattern)
+            self.patternList[pattern] += 1 if self.isBottom else -1
+        else:
+            print("Adding a new element: isButtom ", self.isBottom, " ", pattern)
+            self.patternList[pattern] = 1 if self.isBottom else -1
 
 
 
@@ -236,6 +234,14 @@ class TransactionAnalyzer :
             returnPatternList.append( 1 if value > 0 else 0 )
 
         return np.array(returnPatternList)
+
+    def Print( self ):
+        peakPatternValues = list(self.patternList.values())
+        peakPatternValues.sort()
+        m = sum(peakPatternValues) / len(peakPatternValues)
+        var_res = sum((xi - m) ** 2 for xi in peakPatternValues) / len(peakPatternValues)
+        print( " len: ", len(peakPatternValues), " small: ", peakPatternValues[0],
+               " last: ", peakPatternValues[-1], " mean ", m, " var ", var_res)
 
     def __MergeInTransactions(self, transactionPeakHelper, isBottom ):
         # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
