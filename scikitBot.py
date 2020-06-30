@@ -38,6 +38,8 @@ trainingReshaper = ReadFileAndCreateReshaper("learning_23_06.txt")
 AddExtraToShaper("learning24_06.txt",trainingReshaper, True)
 AddExtraToShaper("learning_25_06.txt",trainingReshaper, True)
 AddExtraToShaper("learning_26_29.txt",trainingReshaper, False)
+AddExtraToShaper("learning_29_30.txt",trainingReshaper, True)
+AddExtraToShaper("learning_30.txt",trainingReshaper, True)
 
 print("All added now scores")
 #trainingReshaper.transactionHelper.Print()
