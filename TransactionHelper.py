@@ -12,6 +12,7 @@ class TransactionData:
         self.totalTransactionCount = 0.0
         self.normalizedCount = 0.0
         self.score = 0
+        self.timeInSecs = 0
 
     def __repr__(self):
         return "TotalBuy:%f,TotalSell:%f,TransactionCount:%f,Score:%f, NormalizedCount:%d" % (self.totalBuy, self.totalSell,
@@ -56,12 +57,16 @@ class TransactionData:
         else:
             self.totalSell += power
 
+    def SetTime(self, timeInSecs):
+        self.timeInSecs = timeInSecs
+
     def Reset(self):
         self.totalBuy = 0.0
         self.totalSell = 0.0
         self.transactionCount = 0.0
         self.totalTransactionCount = 0.0
         self.score = 0
+        self.timeInSecs = 0
 
 class TransactionPattern:
     def __init__(self):
@@ -72,8 +77,9 @@ class TransactionPattern:
         self.score = 0.0
         self.maxNormalizedCount = 0
         self.totalTransactionCount = 0
+        self.timeDiffInSeconds = 0
 
-    def Append( self, dataList ):
+    def Append( self, dataList, peakTime ):
         for elem in dataList:
             elem.NormalizeTransactionCount()
             self.transactionList.append(elem.normalizedCount)
@@ -82,7 +88,7 @@ class TransactionPattern:
             self.totalSell += elem.totalSell
             self.transactionCount += elem.transactionCount
             self.totalTransactionCount += elem.totalTransactionCount
-
+        self.timeDiffInSeconds = dataList[-1].timeInSecs - peakTime
     def GetFeatures(self):
         returnval = self.transactionList + [self.BuyVsSellRatio()]
         return returnval
@@ -95,8 +101,8 @@ class TransactionPattern:
         return min(4,buySellRatio)
 
     def __repr__(self):
-        return "list:%s,normalized:%d,totalBuy:%f,totalSell:%f,transactionCount:%f,score:%f, maxNormalizedCount:%d" % (
-                                                                                str(self.transactionList), self.BuyVsSellRatio(),
+        return "list:%s,buySellRatio:%d,timeDiff:%d,totalBuy:%f,totalSell:%f,transactionCount:%f,score:%f, maxNormalizedCount:%d" % (
+                                                                                str(self.transactionList), self.BuyVsSellRatio(), self.timeDiffInSeconds,
                                                                                 self.totalBuy, self.totalSell,
                                                                                 self.transactionCount,self.score,
                                                                                 self.maxNormalizedCount )
@@ -115,7 +121,8 @@ class TransactionPattern:
 
 class TransactionPeakHelper:
     percent = 0.01
-    lowestAcceptedTotalTransactionCount = 20
+    stopTime = 10
+    lowestAcceptedTotalTransactionCount = 30
 
     def __init__(self, jsonIn, mseconds, isBottom ):
         self.mseconds = mseconds
@@ -134,6 +141,7 @@ class TransactionPeakHelper:
             self.peakIndex = prices.index(max(prices))
 
         self.peakVal = float(jsonIn[self.peakIndex]["p"])
+        self.peakTimeSeconds = int(jsonIn[self.peakIndex]["T"])//1000
         self.startIndex = max(0, self.__FindIndexWithPriceAndPercent(jsonIn, self.peakIndex, -1, -1))
         self.stopIndex = min(totalSize, self.__FindIndexWithPriceAndPercent(jsonIn, self.peakIndex, totalSize,1))
         self.__DivideDataInSeconds(jsonIn)
@@ -160,6 +168,11 @@ class TransactionPeakHelper:
         for x in range(curStartIndex, curStopIndex, step ):
             curElem = jsonIn[x]
             price = float(curElem["p"])
+            curTime = int(curElem["T"])//1000
+
+            if curTime < self.peakTimeSeconds - self.stopTime:
+                return x
+
             if self.isBottom:
                 if price > self.peakVal * (1.00+self.percent):
                     return x
@@ -183,6 +196,7 @@ class TransactionPeakHelper:
                 self.dataList.append( copy.deepcopy(transactionData) )
                 transactionData.Reset()
                 transactionData.AddData(curElement)
+                transactionData.SetTime(curMiliSecs//1000)
             else:
                 transactionData.AddData(curElement)
         self.dataList.append(copy.deepcopy(transactionData))
@@ -194,7 +208,7 @@ class TransactionPeakHelper:
             return
 
         pattern = TransactionPattern()
-        pattern.Append(self.dataList[startBin:endBin])
+        pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
         if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
             return
 
