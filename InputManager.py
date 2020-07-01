@@ -4,7 +4,7 @@ import json
 import TransactionHelper
 
 class ReShapeManager:
-    maxFeatureCount = 8
+    maxFeatureCount = 6
     minFeatureCount = 3
 
     def __init__( self ):
@@ -51,7 +51,7 @@ class ReShapeManager:
             for currentElemIndex in range(len(self.inputs[curBinIndex].inputRise)):
                 elem = self.inputs[curBinIndex].inputRise[currentElemIndex]
                 if elem[-1] < 0.0 and curBinIndex + 1 < self.maxFeatureCount - self.minFeatureCount:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex+1])
+                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex])
                 elif elem[-1] > 0.0:
                     self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex])
 
@@ -63,6 +63,12 @@ class ReShapeManager:
         curBinIndex = binCount - self.minFeatureCount
         newArray = list(map ( lambda elem: 0.0 if elem < 2.0 else 1.0, self.scoreList[curBinIndex] ))
         return np.array(newArray)
+
+    def toTestResultNumpy(self, xTest, gramCount):
+        output = []
+        for x in xTest:
+            output.append( 1 if x[gramCount-1] < 0.0 else 0)
+        return np.array(output)
 
     def toTransactionFeaturesNumpy(self, transactionCount):
         return self.transactionHelper.toTransactionNumpy(transactionCount)
@@ -77,13 +83,13 @@ class ReShapeManager:
             self.scoreList[curBinIndex] = [0.0]*len(self.inputs[curBinIndex].inputRise);
 
     def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteList):
-        score = 2.0
+        score = 0.0
         for elemList in nPlusOneCompleteList.inputRise:
             score+= self.__getScoreForButtom(oneSampleNBin, elemList)
         return score
 
     def __getScoreForRisingElement(self, oneSampleNBin, nBinCompleteList):
-        score = -3.0
+        score = 0
         for elemList in nBinCompleteList.inputRise :
             score+= self.__getScoreForRising(oneSampleNBin, elemList)
         return score
@@ -106,14 +112,23 @@ class ReShapeManager:
             [self.__checkPositivitySingleVal(x, y) for x, y in zip(oneSampleNBin[:-1], oneSampleOtherBin[:-1])])
         if not isAllValid:
             return 0
-        if oneSampleNBin == oneSampleOtherBin:
+        diff = oneSampleOtherBin[-1] - oneSampleNBin[-1]
+        if diff < -1:
             return 0
-        #print( "Score will change ", *oneSampleNBin, " " , *oneSampleOtherBin)
-        return max( -5.0, min(oneSampleOtherBin[-1] - oneSampleNBin[-1] - 2.5, 5.0) )
+
+        return self.__clampVal( diff - 4.0 )
 
     def __getScoreForButtom(self, oneSampleNBin, oneSampleNPluseOneBin):
-        isAllValid = all([self.__checkPositivitySingleVal(x, y) for x, y in zip(oneSampleNBin, oneSampleNPluseOneBin)])
-        if  not isAllValid :
+        isAllValid = all([self.__checkPositivitySingleVal(x, y) for x, y in zip(oneSampleNBin[:-1], oneSampleNPluseOneBin[:-2])])
+        if not isAllValid:
             return 0
-        #print("Buttom repeat Score will change ", *oneSampleNBin, " ", *oneSampleNPluseOneBin)
-        return min( 5.0, max( oneSampleNPluseOneBin[-1], -5.0 ) )
+        diff = oneSampleNBin[-1] - oneSampleNPluseOneBin[-2]
+        if diff < -1:
+            return 0
+        elif diff < 1:
+            return self.__clampVal(oneSampleNPluseOneBin[-1] - abs(diff))#Positive effect
+        else:
+            return -self.__clampVal(diff)#Negative effect
+
+    def __clampVal(self, val ):
+        return min(5.0, max(val, -5.0))
