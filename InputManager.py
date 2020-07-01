@@ -61,7 +61,7 @@ class ReShapeManager:
 
     def toResultsNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
-        newArray = list(map ( lambda elem: 0.0 if elem < 2.0 else 1.0, self.scoreList[curBinIndex] ))
+        newArray = list(map ( lambda elem: 0.0 if elem < 5.0 else 1.0, self.scoreList[curBinIndex] ))
         return np.array(newArray)
 
     def toTestResultNumpy(self, xTest, gramCount):
@@ -80,7 +80,7 @@ class ReShapeManager:
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             curBinIndex = curBinCount - self.minFeatureCount
             #self.scoreList[curBinIndex].clear()
-            self.scoreList[curBinIndex] = [0.0]*len(self.inputs[curBinIndex].inputRise);
+            self.scoreList[curBinIndex] = [0.0]*len(self.inputs[curBinIndex].inputRise)
 
     def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteList):
         score = 0.0
