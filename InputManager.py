@@ -4,7 +4,7 @@ import json
 import TransactionHelper
 
 class ReShapeManager:
-    maxFeatureCount = 6
+    maxFeatureCount = 8
     minFeatureCount = 3
 
     def __init__( self ):
@@ -51,7 +51,7 @@ class ReShapeManager:
             for currentElemIndex in range(len(self.inputs[curBinIndex].inputRise)):
                 elem = self.inputs[curBinIndex].inputRise[currentElemIndex]
                 if elem[-1] < 0.0 and curBinIndex + 1 < self.maxFeatureCount - self.minFeatureCount:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex])
+                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex+1])
                 elif elem[-1] > 0.0:
                     self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex])
 
