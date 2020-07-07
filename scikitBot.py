@@ -42,8 +42,8 @@ AddExtraToShaper("learning_29_30.txt",trainingReshaper, True)
 AddExtraToShaper("learning_30.txt",trainingReshaper, True)
 AddExtraToShaper("learning_30_1.txt",trainingReshaper, True)
 AddExtraToShaper("learning_1_3.txt",trainingReshaper, True)
-AddExtraToShaper("learning_3_7.txt",trainingReshaper, False)
-
+AddExtraToShaper("learning_3_7.txt",trainingReshaper, True)
+AddExtraToShaper("learning_7_9.txt",trainingReshaper, False)
 
 print("All added now scores")
 #trainingReshaper.transactionHelper.Print()
