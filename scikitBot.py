@@ -11,7 +11,7 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
-transactionBinCount = 8
+transactionBinCount = 6
 msecs = 1000
 
 def ReadFileAndCreateReshaper( fileName ):
