@@ -19,6 +19,7 @@ class TransactionData:
                                                                                             self.transactionCount,self.score,
                                                                                               self.normalizedCount)
 
+
     def NormalizeTransactionCount(self):
         if self.transactionCount < 2:
             self.normalizedCount = 0
@@ -89,8 +90,16 @@ class TransactionPattern:
             self.transactionCount += elem.transactionCount
             self.totalTransactionCount += elem.totalTransactionCount
         self.timeDiffInSeconds = dataList[-1].timeInSecs - peakTime
+
+    def TotalTrade(self):
+        total = (self.totalBuy + self.totalSell) // 2
+
+        if total > 10:
+            total = 10
+        return total
+
     def GetFeatures(self):
-        returnval = self.transactionList + [self.BuyVsSellRatio()]
+        returnval = self.transactionList + [self.BuyVsSellRatio(),self.TotalTrade()]
         return returnval
 
 
@@ -124,12 +133,15 @@ class TransactionPeakHelper:
     stopTime = 10
     lowestAcceptedTotalTransactionCount = 50
 
-    def __init__(self, jsonIn, mseconds, isBottom ):
+    def __init__(self, jsonIn, mseconds, isBottom, curveVal, curveTime ):
         self.mseconds = mseconds
         totalSize = len(jsonIn)
-        self.patternList = {}
+        self.patternList = []
+        self.badPatternList = []
         self.dataList = []
         self.isBottom = isBottom
+        self.curveVal = curveVal
+        self.curveTime = curveTime
 
         prices = list(map( lambda x: float(x["p"]), jsonIn))
         if len(prices) == 0:
@@ -212,45 +224,43 @@ class TransactionPeakHelper:
         if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
             return
 
-        if pattern in self.patternList:
-            print("Adding a existing element:  isButtom ", self.isBottom, " ", pattern)
-            self.patternList[pattern] += 1 if self.isBottom else -1
+        if self.isBottom:
+           self.patternList.append(pattern)
         else:
-            print("Adding a new element: isButtom ", self.isBottom, " ", pattern)
-            self.patternList[pattern] = 1 if self.isBottom else -1
-
+            self.badPatternList.append(pattern)
 
 
 class TransactionAnalyzer :
     def __init__(self ):
-        self.patternList = {}
         self.featureArr = []
+        self.patternList = []
+        self.badPatternList = []
+
 
     def AddPeak(self, jsonIn, riseMinuteList, msec, ngrams ):
         for index in range(len(jsonIn)):
             isBottom = riseMinuteList[index].rise < 0.0
-            peakHelper = TransactionPeakHelper(jsonIn[index], msec, isBottom)
+            peakHelper = TransactionPeakHelper(jsonIn[index], msec, isBottom, riseMinuteList[index].rise, riseMinuteList[index].time )
             peakHelper.AssignScores(ngrams)
             self.__MergeInTransactions(peakHelper, isBottom)
 
     def toTransactionNumpy(self, ngrams):
-        peakPatternList = list(map( lambda x: x.GetFeatures(), self.patternList.keys()))
-        self.featureArr = np.array(peakPatternList)
+        allData = self.patternList + self.badPatternList
+        self.featureArr = np.array(allData)
+        print(*allData)
         #print(self.featureArr, ngrams)
-        self.featureArr.reshape(-1, ngrams+1)
+        self.featureArr.reshape(-1, ngrams+4)
         return self.featureArr
 
     def toTransactionResultsNumpy(self):
-        peakPatternKeys = self.patternList.keys()
-        returnPatternList = []
-        for key in peakPatternKeys:
-            value = self.patternList[key]
-            returnPatternList.append( 1 if value > 0 else 0 )
+        goodResult = [1]*len(self.patternList)
+        badResult = [0] * len(self.badPatternList)
+        returnPatternList = goodResult + badResult
 
         return np.array(returnPatternList)
 
     def Print( self ):
-        peakPatternValues = list(self.patternList.values())
+        peakPatternValues = list(self.patternList)
         peakPatternValues.sort()
         m = sum(peakPatternValues) / len(peakPatternValues)
         var_res = sum((xi - m) ** 2 for xi in peakPatternValues) / len(peakPatternValues)
@@ -259,12 +269,9 @@ class TransactionAnalyzer :
 
     def __MergeInTransactions(self, transactionPeakHelper, isBottom ):
         # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
-        peakPatternList = transactionPeakHelper.patternList.keys()
-        for pattern in peakPatternList:
-            if pattern in self.patternList:
-                #print("Merging a existing element: ", pattern)
-                self.patternList[pattern] += (1 if isBottom else -1)
-            else:
-                #print("Merging a new element: ", pattern)
-                self.patternList[pattern] = (1 if isBottom else -1)
 
+        for pattern in transactionPeakHelper.patternList:
+            self.patternList.append(pattern.GetFeatures() + [abs(transactionPeakHelper.curveVal),float(transactionPeakHelper.curveTime)])
+
+        for pattern in transactionPeakHelper.badPatternList:
+            self.badPatternList.append(pattern.GetFeatures() + [abs(transactionPeakHelper.curveVal),float(transactionPeakHelper.curveTime)])
