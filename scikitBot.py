@@ -44,7 +44,10 @@ AddExtraToShaper("learning_1_3.txt",trainingReshaper, True)
 AddExtraToShaper("learning_3_7.txt",trainingReshaper, True)
 AddExtraToShaper("learning_7_9.txt",trainingReshaper, True)
 AddExtraToShaper("learning_9_10.txt",trainingReshaper, True)
-AddExtraToShaper("learning_10_12.txt",trainingReshaper, False)
+AddExtraToShaper("learning_10_12.txt",trainingReshaper, True)
+AddExtraToShaper("learning_13_14.txt",trainingReshaper, False)
+AddExtraToShaper("learning_14_15.txt",trainingReshaper, True)
+
 
 print("All added now scores")
 #trainingReshaper.transactionHelper.Print()
@@ -55,7 +58,9 @@ sys.stdout.flush()
 numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionBinCount)
 mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transactionBinCount, transactionBinCount), activation='relu',
                                               solver='adam', max_iter=500)
-X = numpyArr
+
+transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
+X = transactionScaler.transform(numpyArr)
 y = trainingReshaper.toTransactionResultsNumpy()
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
 mlpTransaction.fit(X_train, y_train)
@@ -110,9 +115,10 @@ while True:
 
     resultStr = ""
 
-    totalFeatures = resultsTransactionFloat[:transactionBinCount + 1]
-    print("I will predict: ", totalFeatures)
-    npTotalFeatures = np.array(totalFeatures)
+    totalFeatures = resultsTransactionFloat[:transactionBinCount + 1] + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
+    totalFeaturesScaled = transactionScaler.transform(totalFeatures)
+    print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled )
+    npTotalFeatures = np.array(totalFeaturesScaled)
     npTotalFeatures = npTotalFeatures.reshape(1, -1)
     predict_test = mlpTransaction.predict_proba(npTotalFeatures)
     curResultStr = str(predict_test) + ";"
