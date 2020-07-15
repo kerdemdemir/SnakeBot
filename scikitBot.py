@@ -116,7 +116,8 @@ while True:
     resultStr = ""
 
     totalFeatures = resultsTransactionFloat[:transactionBinCount + 1] + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
-    totalFeaturesScaled = transactionScaler.transform(totalFeatures)
+    totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
+    totalFeaturesScaled = transactionScaler.transform(totalFeaturesNumpy)
     print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled )
     npTotalFeatures = np.array(totalFeaturesScaled)
     npTotalFeatures = npTotalFeatures.reshape(1, -1)
