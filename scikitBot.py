@@ -167,7 +167,7 @@ while True:
         resultStr += curResultStr
     resultStr = resultStr[:-1]
     totalPredict = totalPredict.reshape(1, -1)
-    totalPredictResult = mixTransactionLearner.predict(totalPredict)
+    totalPredictResult = mixTransactionLearner.predict_proba(totalPredict)
 
     totalPredictResultStr = str(totalPredictResult) + ";"
     resultStr = totalPredictResultStr + resultStr
