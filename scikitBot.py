@@ -13,7 +13,8 @@ from sklearn.metrics import classification_report,confusion_matrix
 
 transactionBinCount = 6
 msecs = 1000
-isTrainCurves = False
+isTrainCurves = True
+totalUsedCurveCount = 3
 
 def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")
@@ -63,13 +64,6 @@ mlpScalerList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount -
 
 if isTrainCurves :
     for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount):
-        #numpyArr = trainingReshaper.toTransactionFeaturesNumpy(binCount)
-        #X_train = trainingReshaper.toTransactionFeaturesNumpy(binCount,transactionBinCount)
-        #y_train = trainingReshaper.toResultsNumpy(binCount)
-        #X_test = trainingReshaper2.toTransactionFeaturesNumpy(binCount,transactionBinCount)
-        #y_test = trainingReshaper2.toResultsNumpy(binCount)
-
-        #print( X.shape, " ", y.shape,  X.shape, " ", y_1.shape,  X_2.shape, " ", y_2.shape)
         curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
         numpyArr = trainingReshaper.toFeaturesNumpy(binCount)
         mlpScalerList[curIndex] = preprocessing.StandardScaler().fit(numpyArr)
@@ -92,13 +86,41 @@ mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transact
 transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
 X = transactionScaler.transform(numpyArr)
 y = trainingReshaper.toTransactionResultsNumpy()
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=40)
+
+testCount = 100
+X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
+y_test = np.concatenate((y[:testCount], y[-testCount:]))
+X_train = X[testCount:-testCount,:]
+y_train = y[testCount:-testCount]
 mlpTransaction.fit(X_train, y_train)
 
-predict_test = mlpTransaction.predict_proba(X_test)[:,1] >= 0.8
-print(" Transactions : ")
-print(predict_test)
-print(confusion_matrix(y_test, predict_test))
+predict_test = mlpTransaction.predict_proba(X_test)
+finalResult = predict_test[:,1] >= 0.8
+print(" Transactions : ", predict_test)
+print(confusion_matrix(y_test, finalResult))
+
+resultPredicts = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - 1 - inputManager.ReShapeManager.minFeatureCount)]
+if isTrainCurves:
+    for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount-1):
+        curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
+        numpyArr = trainingReshaper.toTransactionCurvesToNumpy(binCount)
+        X = mlpScalerList[curIndex].transform(numpyArr)
+        X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
+        resultPredicts[curIndex] = mlpList[curIndex].predict_proba(X_test)
+        print( " Transaction Curves Bin Count: ", binCount, " Results: ", resultPredicts[curIndex])
+        sys.stdout.flush()
+
+
+
+mergedArray = np.concatenate((predict_test, resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
+print(mergedArray)
+X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y_test, test_size=0.2, random_state=40)
+mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transactionBinCount, transactionBinCount), activation='relu',
+                                              solver='adam', max_iter=500)
+mixTransactionLearner.fit(X_trainMearged, y_trainMerged)
+predict_test = mixTransactionLearner.predict(X_testMerged)
+print(" Transactions and curves merged: ")
+print(confusion_matrix(y_testMerged, predict_test))
 
 
 context = zmq.Context()
@@ -129,6 +151,8 @@ while True:
     predict_test = mlpTransaction.predict_proba(npTotalFeatures)
     curResultStr = str(predict_test) + ";"
     resultStr += curResultStr
+    totalPredict = predict_test
+
     for binCount in range (inputManager.ReShapeManager.maxFeatureCount-inputManager.ReShapeManager.minFeatureCount-1):
         curCount = binCount + inputManager.ReShapeManager.minFeatureCount
         totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
@@ -137,10 +161,15 @@ while True:
         npTotalCurvesScaled = mlpScalerList[binCount].transform(npTotalCurves)
         print("I will predict the curves: ", totalCurves)
         predict_test = mlpList[binCount].predict_proba(npTotalCurvesScaled)
+        if binCount < totalUsedCurveCount:
+            totalPredict = np.append(totalPredict,predict_test)
         curResultStr = str(predict_test) + ";"
         resultStr += curResultStr
-
     resultStr = resultStr[:-1]
+    totalPredictResult = mixTransactionLearner.predict(totalPredict)
+
+    totalPredictResultStr = str(totalPredictResult) + ";"
+    resultStr = totalPredictResultStr + resultStr
     print("Results are: " , resultStr)
 
     #  Send reply back to client

@@ -248,7 +248,7 @@ class TransactionAnalyzer :
         self.featureArr = []
         self.patternList = []
         self.badPatternList = []
-
+        self.peakHelperList = []
 
     def AddPeak(self, jsonIn, riseMinuteList, msec, ngrams, maxGrams ):
         for index in range(len(jsonIn)):
@@ -265,7 +265,8 @@ class TransactionAnalyzer :
 
             peakHelper = TransactionPeakHelper(jsonIn[index], msec, isBottom, riseMinuteList[index].rise, riseMinuteList[index].time, riseList, timeList)
             peakHelper.AssignScores(ngrams)
-            self.__MergeInTransactions(peakHelper, isBottom)
+            self.peakHelperList.append(peakHelper)
+            self.__MergeInTransactions(peakHelper,riseList,timeList)
 
     def toTransactionNumpy(self, ngrams):
         allData = self.patternList + self.badPatternList
@@ -274,6 +275,21 @@ class TransactionAnalyzer :
         #print(self.featureArr, ngrams)
         self.featureArr.reshape(-1, ngrams+5)
         return self.featureArr
+
+    def toTransactionCurvesToNumpy(self, ngrams):
+        returnVal = []
+        for peakHelper in self.peakHelperList:
+            for pattern in peakHelper.patternList:
+                returnVal.append(peakHelper.inputRise[-ngrams:] + peakHelper.inputTime[-ngrams:])
+
+        for peakHelper in self.peakHelperList:
+            for pattern in peakHelper.badPatternList:
+                returnVal.append(peakHelper.inputRise[-ngrams:] + peakHelper.inputTime[-ngrams:])
+
+        self.featureArr = np.array(returnVal)
+        self.featureArr.reshape(-1, ngrams*2)
+        return self.featureArr
+
 
     def toTransactionResultsNumpy(self):
         goodResult = [1]*len(self.patternList)
@@ -290,9 +306,8 @@ class TransactionAnalyzer :
         print( " len: ", len(peakPatternValues), " small: ", peakPatternValues[0],
                " last: ", peakPatternValues[-1], " mean ", m, " var ", var_res)
 
-    def __MergeInTransactions(self, transactionPeakHelper, isBottom ):
+    def __MergeInTransactions(self, transactionPeakHelper,riseList,timeList ):
         # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
-
         for pattern in transactionPeakHelper.patternList:
             self.patternList.append(pattern.GetFeatures() + [abs(transactionPeakHelper.curveVal),float(transactionPeakHelper.curveTime)])
 

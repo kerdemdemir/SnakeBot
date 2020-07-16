@@ -4,7 +4,7 @@ import json
 import TransactionHelper
 
 class ReShapeManager:
-    maxFeatureCount = 6
+    maxFeatureCount = 7
     minFeatureCount = 3
 
     def __init__( self ):
@@ -58,6 +58,9 @@ class ReShapeManager:
     def toFeaturesNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
         return self.inputs[curBinIndex].toNumpy()
+
+    def toTransactionCurvesToNumpy(self, binCount):
+        return self.transactionHelper.toTransactionCurvesToNumpy(binCount)
 
     def toResultsNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
