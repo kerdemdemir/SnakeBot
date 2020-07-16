@@ -4,7 +4,7 @@ import json
 import TransactionHelper
 
 class ReShapeManager:
-    maxFeatureCount = 8
+    maxFeatureCount = 6
     minFeatureCount = 3
 
     def __init__( self ):
@@ -33,7 +33,7 @@ class ReShapeManager:
 
         if not isAddOnlyTransactionPeaks:
             self.addLinePeaks(riseAndTimeList)
-        self.transactionHelper.AddPeak( transactionData, riseAndTimeList,transactionMSec,transactionCount )
+        self.transactionHelper.AddPeak( transactionData, riseAndTimeList,transactionMSec,transactionCount,self.maxFeatureCount )
 
 
     def addLinePeaks(self, riseAndTimeList):

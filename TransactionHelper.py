@@ -13,6 +13,8 @@ class TransactionData:
         self.normalizedCount = 0.0
         self.score = 0
         self.timeInSecs = 0
+        self.firstPrice = 0.0
+        self.lastPrice = 0.0
 
     def __repr__(self):
         return "TotalBuy:%f,TotalSell:%f,TransactionCount:%f,Score:%f, NormalizedCount:%d" % (self.totalBuy, self.totalSell,
@@ -51,6 +53,9 @@ class TransactionData:
     def AddData(self, jsonIn):
         isSell = jsonIn["m"]
         power  = float(jsonIn["q"]) * float(jsonIn["p"])
+        if self.firstPrice == 0.0:
+            self.firstPrice = float(jsonIn["p"])
+        self.lastPrice = float(jsonIn["p"])
         self.totalTransactionCount += 1
         if not isSell:
             self.transactionCount += 1
@@ -68,6 +73,8 @@ class TransactionData:
         self.totalTransactionCount = 0.0
         self.score = 0
         self.timeInSecs = 0
+        self.firstPrice = 0.0
+        self.lastPrice = 0.0
 
 class TransactionPattern:
     def __init__(self):
@@ -79,8 +86,12 @@ class TransactionPattern:
         self.maxNormalizedCount = 0
         self.totalTransactionCount = 0
         self.timeDiffInSeconds = 0
+        self.priceRatio = 1.0
 
     def Append( self, dataList, peakTime ):
+        if len(dataList) > 0:
+            self.priceRatio = int((1.0 - dataList[-1].lastPrice / dataList[0].firstPrice)*1000)
+
         for elem in dataList:
             elem.NormalizeTransactionCount()
             self.transactionList.append(elem.normalizedCount)
@@ -99,7 +110,7 @@ class TransactionPattern:
         return total
 
     def GetFeatures(self):
-        returnval = self.transactionList + [self.BuyVsSellRatio(),self.TotalTrade()]
+        returnval = self.transactionList + [self.priceRatio,self.BuyVsSellRatio(),self.TotalTrade()]
         return returnval
 
 
@@ -133,7 +144,7 @@ class TransactionPeakHelper:
     stopTime = 10
     lowestAcceptedTotalTransactionCount = 50
 
-    def __init__(self, jsonIn, mseconds, isBottom, curveVal, curveTime ):
+    def __init__(self, jsonIn, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
         self.mseconds = mseconds
         totalSize = len(jsonIn)
         self.patternList = []
@@ -142,6 +153,8 @@ class TransactionPeakHelper:
         self.isBottom = isBottom
         self.curveVal = curveVal
         self.curveTime = curveTime
+        self.inputRise = riseList
+        self.inputTime = timeList
 
         prices = list(map( lambda x: float(x["p"]), jsonIn))
         if len(prices) == 0:
@@ -237,10 +250,20 @@ class TransactionAnalyzer :
         self.badPatternList = []
 
 
-    def AddPeak(self, jsonIn, riseMinuteList, msec, ngrams ):
+    def AddPeak(self, jsonIn, riseMinuteList, msec, ngrams, maxGrams ):
         for index in range(len(jsonIn)):
             isBottom = riseMinuteList[index].rise < 0.0
-            peakHelper = TransactionPeakHelper(jsonIn[index], msec, isBottom, riseMinuteList[index].rise, riseMinuteList[index].time )
+            if len(jsonIn[index]) == 0:
+                continue
+
+            indexPlusOne = index + 1
+            riseList = list(map( lambda x: x.rise , riseMinuteList[index-maxGrams:indexPlusOne] ))
+            timeList = list(map(lambda x: x.time, riseMinuteList[index-maxGrams:indexPlusOne]))
+            if len(riseList) < maxGrams :
+                riseList = [0.0]*(maxGrams-len(riseList)) + riseList
+                timeList = [0.0]*(maxGrams-len(timeList)) + timeList
+
+            peakHelper = TransactionPeakHelper(jsonIn[index], msec, isBottom, riseMinuteList[index].rise, riseMinuteList[index].time, riseList, timeList)
             peakHelper.AssignScores(ngrams)
             self.__MergeInTransactions(peakHelper, isBottom)
 
@@ -249,7 +272,7 @@ class TransactionAnalyzer :
         self.featureArr = np.array(allData)
         print(*allData)
         #print(self.featureArr, ngrams)
-        self.featureArr.reshape(-1, ngrams+4)
+        self.featureArr.reshape(-1, ngrams+5)
         return self.featureArr
 
     def toTransactionResultsNumpy(self):

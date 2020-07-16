@@ -13,6 +13,7 @@ from sklearn.metrics import classification_report,confusion_matrix
 
 transactionBinCount = 6
 msecs = 1000
+isTrainCurves = False
 
 def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")
@@ -47,13 +48,42 @@ AddExtraToShaper("learning_9_10.txt",trainingReshaper, True)
 AddExtraToShaper("learning_10_12.txt",trainingReshaper, True)
 AddExtraToShaper("learning_13_14.txt",trainingReshaper, False)
 AddExtraToShaper("learning_14_15.txt",trainingReshaper, True)
-
+AddExtraToShaper("learning15_15.txt",trainingReshaper, True)
+AddExtraToShaper("learning15_16.txt",trainingReshaper, True)
 
 print("All added now scores")
 #trainingReshaper.transactionHelper.Print()
-trainingReshaper.assignScores()
+if isTrainCurves:
+    trainingReshaper.assignScores()
 print("Assigned scores")
 sys.stdout.flush()
+
+mlpList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
+mlpScalerList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
+
+if isTrainCurves :
+    for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount):
+        #numpyArr = trainingReshaper.toTransactionFeaturesNumpy(binCount)
+        #X_train = trainingReshaper.toTransactionFeaturesNumpy(binCount,transactionBinCount)
+        #y_train = trainingReshaper.toResultsNumpy(binCount)
+        #X_test = trainingReshaper2.toTransactionFeaturesNumpy(binCount,transactionBinCount)
+        #y_test = trainingReshaper2.toResultsNumpy(binCount)
+
+        #print( X.shape, " ", y.shape,  X.shape, " ", y_1.shape,  X_2.shape, " ", y_2.shape)
+        curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
+        numpyArr = trainingReshaper.toFeaturesNumpy(binCount)
+        mlpScalerList[curIndex] = preprocessing.StandardScaler().fit(numpyArr)
+        X = mlpScalerList[curIndex].transform(numpyArr)
+        y = trainingReshaper.toResultsNumpy(binCount)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
+        y_test = trainingReshaper.toTestResultNumpy(X_test,binCount)
+        nodeSize = min(8, binCount*2)
+        mlpList[curIndex] = MLPClassifier(hidden_layer_sizes=(nodeSize,nodeSize,nodeSize), activation='relu', solver='adam', max_iter=500)
+        mlpList[curIndex].fit(X_train,y_train)
+        predict_test = mlpList[curIndex].predict(X_test)
+        print( " Curves : ")
+        print( confusion_matrix(y_test,predict_test))
+        sys.stdout.flush()
 
 numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionBinCount)
 mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transactionBinCount, transactionBinCount), activation='relu',
@@ -62,38 +92,13 @@ mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transact
 transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
 X = transactionScaler.transform(numpyArr)
 y = trainingReshaper.toTransactionResultsNumpy()
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=40)
 mlpTransaction.fit(X_train, y_train)
 
-predict_test = mlpTransaction.predict(X_test)
+predict_test = mlpTransaction.predict_proba(X_test)[:,1] >= 0.8
 print(" Transactions : ")
+print(predict_test)
 print(confusion_matrix(y_test, predict_test))
-
-mlpList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
-mlpScalerList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
-
-for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount):
-    #numpyArr = trainingReshaper.toTransactionFeaturesNumpy(binCount)
-    #X_train = trainingReshaper.toTransactionFeaturesNumpy(binCount,transactionBinCount)
-    #y_train = trainingReshaper.toResultsNumpy(binCount)
-    #X_test = trainingReshaper2.toTransactionFeaturesNumpy(binCount,transactionBinCount)
-    #y_test = trainingReshaper2.toResultsNumpy(binCount)
-
-    #print( X.shape, " ", y.shape,  X.shape, " ", y_1.shape,  X_2.shape, " ", y_2.shape)
-    curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
-    numpyArr = trainingReshaper.toFeaturesNumpy(binCount)
-    mlpScalerList[curIndex] = preprocessing.StandardScaler().fit(numpyArr)
-    X = mlpScalerList[curIndex].transform(numpyArr)
-    y = trainingReshaper.toResultsNumpy(binCount)
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
-    y_test = trainingReshaper.toTestResultNumpy(X_test,binCount)
-    nodeSize = min(8, binCount*2)
-    mlpList[curIndex] = MLPClassifier(hidden_layer_sizes=(nodeSize,nodeSize,nodeSize), activation='relu', solver='adam', max_iter=500)
-    mlpList[curIndex].fit(X_train,y_train)
-    predict_test = mlpList[curIndex].predict(X_test)
-    print( " Curves : ")
-    print( confusion_matrix(y_test,predict_test))
-    sys.stdout.flush()
 
 
 context = zmq.Context()
@@ -115,7 +120,7 @@ while True:
 
     resultStr = ""
 
-    totalFeatures = resultsTransactionFloat[:transactionBinCount + 2] + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
+    totalFeatures = resultsTransactionFloat[:transactionBinCount + 3] + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
     totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
     totalFeaturesScaled = transactionScaler.transform(totalFeaturesNumpy)
     print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled )
