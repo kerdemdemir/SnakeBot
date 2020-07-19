@@ -134,4 +134,4 @@ class ReShapeManager:
             return -self.__clampVal(diff)#Negative effect
 
     def __clampVal(self, val ):
-        return min(5.0, max(val, -10.0))
+        return min(6.0, max(val, -7.0))
