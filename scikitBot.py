@@ -1,9 +1,12 @@
 import json
 import Input as input
 import InputManager as inputManager
+import ExtraDataManager as extraDataMan
 import zmq
 import numpy as np
 import sys
+import pandas as pd
+import os
 
 from sklearn.neural_network import MLPClassifier
 from sklearn import preprocessing
@@ -53,7 +56,12 @@ AddExtraToShaper("learning15_15.txt",trainingReshaper, True)
 AddExtraToShaper("learning15_16.txt",trainingReshaper, True)
 AddExtraToShaper("learning_16_17.txt",trainingReshaper, True)
 AddExtraToShaper("learning_17_18.txt",trainingReshaper,True)
-AddExtraToShaper("learning_18_19.txt",trainingReshaper,False)
+AddExtraToShaper("learning_18_19.txt",trainingReshaper,True)
+AddExtraToShaper("learning_19_20.txt",trainingReshaper,False)
+extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
+                                                  inputManager.ReShapeManager.maxFeatureCount,
+                                                  transactionBinCount+3,
+                                                  os.path.abspath(os.getcwd()) + "\\Data")
 
 print("All added now scores")
 #trainingReshaper.transactionHelper.Print()
@@ -69,6 +77,7 @@ if isTrainCurves :
     for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount):
         curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
         numpyArr = trainingReshaper.toFeaturesNumpy(binCount)
+
         mlpScalerList[curIndex] = preprocessing.StandardScaler().fit(numpyArr)
         X = mlpScalerList[curIndex].transform(numpyArr)
         y = trainingReshaper.toResultsNumpy(binCount)
@@ -83,13 +92,14 @@ if isTrainCurves :
         sys.stdout.flush()
 
 numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionBinCount)
+numpyArr = extraDataManager.ConcanateTransactions(numpyArr, transactionBinCount+5)
 mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transactionBinCount, transactionBinCount), activation='relu',
                                               solver='adam', max_iter=500)
 
 transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
 X = transactionScaler.transform(numpyArr)
 y = trainingReshaper.toTransactionResultsNumpy()
-
+y = extraDataManager.ConcanateResults(y)
 testCount = 100
 X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
 y_test = np.concatenate((y[:testCount], y[-testCount:]))
@@ -107,6 +117,7 @@ if isTrainCurves:
     for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount-1):
         curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
         numpyArr = trainingReshaper.toTransactionCurvesToNumpy(binCount)
+        numpyArr = extraDataManager.ConcanateResults(numpyArr)
         X = mlpScalerList[curIndex].transform(numpyArr)
         X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
         resultPredicts[curIndex] = mlpList[curIndex].predict_proba(X_test)
