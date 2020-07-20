@@ -125,9 +125,9 @@ if isTrainCurves:
 
 
 
-mergedArray = np.concatenate((predict_test, resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
+mergedArray = np.concatenate((predict_test[1], resultPredicts[0][1], resultPredicts[1][1], resultPredicts[2][1]), axis=1)
 print(mergedArray)
-X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y_test, test_size=0.2, random_state=40)
+X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y_test, test_size=0.1, random_state=40)
 mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transactionBinCount, transactionBinCount), activation='relu',
                                               solver='adam', max_iter=500)
 mixTransactionLearner.fit(X_trainMearged, y_trainMerged)
@@ -164,7 +164,7 @@ while True:
     predict_test = mlpTransaction.predict_proba(npTotalFeatures)
     curResultStr = str(predict_test) + ";"
     resultStr += curResultStr
-    totalPredict = predict_test
+    totalPredict = predict_test[1]
 
     for binCount in range (inputManager.ReShapeManager.maxFeatureCount-inputManager.ReShapeManager.minFeatureCount-1):
         curCount = binCount + inputManager.ReShapeManager.minFeatureCount
@@ -175,7 +175,7 @@ while True:
         print("I will predict the curves: ", totalCurves)
         predict_test = mlpList[binCount].predict_proba(npTotalCurvesScaled)
         if binCount < totalUsedCurveCount:
-            totalPredict = np.append(totalPredict,predict_test)
+            totalPredict = np.append(totalPredict,predict_test[1])
         curResultStr = str(predict_test) + ";"
         resultStr += curResultStr
     resultStr = resultStr[:-1]
