@@ -5,7 +5,6 @@ import ExtraDataManager as extraDataMan
 import zmq
 import numpy as np
 import sys
-import pandas as pd
 import os
 
 from sklearn.neural_network import MLPClassifier
@@ -61,7 +60,7 @@ AddExtraToShaper("learning_19_20.txt",trainingReshaper,False)
 extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
                                                   inputManager.ReShapeManager.maxFeatureCount,
                                                   transactionBinCount+3,
-                                                  os.path.abspath(os.getcwd()) + "\\Data")
+                                                  os.path.abspath(os.getcwd()) + "/Data")
 
 print("All added now scores")
 #trainingReshaper.transactionHelper.Print()

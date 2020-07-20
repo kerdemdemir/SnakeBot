@@ -33,7 +33,7 @@ class ExtraDataManager:
     def ReadFiles(self, folderPath ):
         onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
         for fileName in onlyfiles:
-            self.__ReadFile( folderPath + "\\" + fileName )
+            self.__ReadFile( folderPath + "/" + fileName )
 
     def __ReadFile(self, fileName):
         with open(fileName) as fp:
@@ -62,9 +62,9 @@ class ExtraDataManager:
                     for binCount in range( self.maxFeatureCount - self.minFeatureCount - 1):
                         curCount = binCount + self.minFeatureCount
                         totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
-                        self.featureArr[binCount].extend(totalCurves)
+                        self.featureArr[binCount].append(totalCurves)
                     newTransaction  = resultsTransactionFloat + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
                     assert ( len(newTransaction) == 11 )
                     print(newTransaction)
-                    self.transactionFeaturesList.extend( newTransaction )
+                    self.transactionFeaturesList.append( newTransaction )
                     self.scoreList.append( 1 if score > 1.0 else 0 )
