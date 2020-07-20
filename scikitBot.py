@@ -116,7 +116,7 @@ if isTrainCurves:
     for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount-1):
         curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
         numpyArr = trainingReshaper.toTransactionCurvesToNumpy(binCount)
-        numpyArr = extraDataManager.ConcanateResults(numpyArr)
+        numpyArr = extraDataManager.ConcanateFeature(numpyArr,binCount)
         X = mlpScalerList[curIndex].transform(numpyArr)
         X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
         resultPredicts[curIndex] = mlpList[curIndex].predict_proba(X_test)
