@@ -58,7 +58,8 @@ AddExtraToShaper("learning_17_18.txt",trainingReshaper,True)
 AddExtraToShaper("learning_18_19.txt",trainingReshaper,True)
 AddExtraToShaper("learning_19_20.txt",trainingReshaper,True)
 AddExtraToShaper("learning_20_21.txt",trainingReshaper,True)
-AddExtraToShaper("learning_21_21.txt",trainingReshaper,False)
+AddExtraToShaper("learning_21_21.txt",trainingReshaper,True)
+AddExtraToShaper("learning_21_21_2.txt",trainingReshaper,False)
 
 extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
                                                   inputManager.ReShapeManager.maxFeatureCount,
