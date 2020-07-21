@@ -168,7 +168,7 @@ while True:
     predict_test = mlpTransaction.predict_proba(npTotalFeatures)
     curResultStr = str(predict_test) + ";"
     resultStr += curResultStr
-    totalPredict = predict_test[1]
+    totalPredict = np.delete(predict_test, 0 , 1 )
 
     for binCount in range (inputManager.ReShapeManager.maxFeatureCount-inputManager.ReShapeManager.minFeatureCount-1):
         curCount = binCount + inputManager.ReShapeManager.minFeatureCount
@@ -178,10 +178,12 @@ while True:
         npTotalCurvesScaled = mlpScalerList[binCount].transform(npTotalCurves)
         print("I will predict the curves: ", totalCurves)
         predict_test = mlpList[binCount].predict_proba(npTotalCurvesScaled)
-        if binCount < totalUsedCurveCount:
-            totalPredict = np.append(totalPredict,predict_test[1])
         curResultStr = str(predict_test) + ";"
         resultStr += curResultStr
+        predict_test = np.delete(predict_test, 0, 1)
+        if binCount < totalUsedCurveCount:
+            totalPredict = np.append(totalPredict,predict_test)
+
     resultStr = resultStr[:-1]
     totalPredict = totalPredict.reshape(1, -1)
     totalPredictResult = mixTransactionLearner.predict_proba(totalPredict)
