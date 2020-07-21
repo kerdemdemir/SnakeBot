@@ -105,10 +105,10 @@ y = trainingReshaper.toTransactionResultsNumpy()
 y = extraDataManager.ConcanateResults(y)
 testCount = len(y)//4
 print( "Test count is: ", testCount)
-X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
-y_test = np.concatenate((y[:testCount], y[-testCount:]))
-X_train = X[testCount:-testCount,:]
-y_train = y[testCount:-testCount]
+X_train = np.concatenate((X[:testCount,:], X[-testCount:,:]))
+y_train = np.concatenate((y[:testCount], y[-testCount:]))
+X_test = X[testCount:-testCount,:]
+y_test = y[testCount:-testCount]
 print(X_test)
 print(y_test)
 print(X_train)
@@ -129,7 +129,7 @@ if isTrainCurves:
         numpyArr = trainingReshaper.toTransactionCurvesToNumpy(binCount)
         numpyArr = extraDataManager.ConcanateFeature(numpyArr,binCount)
         X = mlpScalerList[curIndex].transform(numpyArr)
-        X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
+        X_test = X[testCount:-testCount,:]
         curResultPredict = mlpList[curIndex].predict_proba(X_test)
         resultPredicts[curIndex] = np.delete(curResultPredict, 0 , 1 )
         print( " Transaction Curves Bin Count: ", binCount, " Results: ", curResultPredict)
