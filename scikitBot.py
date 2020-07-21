@@ -110,6 +110,7 @@ mlpTransaction.fit(X_train, y_train)
 
 predict_test = mlpTransaction.predict_proba(X_test)
 finalResult = predict_test[:,1] >= 0.8
+predict_test = np.delete(predict_test, 0 , 1 )
 print(" Transactions : ", predict_test)
 print(confusion_matrix(y_test, finalResult))
 
@@ -121,13 +122,14 @@ if isTrainCurves:
         numpyArr = extraDataManager.ConcanateFeature(numpyArr,binCount)
         X = mlpScalerList[curIndex].transform(numpyArr)
         X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
-        resultPredicts[curIndex] = mlpList[curIndex].predict_proba(X_test)
-        print( " Transaction Curves Bin Count: ", binCount, " Results: ", resultPredicts[curIndex])
+        curResultPredict = mlpList[curIndex].predict_proba(X_test)
+        resultPredicts[curIndex] = np.delete(curResultPredict, 0 , 1 )
+        print( " Transaction Curves Bin Count: ", binCount, " Results: ", curResultPredict)
         sys.stdout.flush()
 
 
 
-mergedArray = np.concatenate((predict_test[1], resultPredicts[0][1], resultPredicts[1][1], resultPredicts[2][1]))
+mergedArray = np.concatenate((predict_test, resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
 print(mergedArray)
 X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y_test, test_size=0.1, random_state=40)
 mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transactionBinCount, transactionBinCount), activation='relu',
