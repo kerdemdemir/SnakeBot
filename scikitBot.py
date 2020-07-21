@@ -17,6 +17,7 @@ transactionBinCount = 6
 msecs = 1000
 isTrainCurves = True
 totalUsedCurveCount = 3
+isConcanateCsv = False
 
 def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")
@@ -95,20 +96,22 @@ if isTrainCurves :
         sys.stdout.flush()
 
 numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionBinCount)
-numpyArr = extraDataManager.ConcanateTransactions(numpyArr, transactionBinCount+5)
+if isConcanateCsv:
+    numpyArr = extraDataManager.ConcanateTransactions(numpyArr, transactionBinCount+5)
 mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount+2, transactionBinCount+2, transactionBinCount+2), activation='relu',
                                               solver='adam', max_iter=500)
 
 transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
 X = transactionScaler.transform(numpyArr)
 y = trainingReshaper.toTransactionResultsNumpy()
-y = extraDataManager.ConcanateResults(y)
+if isConcanateCsv:
+    y = extraDataManager.ConcanateResults(y)
 testCount = len(y)//4
 print( "Test count is: ", testCount)
-X_train = np.concatenate((X[:testCount,:], X[-testCount:,:]))
-y_train = np.concatenate((y[:testCount], y[-testCount:]))
-X_test = X[testCount:-testCount,:]
-y_test = y[testCount:-testCount]
+X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
+y_test = np.concatenate((y[:testCount], y[-testCount:]))
+X_train = X[testCount:-testCount,:]
+y_train = y[testCount:-testCount]
 print(X_test)
 print(y_test)
 print(X_train)
@@ -127,9 +130,10 @@ if isTrainCurves:
     for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount-1):
         curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
         numpyArr = trainingReshaper.toTransactionCurvesToNumpy(binCount)
-        numpyArr = extraDataManager.ConcanateFeature(numpyArr,binCount)
+        if isConcanateCsv:
+            numpyArr = extraDataManager.ConcanateFeature(numpyArr,binCount)
         X = mlpScalerList[curIndex].transform(numpyArr)
-        X_test = X[testCount:-testCount,:]
+        X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
         curResultPredict = mlpList[curIndex].predict_proba(X_test)
         resultPredicts[curIndex] = np.delete(curResultPredict, 0 , 1 )
         print( " Transaction Curves Bin Count: ", binCount, " Results: ", curResultPredict)
