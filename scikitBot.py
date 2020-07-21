@@ -56,7 +56,9 @@ AddExtraToShaper("learning15_16.txt",trainingReshaper, True)
 AddExtraToShaper("learning_16_17.txt",trainingReshaper, True)
 AddExtraToShaper("learning_17_18.txt",trainingReshaper,True)
 AddExtraToShaper("learning_18_19.txt",trainingReshaper,True)
-AddExtraToShaper("learning_19_20.txt",trainingReshaper,False)
+AddExtraToShaper("learning_19_20.txt",trainingReshaper,True)
+AddExtraToShaper("learning_20_21.txt",trainingReshaper,False)
+
 extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
                                                   inputManager.ReShapeManager.maxFeatureCount,
                                                   transactionBinCount+3,
@@ -125,7 +127,7 @@ if isTrainCurves:
 
 
 
-mergedArray = np.concatenate((predict_test[1], resultPredicts[0][1], resultPredicts[1][1], resultPredicts[2][1]), axis=1)
+mergedArray = np.concatenate((predict_test[1], resultPredicts[0][1], resultPredicts[1][1], resultPredicts[2][1]))
 print(mergedArray)
 X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y_test, test_size=0.1, random_state=40)
 mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transactionBinCount, transactionBinCount), activation='relu',
