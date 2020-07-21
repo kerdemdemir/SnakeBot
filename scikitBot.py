@@ -57,7 +57,8 @@ AddExtraToShaper("learning_16_17.txt",trainingReshaper, True)
 AddExtraToShaper("learning_17_18.txt",trainingReshaper,True)
 AddExtraToShaper("learning_18_19.txt",trainingReshaper,True)
 AddExtraToShaper("learning_19_20.txt",trainingReshaper,True)
-AddExtraToShaper("learning_20_21.txt",trainingReshaper,False)
+AddExtraToShaper("learning_20_21.txt",trainingReshaper,True)
+AddExtraToShaper("learning_21_21.txt",trainingReshaper,False)
 
 extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
                                                   inputManager.ReShapeManager.maxFeatureCount,
@@ -101,7 +102,8 @@ transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
 X = transactionScaler.transform(numpyArr)
 y = trainingReshaper.toTransactionResultsNumpy()
 y = extraDataManager.ConcanateResults(y)
-testCount = 100
+testCount = len(y)//2
+print( "Test count is: ", testCount)
 X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
 y_test = np.concatenate((y[:testCount], y[-testCount:]))
 X_train = X[testCount:-testCount,:]
