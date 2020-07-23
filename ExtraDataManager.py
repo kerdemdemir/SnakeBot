@@ -56,15 +56,13 @@ class ExtraDataManager:
                 line = fp.readline()
                 if score < 0.5:
                     continue
-                repeatCount = min(1, abs((1.0 - score)*100.0)//2 )
-                while repeatCount > 0:
-                    repeatCount -= 1
-                    for binCount in range( self.maxFeatureCount - self.minFeatureCount - 1):
-                        curCount = binCount + self.minFeatureCount
-                        totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
-                        self.featureArr[binCount].append(totalCurves)
-                    newTransaction  = resultsTransactionFloat + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
-                    assert ( len(newTransaction) == 11 )
-                    print(newTransaction)
-                    self.transactionFeaturesList.append( newTransaction )
-                    self.scoreList.append( 1 if score > 1.0 else 0 )
+
+                for binCount in range( self.maxFeatureCount - self.minFeatureCount - 1):
+                    curCount = binCount + self.minFeatureCount
+                    totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
+                    self.featureArr[binCount].append(totalCurves)
+                newTransaction  = resultsTransactionFloat + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
+                assert ( len(newTransaction) == 11 )
+                print(newTransaction)
+                self.transactionFeaturesList.append( newTransaction )
+                self.scoreList.append( 1 if score > 1.0 else 0 )
