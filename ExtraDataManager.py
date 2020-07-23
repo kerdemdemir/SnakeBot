@@ -56,8 +56,8 @@ class ExtraDataManager:
                 line = fp.readline()
                 if score < 0.5:
                     continue
-                repeatCount = min(2, (1.0 - score)*100.0//2 )
-                while repeatCount >= 0:
+                repeatCount = min(1, abs((1.0 - score)*100.0)//2 )
+                while repeatCount > 0:
                     repeatCount -= 1
                     for binCount in range( self.maxFeatureCount - self.minFeatureCount - 1):
                         curCount = binCount + self.minFeatureCount

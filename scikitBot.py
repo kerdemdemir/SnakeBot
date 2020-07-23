@@ -17,7 +17,7 @@ transactionBinCount = 6
 msecs = 1000
 isTrainCurves = True
 totalUsedCurveCount = 3
-isConcanateCsv = False
+isConcanateCsv = True
 
 def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")
@@ -61,6 +61,7 @@ AddExtraToShaper("learning_19_20.txt",trainingReshaper,True)
 AddExtraToShaper("learning_20_21.txt",trainingReshaper,True)
 AddExtraToShaper("learning_21_21.txt",trainingReshaper,True)
 AddExtraToShaper("learning_21_21_2.txt",trainingReshaper,True)
+AddExtraToShaper("learning_21_22.txt",trainingReshaper,True)
 AddExtraToShaper("learning_21_22.txt",trainingReshaper,False)
 
 extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
