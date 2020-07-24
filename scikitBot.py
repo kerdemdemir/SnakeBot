@@ -14,10 +14,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
 transactionBinCount = 6
-msecs = 1000
+msecs = 500
 isTrainCurves = True
 totalUsedCurveCount = 3
-isConcanateCsv = True
+isConcanateCsv = False
 
 def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")
@@ -63,9 +63,11 @@ AddExtraToShaper("learning_21_21.txt",trainingReshaper,True)
 AddExtraToShaper("learning_21_21_2.txt",trainingReshaper,True)
 AddExtraToShaper("learning_21_22.txt",trainingReshaper,True)
 AddExtraToShaper("learning_22_23.txt",trainingReshaper,True)
-AddExtraToShaper("learning_23_23.txt",trainingReshaper,False)
+AddExtraToShaper("learning_23_23.txt",trainingReshaper,True)
+AddExtraToShaper("learning_23_24_07.txt",trainingReshaper,False)
 
-extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
+if isConcanateCsv:
+    extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
                                                   inputManager.ReShapeManager.maxFeatureCount,
                                                   transactionBinCount+3,
                                                   os.path.abspath(os.getcwd()) + "/Data")
@@ -111,21 +113,21 @@ if isConcanateCsv:
     y = extraDataManager.ConcanateResults(y)
 testCount = len(y)//4
 print( "Test count is: ", testCount)
-X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
-y_test = np.concatenate((y[:testCount], y[-testCount:]))
-X_train = X[testCount:-testCount,:]
-y_train = y[testCount:-testCount]
-print(X_test)
-print(y_test)
-print(X_train)
-print(y_train)
+X_train = np.concatenate((X[:testCount,:], X[-testCount:,:]))
+y_train = np.concatenate((y[:testCount], y[-testCount:]))
+X_test = X[testCount:-testCount,:]
+y_test = y[testCount:-testCount]
+#print(X_test)
+#print(y_test)
+#print(X_train)
+#print(y_train)
 
 mlpTransaction.fit(X_train, y_train)
 
 predict_test = mlpTransaction.predict_proba(X_test)
-finalResult = predict_test[:,1] >= 0.8
+finalResult = predict_test[:,1] >= 0.9
 predict_test = np.delete(predict_test, 0 , 1 )
-print(" Transactions : ", predict_test)
+#print(" Transactions : ", predict_test)
 print(confusion_matrix(y_test, finalResult))
 
 resultPredicts = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - 1 - inputManager.ReShapeManager.minFeatureCount)]
@@ -136,7 +138,7 @@ if isTrainCurves:
         if isConcanateCsv:
             numpyArr = extraDataManager.ConcanateFeature(numpyArr,binCount)
         X = mlpScalerList[curIndex].transform(numpyArr)
-        X_test = np.concatenate((X[:testCount,:], X[-testCount:,:]))
+        X_test = X[testCount:-testCount,:]
         curResultPredict = mlpList[curIndex].predict_proba(X_test)
         resultPredicts[curIndex] = np.delete(curResultPredict, 0 , 1 )
         print( " Transaction Curves Bin Count: ", binCount, " Results: ", curResultPredict)
