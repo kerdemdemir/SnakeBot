@@ -6,6 +6,7 @@ import zmq
 import numpy as np
 import sys
 import os
+import functools
 from os import listdir
 from os.path import isfile, join
 
@@ -44,12 +45,17 @@ def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
     file.close()
 
 
-onlyTransactions = ["learning_10_12.txt"]
+onlyTransactions = ["learning_12_10_12.txt"]
 folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
 onlyTransactions = list(map( lambda x:  folderPath+x, onlyTransactions))
 
 
 onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
+def compareInt(x,y):
+    return int(x.split("_")[1]) - int(y.split("_")[1])
+
+onlyfiles = list(sorted( onlyfiles, key=functools.cmp_to_key(compareInt) ))
+
 onlyfiles = list(map( lambda x:  folderPath+x, onlyfiles))
 trainingReshaper = ReadFileAndCreateReshaper(onlyfiles[0])
 for fileName in onlyfiles:
