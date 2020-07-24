@@ -6,6 +6,9 @@ import zmq
 import numpy as np
 import sys
 import os
+from os import listdir
+from os.path import isfile, join
+
 
 from sklearn.neural_network import MLPClassifier
 from sklearn import preprocessing
@@ -15,11 +18,12 @@ from sklearn.metrics import classification_report,confusion_matrix
 
 transactionBinCount = 6
 msecs = 500
-isTrainCurves = True
+isTrainCurves = False
 totalUsedCurveCount = 3
-isConcanateCsv = False
+isConcanateCsv = True
 
 def ReadFileAndCreateReshaper( fileName ):
+    print("Reading ", fileName )
     file = open(fileName, "r")
     jsonDictionary = json.load(file)
 
@@ -31,6 +35,7 @@ def ReadFileAndCreateReshaper( fileName ):
     return  reshaper
 
 def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
+    print("Reading ", fileName, " ", IsTransactionOnly)
     file = open(fileName, "r")
     jsonDictionary = json.load(file)
 
@@ -38,33 +43,24 @@ def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
         shaper.addANewCurrency(jsonElem,msecs,transactionBinCount,IsTransactionOnly)
     file.close()
 
-trainingReshaper = ReadFileAndCreateReshaper("learning_23_06.txt")
-AddExtraToShaper("learning24_06.txt",trainingReshaper, True)
-AddExtraToShaper("learning_25_06.txt",trainingReshaper, True)
-AddExtraToShaper("learning_26_29.txt",trainingReshaper, True)
-AddExtraToShaper("learning_29_30.txt",trainingReshaper, True)
-AddExtraToShaper("learning_30.txt",trainingReshaper, True)
-AddExtraToShaper("learning_30_1.txt",trainingReshaper, True)
-AddExtraToShaper("learning_1_3.txt",trainingReshaper, True)
-AddExtraToShaper("learning_3_7.txt",trainingReshaper, True)
-AddExtraToShaper("learning_7_9.txt",trainingReshaper, True)
-AddExtraToShaper("learning_9_10.txt",trainingReshaper, True)
-AddExtraToShaper("learning_10_12.txt",trainingReshaper, False)
-AddExtraToShaper("learning_13_14.txt",trainingReshaper, True)
-AddExtraToShaper("learning_14_15.txt",trainingReshaper, True)
-AddExtraToShaper("learning15_15.txt",trainingReshaper, True)
-AddExtraToShaper("learning15_16.txt",trainingReshaper, True)
-AddExtraToShaper("learning_16_17.txt",trainingReshaper, True)
-AddExtraToShaper("learning_17_18.txt",trainingReshaper,True)
-AddExtraToShaper("learning_18_19.txt",trainingReshaper,True)
-AddExtraToShaper("learning_19_20.txt",trainingReshaper,True)
-AddExtraToShaper("learning_20_21.txt",trainingReshaper,True)
-AddExtraToShaper("learning_21_21.txt",trainingReshaper,True)
-AddExtraToShaper("learning_21_21_2.txt",trainingReshaper,True)
-AddExtraToShaper("learning_21_22.txt",trainingReshaper,True)
-AddExtraToShaper("learning_22_23.txt",trainingReshaper,True)
-AddExtraToShaper("learning_23_23.txt",trainingReshaper,True)
-AddExtraToShaper("learning_23_24_07.txt",trainingReshaper,False)
+
+onlyTransactions = ["learning_10_12.txt"]
+folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
+onlyTransactions = list(map( lambda x:  folderPath+x, onlyTransactions))
+
+onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
+onlyfiles = list(map( lambda x:  folderPath+x, onlyfiles))
+onlyfiles = sorted(onlyfiles, key=lambda x: os.path.getmtime(x))
+trainingReshaper = ReadFileAndCreateReshaper(onlyfiles[0])
+for fileName in onlyfiles:
+    if fileName == onlyfiles[0]:
+        continue
+    elif fileName == onlyfiles[-1]:
+        AddExtraToShaper(fileName, trainingReshaper, False)
+    elif fileName in onlyTransactions:
+        AddExtraToShaper(fileName, trainingReshaper, False)
+    else:
+        AddExtraToShaper(fileName, trainingReshaper, True)
 
 if isConcanateCsv:
     extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
