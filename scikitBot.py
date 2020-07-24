@@ -19,7 +19,7 @@ from sklearn.metrics import classification_report,confusion_matrix
 
 transactionBinCount = 6
 msecs = 500
-isTrainCurves = False
+isTrainCurves = True
 totalUsedCurveCount = 3
 isConcanateCsv = True
 
