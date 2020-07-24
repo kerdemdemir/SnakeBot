@@ -48,9 +48,9 @@ onlyTransactions = ["learning_10_12.txt"]
 folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
 onlyTransactions = list(map( lambda x:  folderPath+x, onlyTransactions))
 
+
 onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
 onlyfiles = list(map( lambda x:  folderPath+x, onlyfiles))
-onlyfiles = sorted(onlyfiles, key=lambda x: os.path.getmtime(x))
 trainingReshaper = ReadFileAndCreateReshaper(onlyfiles[0])
 for fileName in onlyfiles:
     if fileName == onlyfiles[0]:
