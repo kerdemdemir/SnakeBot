@@ -18,10 +18,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
 transactionBinCount = 6
-msecs = 500
+msecs = 250
 isTrainCurves = True
 totalUsedCurveCount = 3
-isConcanateCsv = True
+isConcanateCsv = False
 
 def ReadFileAndCreateReshaper( fileName ):
     print("Reading ", fileName )
