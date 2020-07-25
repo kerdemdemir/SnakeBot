@@ -17,11 +17,13 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
-transactionBinCount = 6
-msecs = 250
+transactionBinCount = 10
+msecs = 125
 isTrainCurves = True
 totalUsedCurveCount = 3
 isConcanateCsv = False
+acceptedProbibilty = 0.9
+testRatio = 4
 
 def ReadFileAndCreateReshaper( fileName ):
     print("Reading ", fileName )
@@ -113,7 +115,7 @@ X = transactionScaler.transform(numpyArr)
 y = trainingReshaper.toTransactionResultsNumpy()
 if isConcanateCsv:
     y = extraDataManager.ConcanateResults(y)
-testCount = len(y)//4
+testCount = len(y)//testRatio
 print( "Test count is: ", testCount)
 X_train = np.concatenate((X[:testCount,:], X[-testCount:,:]))
 y_train = np.concatenate((y[:testCount], y[-testCount:]))
@@ -127,7 +129,7 @@ y_test = y[testCount:-testCount]
 mlpTransaction.fit(X_train, y_train)
 
 predict_test = mlpTransaction.predict_proba(X_test)
-finalResult = predict_test[:,1] >= 0.9
+finalResult = predict_test[:,1] >= acceptedProbibilty
 predict_test = np.delete(predict_test, 0 , 1 )
 #print(" Transactions : ", predict_test)
 print(confusion_matrix(y_test, finalResult))

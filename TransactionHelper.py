@@ -23,31 +23,40 @@ class TransactionData:
 
 
     def NormalizeTransactionCount(self):
-        if self.transactionCount < 2:
+        if self.transactionCount < 1:
             self.normalizedCount = 0
             return
-        elif self.transactionCount < 5:
+        if self.transactionCount < 3:
             self.normalizedCount = 1
             return
-        elif self.transactionCount < 10:
+        elif self.transactionCount < 5:
             self.normalizedCount = 2
             return
-        elif self.transactionCount < 15:
+        elif self.transactionCount < 7:
             self.normalizedCount = 3
             return
-        elif self.transactionCount < 25:
+        elif self.transactionCount < 10:
             self.normalizedCount = 4
             return
-        elif self.transactionCount < 50:
+        elif self.transactionCount < 14:
             self.normalizedCount = 5
             return
-        elif self.transactionCount < 100:
+        elif self.transactionCount < 19:
             self.normalizedCount = 6
             return
-        elif self.transactionCount < 200:
+        elif self.transactionCount < 25:
             self.normalizedCount = 7
             return
-        self.normalizedCount = 8
+        elif self.transactionCount < 50:
+            self.normalizedCount = 8
+            return
+        elif self.transactionCount < 100:
+            self.normalizedCount = 9
+            return
+        elif self.transactionCount < 200:
+            self.normalizedCount = 10
+            return
+        self.normalizedCount = 11
 
     #"m": true, "l": 6484065,"M": true,"q": "44113.00000000","a": 5378484,"T": 1591976004949,"p": "0.00000225","f": 6484064
     def AddData(self, jsonIn):
@@ -143,6 +152,7 @@ class TransactionPeakHelper:
     percent = 0.01
     stopTime = 10
     lowestAcceptedTotalTransactionCount = 50
+    lowestAcceptedTopTotalTransactionCount = 40
 
     def __init__(self, jsonIn, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
         self.mseconds = mseconds
@@ -234,9 +244,12 @@ class TransactionPeakHelper:
 
         pattern = TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
-        if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
-            return
-
+        if self.isBottom:
+            if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
+                return
+        else:
+            if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTopTotalTransactionCount:
+                return
         if self.isBottom:
            self.patternList.append(pattern)
         else:
