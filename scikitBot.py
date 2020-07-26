@@ -21,7 +21,7 @@ transactionBinCount = 10
 msecs = 125
 isTrainCurves = True
 totalUsedCurveCount = 3
-isConcanateCsv = False
+isConcanateCsv = True
 acceptedProbibilty = 0.9
 testRatio = 4
 
@@ -153,7 +153,7 @@ if isTrainCurves:
 mergedArray = np.concatenate((predict_test, resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
 print(mergedArray)
 X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y_test, test_size=0.1, random_state=40)
-mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(transactionBinCount, transactionBinCount, transactionBinCount), activation='relu',
+mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(5, 5, 5), activation='relu',
                                               solver='adam', max_iter=500)
 mixTransactionLearner.fit(X_trainMearged, y_trainMerged)
 predict_test = mixTransactionLearner.predict(X_testMerged)

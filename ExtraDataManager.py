@@ -62,7 +62,6 @@ class ExtraDataManager:
                     totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
                     self.featureArr[binCount].append(totalCurves)
                 newTransaction  = resultsTransactionFloat + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
-                assert ( len(newTransaction) == 11 )
                 print(newTransaction)
                 self.transactionFeaturesList.append( newTransaction )
                 self.scoreList.append( 1 if score > 1.0 else 0 )
