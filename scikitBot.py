@@ -17,21 +17,31 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
+smallestTime = 250
 transactionBinCount = 6
-msecs = 750
-isTrainCurves = True
+totalTimeCount = 5
+isTrainCurves = False
 totalUsedCurveCount = 3
 isConcanateCsv = False
 acceptedProbibilty = 0.9
 testRatio = 4
+transParamList = []
+
+def MergeTransactions ( transactionList, index ):
+    totalElement = index * transactionBinCount
+    arrayList = np.array_split(transactionList[-totalElement:], index)
+    summedArray = list(map(lambda x: x.sum(), arrayList))
+    return summedArray
+
 
 def ReadFileAndCreateReshaper( fileName ):
     print("Reading ", fileName )
     file = open(fileName, "r")
     jsonDictionary = json.load(file)
 
-    transParam = inputManager.TransactionParam(msecs, transactionBinCount)
-    reshaper = inputManager.ReShapeManager([transParam])
+    for index in range(totalTimeCount):
+        transParamList.append(inputManager.TransactionParam(smallestTime*(index+1), transactionBinCount))
+    reshaper = inputManager.ReShapeManager(transParamList)
 
     for jsonElem in jsonDictionary:
         reshaper.addANewCurrency(jsonElem,False)
@@ -135,40 +145,32 @@ if isTrainCurves :
         print( confusion_matrix(y_test,predict_test))
         sys.stdout.flush()
 
-numpyArr = trainingReshaper.toTransactionFeaturesNumpy(0)
-if isConcanateCsv:
-    numpyArr = extraDataManager.ConcanateTransactions(numpyArr, transactionBinCount+5)
-mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount+2, transactionBinCount+2, transactionBinCount+2), activation='relu',
-                                              solver='adam', max_iter=500)
+mlpTransactionList = []
+mlpTransactionScalerList = []
+for transactionIndex in range(totalTimeCount):
+    transParam = transParamList[transactionIndex]
+    numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
+    if isConcanateCsv:
+        numpyArr = extraDataManager.ConcanateTransactions(numpyArr, transactionBinCount+5)
+    mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount+2, transactionBinCount+2, transactionBinCount+2), activation='relu',
+                                                  solver='adam', max_iter=500)
+    mlpTransactionList.append(mlpTransaction)
+    transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
+    mlpTransactionScalerList.append(transactionScaler)
+    X = transactionScaler.transform(numpyArr)
+    y = trainingReshaper.toTransactionResultsNumpy(transactionIndex)
+    if isConcanateCsv:
+        y = extraDataManager.ConcanateResults(y)
 
-transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
-X = transactionScaler.transform(numpyArr)
-y = trainingReshaper.toTransactionResultsNumpy(0)
-if isConcanateCsv:
-    y = extraDataManager.ConcanateResults(y)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=40)
 
-#
-# testCount = len(y)//testRatio
-# print( "Test count is: ", testCount)
-# X_train = np.concatenate((X[:testCount,:], X[-testCount:,:]))
-# y_train = np.concatenate((y[:testCount], y[-testCount:]))
-# X_test = X[testCount:-testCount,:]
-# y_test = y[testCount:-testCount]
+    mlpTransaction.fit(X_train, y_train)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=40)
-
-#print(X_test)
-#print(y_test)
-#print(X_train)
-#print(y_train)
-
-mlpTransaction.fit(X_train, y_train)
-
-predict_test = mlpTransaction.predict_proba(X_test)
-finalResult = predict_test[:,1] >= acceptedProbibilty
-predict_test = np.delete(predict_test, 0 , 1 )
-#print(" Transactions : ", predict_test)
-print(confusion_matrix(y_test, finalResult))
+    predict_test = mlpTransaction.predict_proba(X_test)
+    finalResult = predict_test[:,1] >= acceptedProbibilty
+    predict_test = np.delete(predict_test, 0 , 1 )
+    print(" Transactions time: ", transParam.msec)
+    print(confusion_matrix(y_test, finalResult))
 
 resultPredicts = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - 1 - inputManager.ReShapeManager.minFeatureCount)]
 if isTrainCurves:
@@ -214,16 +216,19 @@ while True:
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
     resultStr = ""
-
-    totalFeatures = resultsTransactionFloat[:transactionBinCount + 3] + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
-    totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
-    totalFeaturesScaled = transactionScaler.transform(totalFeaturesNumpy)
-    print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled )
-    npTotalFeatures = np.array(totalFeaturesScaled)
-    npTotalFeatures = npTotalFeatures.reshape(1, -1)
-    predict_test = mlpTransaction.predict_proba(npTotalFeatures)
-    curResultStr = str(predict_test) + ";"
-    resultStr += curResultStr
+    for transactionIndex in range(totalTimeCount):
+        extraStuff = resultsTransactionFloat[-3:]
+        justTransactions = resultsTransactionFloat[:-3]
+        currentTransactionList = MergeTransactions( justTransactions, transactionIndex+1)
+        totalFeatures = currentTransactionList + extraStuff + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
+        totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
+        totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
+        print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled )
+        npTotalFeatures = np.array(totalFeaturesScaled)
+        npTotalFeatures = npTotalFeatures.reshape(1, -1)
+        predict_test = mlpTransactionList[transactionIndex].predict_proba(npTotalFeatures)
+        curResultStr = str(predict_test) + ";"
+        resultStr += curResultStr
     totalPredict = []
 
     for binCount in range (inputManager.ReShapeManager.maxFeatureCount-inputManager.ReShapeManager.minFeatureCount-1):
