@@ -17,8 +17,8 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
-transactionBinCount = 8
-msecs = 250
+transactionBinCount = 6
+msecs = 750
 isTrainCurves = True
 totalUsedCurveCount = 3
 isConcanateCsv = False
@@ -30,20 +30,51 @@ def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")
     jsonDictionary = json.load(file)
 
-    reshaper = inputManager.ReShapeManager()
+    transParam = inputManager.TransactionParam(msecs, transactionBinCount)
+    reshaper = inputManager.ReShapeManager([transParam])
 
     for jsonElem in jsonDictionary:
-        reshaper.addANewCurrency(jsonElem,msecs,transactionBinCount,False)
+        reshaper.addANewCurrency(jsonElem,False)
     file.close()
     return  reshaper
 
 def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
     print("Reading ", fileName, " ", IsTransactionOnly)
     file = open(fileName, "r")
-    jsonDictionary = json.load(file)
+    jsonDictionary = {}
+    try:
+        jsonDictionary = json.load(file)
+        for jsonElem in jsonDictionary:
+            shaper.addANewCurrency(jsonElem, IsTransactionOnly)
+    except:
+        file = open(fileName, "r")
+        temp = file.readline()
+        startIndex = 0
+        curCount = 0
+        isAlert = False
+        for index in range(len(temp)):
+            if temp[index] == "{":
+                curCount += 1
+                if curCount == 1:
+                    startIndex = index
+            elif temp[index] == "}" :
+                curCount -= 1
+                if curCount == 0 :
+                    jsonStr = temp[startIndex:index + 1]
+                    if  temp[index - 1] == "]":
+                        #print(jsonStr)
+                        if not isAlert:
+                            jsonElem = json.loads( jsonStr )
+                            shaper.addANewCurrency(jsonElem, IsTransactionOnly)
+                        else:
+                            isAlert = False
+                    else:
+                        curCount = 1
+                        isAlert = True
+                        print(isAlert, " ", jsonStr)
 
-    for jsonElem in jsonDictionary:
-        shaper.addANewCurrency(jsonElem,msecs,transactionBinCount,IsTransactionOnly)
+
+
     file.close()
 
 
@@ -104,7 +135,7 @@ if isTrainCurves :
         print( confusion_matrix(y_test,predict_test))
         sys.stdout.flush()
 
-numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionBinCount)
+numpyArr = trainingReshaper.toTransactionFeaturesNumpy(0)
 if isConcanateCsv:
     numpyArr = extraDataManager.ConcanateTransactions(numpyArr, transactionBinCount+5)
 mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount+2, transactionBinCount+2, transactionBinCount+2), activation='relu',
@@ -112,7 +143,7 @@ mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount+2, transa
 
 transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
 X = transactionScaler.transform(numpyArr)
-y = trainingReshaper.toTransactionResultsNumpy()
+y = trainingReshaper.toTransactionResultsNumpy(0)
 if isConcanateCsv:
     y = extraDataManager.ConcanateResults(y)
 
@@ -143,7 +174,7 @@ resultPredicts = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount 
 if isTrainCurves:
     for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount-1):
         curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
-        numpyArr = trainingReshaper.toTransactionCurvesToNumpy(binCount)
+        numpyArr = trainingReshaper.toTransactionCurvesToNumpy(0, binCount)
         if isConcanateCsv:
             numpyArr = extraDataManager.ConcanateFeature(numpyArr,binCount)
         X = mlpScalerList[curIndex].transform(numpyArr)

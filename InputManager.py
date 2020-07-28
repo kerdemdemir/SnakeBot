@@ -3,20 +3,28 @@ import numpy as np
 import json
 import TransactionHelper
 
+class TransactionParam:
+    def __init__ ( self, msec, gramCount ):
+        self.msec = msec
+        self.gramCount = gramCount
+
 class ReShapeManager:
     maxFeatureCount = 7
     minFeatureCount = 3
 
-    def __init__( self ):
+    def __init__( self, transactionParams ):
         self.inputs = []
         self.features = []
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             self.inputs.append( input.ReShapedInput(curBinCount) )
         self.scoreList = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
         self.features = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
-        self.transactionHelper = TransactionHelper.TransactionAnalyzer()
+        self.transactionHelperList = []
+        self.transactionParams = transactionParams
+        for _ in range(len(transactionParams)):
+            self.transactionHelperList.append(TransactionHelper.TransactionAnalyzer())
 
-    def addANewCurrency( self, jsonIn, transactionMSec, transactionCount, isAddOnlyTransactionPeaks ):
+    def addANewCurrency( self, jsonIn, isAddOnlyTransactionPeaks ):
         peakData = jsonIn["peak"]
         riseAndTimeStrList = peakData.split(",")
         if len(riseAndTimeStrList) < 2:
@@ -25,7 +33,9 @@ class ReShapeManager:
         transactionData = jsonIn["transactionList"]
         peakSize = len(riseAndTimeStrList)
         transactionDataSize = len(transactionData)
-        assert peakSize == transactionDataSize
+        if peakSize != transactionDataSize:
+            print(peakSize , " ", transactionDataSize)
+            return
         riseAndTimeList = []
         for x in range(peakSize):
             riseMinute = input.RiseMinute(riseAndTimeStrList[x])
@@ -33,7 +43,10 @@ class ReShapeManager:
 
         if not isAddOnlyTransactionPeaks:
             self.addLinePeaks(riseAndTimeList)
-        self.transactionHelper.AddPeak( transactionData, riseAndTimeList,transactionMSec,transactionCount,self.maxFeatureCount )
+
+        for i in range(len(self.transactionParams)):
+            transParam = self.transactionParams[i]
+            self.transactionHelperList[i].AddPeak( transactionData, riseAndTimeList,transParam.msec,transParam.gramCount,self.maxFeatureCount )
 
 
     def addLinePeaks(self, riseAndTimeList):
@@ -59,8 +72,8 @@ class ReShapeManager:
         curBinIndex = binCount - self.minFeatureCount
         return self.inputs[curBinIndex].toNumpy()
 
-    def toTransactionCurvesToNumpy(self, binCount):
-        return self.transactionHelper.toTransactionCurvesToNumpy(binCount)
+    def toTransactionCurvesToNumpy(self, index , binCount):
+        return self.transactionHelperList[index].toTransactionCurvesToNumpy(binCount)
 
     def toResultsNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
@@ -73,11 +86,11 @@ class ReShapeManager:
             output.append( 1 if x[gramCount-1] < 0.0 else 0)
         return np.array(output)
 
-    def toTransactionFeaturesNumpy(self, transactionCount):
-        return self.transactionHelper.toTransactionNumpy(transactionCount)
+    def toTransactionFeaturesNumpy(self, index ):
+        return self.transactionHelperList[index].toTransactionNumpy(self.transactionParams[index].gramCount)
 
-    def toTransactionResultsNumpy(self):
-        return self.transactionHelper.toTransactionResultsNumpy()
+    def toTransactionResultsNumpy(self, index):
+        return self.transactionHelperList[index].toTransactionResultsNumpy()
 
     def resetScores(self):
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
@@ -111,6 +124,9 @@ class ReShapeManager:
             return diff < 1.5
 
     def __getScoreForRising(self, oneSampleNBin, oneSampleOtherBin):
+
+        if not self.__checkPositivitySingleVal(oneSampleNBin[0],oneSampleOtherBin[0]):
+            return False
         isAllValid = all(
             [self.__checkPositivitySingleVal(x, y) for x, y in zip(oneSampleNBin[:-1], oneSampleOtherBin[:-1])])
         if not isAllValid:
@@ -122,6 +138,8 @@ class ReShapeManager:
         return self.__clampVal( diff - 4.0 )
 
     def __getScoreForButtom(self, oneSampleNBin, oneSampleNPluseOneBin):
+        if not self.__checkPositivitySingleVal(oneSampleNBin[0],oneSampleNPluseOneBin[0]):
+            return False
         isAllValid = all([self.__checkPositivitySingleVal(x, y) for x, y in zip(oneSampleNBin[:-1], oneSampleNPluseOneBin[:-2])])
         if not isAllValid:
             return 0
