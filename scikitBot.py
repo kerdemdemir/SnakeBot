@@ -20,7 +20,7 @@ from sklearn.metrics import classification_report,confusion_matrix
 smallestTime = 250
 transactionBinCount = 6
 totalTimeCount = 5
-isTrainCurves = False
+isTrainCurves = True
 totalUsedCurveCount = 3
 isConcanateCsv = False
 acceptedProbibilty = 0.9
@@ -176,7 +176,7 @@ resultPredicts = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount 
 if isTrainCurves:
     for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount-1):
         curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
-        numpyArr = trainingReshaper.toTransactionCurvesToNumpy(0, binCount)
+        numpyArr = trainingReshaper.toTransactionCurvesToNumpy(2, binCount)
         if isConcanateCsv:
             numpyArr = extraDataManager.ConcanateFeature(numpyArr,binCount)
         X = mlpScalerList[curIndex].transform(numpyArr)
@@ -184,18 +184,18 @@ if isTrainCurves:
         resultPredicts[curIndex] = np.delete(curResultPredict, 0 , 1 )
         print( " Transaction Curves Bin Count: ", binCount, " Results: ", curResultPredict)
         sys.stdout.flush()
+    y = trainingReshaper.toTransactionResultsNumpy(2)
 
 
-
-mergedArray = np.concatenate((resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
-print(mergedArray)
-X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y, test_size=0.2, random_state=40)
-mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(4, 4, 4), activation='relu',
-                                              solver='adam', max_iter=500)
-mixTransactionLearner.fit(X_trainMearged, y_trainMerged)
-predict_test = mixTransactionLearner.predict(X_testMerged)
-print(" Transactions and curves merged: ")
-print(confusion_matrix(y_testMerged, predict_test))
+    mergedArray = np.concatenate((resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
+    print(mergedArray)
+    X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y, test_size=0.2, random_state=40)
+    mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(4, 4, 4), activation='relu',
+                                                  solver='adam', max_iter=500)
+    mixTransactionLearner.fit(X_trainMearged, y_trainMerged)
+    predict_test = mixTransactionLearner.predict(X_testMerged)
+    print(" Transactions and curves merged: ")
+    print(confusion_matrix(y_testMerged, predict_test))
 
 
 context = zmq.Context()
