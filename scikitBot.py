@@ -29,7 +29,7 @@ transParamList = []
 
 def MergeTransactions ( transactionList, index ):
     totalElement = index * transactionBinCount
-    arrayList = np.array_split(transactionList[-totalElement:], index)
+    arrayList = np.array_split(transactionList[-totalElement:], transactionBinCount)
     summedArray = list(map(lambda x: x.sum(), arrayList))
     return summedArray
 
