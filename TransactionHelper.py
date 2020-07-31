@@ -8,7 +8,7 @@ import numpy as np
 def NormalizeTransactionCount( totalCount ):
     if totalCount < 1:
         return 0
-    if totalCount < 3:
+    elif totalCount < 3:
         return 1
     elif totalCount < 5:
         return 2
@@ -238,10 +238,10 @@ class TransactionPeakHelper:
         pattern = TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
         if self.isBottom:
-            if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
+            if pattern.transactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
                 return
         else:
-            if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
+            if pattern.transactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
                 return
         if self.isBottom:
            self.patternList.append(pattern)
