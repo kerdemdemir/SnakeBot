@@ -145,7 +145,7 @@ class TransactionPattern:
 class TransactionPeakHelper:
     percent = 0.01
     stopTime = 10
-    lowestAcceptedTotalTransactionCount = 40
+    lowestAcceptedTotalTransactionCount = 75
     lowestAcceptedTopTotalTransactionCount = 36
 
     def __init__(self, jsonIn, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
@@ -238,10 +238,10 @@ class TransactionPeakHelper:
         pattern = TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
         if self.isBottom:
-            if pattern.transactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
+            if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
                 return
         else:
-            if pattern.transactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
+            if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
                 return
         if self.isBottom:
            self.patternList.append(pattern)

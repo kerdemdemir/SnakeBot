@@ -7,6 +7,8 @@ class TransactionParam:
     def __init__ ( self, msec, gramCount ):
         self.msec = msec
         self.gramCount = gramCount
+        self.score80 = 0
+        self.score90 = 0
 
 class ReShapeManager:
     maxFeatureCount = 7
