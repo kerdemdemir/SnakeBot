@@ -4,6 +4,33 @@ import bisect
 import copy
 import numpy as np
 
+
+def NormalizeTransactionCount( totalCount ):
+    if totalCount < 1:
+        return 0
+    if totalCount < 3:
+        return 1
+    elif totalCount < 5:
+        return 2
+    elif totalCount < 7:
+        return 3
+    elif totalCount < 10:
+        return 4
+    elif totalCount < 14:
+        return 5
+    elif totalCount < 19:
+        return 6
+    elif totalCount < 25:
+        return 7
+    elif totalCount < 50:
+        return 8
+    elif totalCount < 100:
+        return 9
+    elif totalCount < 200:
+        return 10
+    return 11
+
+
 class TransactionData:
     def __init__(self):
         self.totalBuy = 0.0
@@ -23,40 +50,7 @@ class TransactionData:
 
 
     def NormalizeTransactionCount(self):
-        if self.transactionCount < 1:
-            self.normalizedCount = 0
-            return
-        if self.transactionCount < 3:
-            self.normalizedCount = 1
-            return
-        elif self.transactionCount < 5:
-            self.normalizedCount = 2
-            return
-        elif self.transactionCount < 7:
-            self.normalizedCount = 3
-            return
-        elif self.transactionCount < 10:
-            self.normalizedCount = 4
-            return
-        elif self.transactionCount < 14:
-            self.normalizedCount = 5
-            return
-        elif self.transactionCount < 19:
-            self.normalizedCount = 6
-            return
-        elif self.transactionCount < 25:
-            self.normalizedCount = 7
-            return
-        elif self.transactionCount < 50:
-            self.normalizedCount = 8
-            return
-        elif self.transactionCount < 100:
-            self.normalizedCount = 9
-            return
-        elif self.transactionCount < 200:
-            self.normalizedCount = 10
-            return
-        self.normalizedCount = 11
+        self.normalizedCount = NormalizeTransactionCount(self.transactionCount)
 
     #"m": true, "l": 6484065,"M": true,"q": "44113.00000000","a": 5378484,"T": 1591976004949,"p": "0.00000225","f": 6484064
     def AddData(self, jsonIn):
@@ -151,8 +145,8 @@ class TransactionPattern:
 class TransactionPeakHelper:
     percent = 0.01
     stopTime = 10
-    lowestAcceptedTotalTransactionCount = 50
-    lowestAcceptedTopTotalTransactionCount = 40
+    lowestAcceptedTotalTransactionCount = 40
+    lowestAcceptedTopTotalTransactionCount = 36
 
     def __init__(self, jsonIn, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
         self.mseconds = mseconds
@@ -205,14 +199,13 @@ class TransactionPeakHelper:
             price = float(curElem["p"])
             curTime = int(curElem["T"])//1000
 
-            if curTime < self.peakTimeSeconds - self.stopTime:
-                return x
-
             if self.isBottom:
+                if curTime < self.peakTimeSeconds - self.stopTime:
+                    return x
                 if price > self.peakVal * (1.00+self.percent):
                     return x
             else:
-                if price < self.peakVal * (1.00-self.percent):
+                if price < self.peakVal * (1.00-self.percent*2):
                     return x
         return 0 if step == -1 else len(jsonIn)
 
@@ -245,10 +238,10 @@ class TransactionPeakHelper:
         pattern = TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
         if self.isBottom:
-            if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
+            if pattern.transactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
                 return
         else:
-            if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTopTotalTransactionCount:
+            if pattern.transactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
                 return
         if self.isBottom:
            self.patternList.append(pattern)
@@ -284,7 +277,7 @@ class TransactionAnalyzer :
     def toTransactionNumpy(self, ngrams):
         allData = self.patternList + self.badPatternList
         self.featureArr = np.array(allData)
-        print(*allData)
+        #print(*allData)
         #print(self.featureArr, ngrams)
         self.featureArr.reshape(-1, ngrams+5)
         return self.featureArr

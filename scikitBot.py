@@ -17,9 +17,11 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
-smallestTime = 250
-transactionBinCount = 6
-totalTimeCount = 5
+import TransactionHelper as transHelper
+
+smallestTime = 125
+transactionBinCountList = [6,8]
+totalTimeCount = 10
 isTrainCurves = True
 totalUsedCurveCount = 3
 isConcanateCsv = False
@@ -27,10 +29,11 @@ acceptedProbibilty = 0.9
 testRatio = 4
 transParamList = []
 
-def MergeTransactions ( transactionList, index ):
+def MergeTransactions ( transactionList, index, transactionBinCount ):
     totalElement = index * transactionBinCount
     arrayList = np.array_split(transactionList[-totalElement:], transactionBinCount)
-    summedArray = list(map(lambda x: x.sum(), arrayList))
+    mergeArray = map(lambda x: x.sum(), arrayList)
+    summedArray = list(map(lambda x: transHelper.NormalizeTransactionCount(x), mergeArray))
     return summedArray
 
 
@@ -39,8 +42,9 @@ def ReadFileAndCreateReshaper( fileName ):
     file = open(fileName, "r")
     jsonDictionary = json.load(file)
 
-    for index in range(totalTimeCount):
-        transParamList.append(inputManager.TransactionParam(smallestTime*(index+1), transactionBinCount))
+    for transactionBinCount in transactionBinCountList:
+        for index in range(totalTimeCount):
+            transParamList.append(inputManager.TransactionParam(smallestTime*(index+1), transactionBinCount))
     reshaper = inputManager.ReShapeManager(transParamList)
 
     for jsonElem in jsonDictionary:
@@ -114,7 +118,7 @@ for fileName in onlyfiles:
 if isConcanateCsv:
     extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
                                                   inputManager.ReShapeManager.maxFeatureCount,
-                                                  transactionBinCount+3,
+                                                  9,
                                                   os.path.abspath(os.getcwd()) + "/Data")
 
 print("All added now scores")
@@ -147,13 +151,13 @@ if isTrainCurves :
 
 mlpTransactionList = []
 mlpTransactionScalerList = []
-for transactionIndex in range(totalTimeCount):
+for transactionIndex in range(len(transParamList)):
     transParam = transParamList[transactionIndex]
     numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
     if isConcanateCsv:
-        numpyArr = extraDataManager.ConcanateTransactions(numpyArr, transactionBinCount+5)
-    mlpTransaction = MLPClassifier(hidden_layer_sizes=(transactionBinCount+2, transactionBinCount+2, transactionBinCount+2), activation='relu',
-                                                  solver='adam', max_iter=500)
+        numpyArr = extraDataManager.ConcanateTransactions(numpyArr, 6+5)
+    mlpTransaction = MLPClassifier(hidden_layer_sizes=(transParam.gramCount+3, transParam.gramCount+3, transParam.gramCount+3), activation='relu',
+                                                  solver='adam', max_iter=750)
     mlpTransactionList.append(mlpTransaction)
     transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
     mlpTransactionScalerList.append(transactionScaler)
@@ -162,14 +166,14 @@ for transactionIndex in range(totalTimeCount):
     if isConcanateCsv:
         y = extraDataManager.ConcanateResults(y)
 
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=40)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
 
     mlpTransaction.fit(X_train, y_train)
 
     predict_test = mlpTransaction.predict_proba(X_test)
     finalResult = predict_test[:,1] >= acceptedProbibilty
     predict_test = np.delete(predict_test, 0 , 1 )
-    print(" Transactions time: ", transParam.msec)
+    print(" Transactions time: ", transParam.msec, " Transaction Index ", transParam.gramCount, "Index ", transactionIndex)
     print(confusion_matrix(y_test, finalResult))
 
 resultPredicts = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - 1 - inputManager.ReShapeManager.minFeatureCount)]
@@ -216,10 +220,11 @@ while True:
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
     resultStr = ""
-    for transactionIndex in range(totalTimeCount):
+    for transactionIndex in range(len(transParamList)):
+        transParam = transParamList[transactionIndex]
         extraStuff = resultsTransactionFloat[-3:]
         justTransactions = resultsTransactionFloat[:-3]
-        currentTransactionList = MergeTransactions( justTransactions, transactionIndex+1)
+        currentTransactionList = MergeTransactions( justTransactions, transParam.msec, transParam.gramCount)
         totalFeatures = currentTransactionList + extraStuff + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
