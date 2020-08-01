@@ -21,7 +21,7 @@ import TransactionHelper as transHelper
 
 smallestTime = 125
 transactionBinCountList = [6,8]
-totalTimeCount = 10
+totalTimeCount = 5
 isTrainCurves = True
 totalUsedCurveCount = 3
 isConcanateCsv = False
@@ -29,13 +29,14 @@ acceptedProbibilty = 0.9
 testRatio = 4
 transParamList = []
 
-def MergeTransactions ( transactionList, index, transactionBinCount ):
+def MergeTransactions ( transactionList, msec, transactionBinCount ):
+    index = msec // smallestTime
     totalElement = index * transactionBinCount
     arrayList = np.array_split(transactionList[-totalElement:], transactionBinCount)
+    print(arrayList)
     mergeArray = list(map(lambda x: x.sum(), arrayList))
     summedArray = list(map(lambda x: transHelper.NormalizeTransactionCount(x), mergeArray))
     return summedArray
-
 
 def ReadFileAndCreateReshaper( fileName ):
     print("Reading ", fileName )
@@ -44,7 +45,8 @@ def ReadFileAndCreateReshaper( fileName ):
 
     for transactionBinCount in transactionBinCountList:
         for index in range(totalTimeCount):
-            transParamList.append(inputManager.TransactionParam(smallestTime*(index+1), transactionBinCount))
+            transactionParam = inputManager.TransactionParam(smallestTime * (index * 2 + 1), transactionBinCount)
+            transParamList.append(transactionParam)
     reshaper = inputManager.ReShapeManager(transParamList)
 
     for jsonElem in jsonDictionary:

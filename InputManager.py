@@ -10,6 +10,11 @@ class TransactionParam:
         self.score80 = 0
         self.score90 = 0
 
+    def __repr__(self):
+        return "MSec:%d,GramCount:%d,Score80:%d,Score90:%d" % (
+        self.msec, self.gramCount,
+        self.score80, self.score90)
+
 class ReShapeManager:
     maxFeatureCount = 7
     minFeatureCount = 3
