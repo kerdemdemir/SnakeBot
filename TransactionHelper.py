@@ -144,7 +144,7 @@ class TransactionPattern:
 
 class TransactionPeakHelper:
     percent = 0.01
-    stopTime = 10
+    stopTime = 25
     lowestAcceptedTotalTransactionCount = 50
 
     def __init__(self, jsonIn, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
