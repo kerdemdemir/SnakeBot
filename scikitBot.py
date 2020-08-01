@@ -203,7 +203,7 @@ if isTrainCurves:
     print(" Transactions and curves merged: ")
     print(confusion_matrix(y_testMerged, predict_test))
 
-
+del trainingReshaper
 context = zmq.Context()
 socket = context.socket(zmq.REP)
 socket.bind("ipc:///tmp/peakLearner")
@@ -266,6 +266,7 @@ while True:
         socket.send_string(resultStr, encoding='ascii')
     elif command == "Train":
         valueAndTime = messageChangeTimeTransactionStrList[1].split(",")
+        valueAndTime = list(map( lambda x: float(x), valueAndTime))
         isBottom = valueAndTime[0] < 0.0
         jsonPeak = json.loads(messageChangeTimeTransactionStrList[2])
         resultStr = ""
