@@ -113,7 +113,7 @@ class TransactionPattern:
         return total
 
     def GetFeatures(self):
-        returnval = self.transactionList + [self.priceRatio,self.BuyVsSellRatio(),self.TotalTrade()]
+        returnval = self.transactionList + [self.totalTransactionCount,self.priceRatio,self.BuyVsSellRatio(),self.TotalTrade()]
         return returnval
 
 
@@ -145,7 +145,7 @@ class TransactionPattern:
 class TransactionPeakHelper:
     percent = 0.01
     stopTime = 25
-    lowestAcceptedTotalTransactionCount = 50
+    lowestAcceptedTotalTransactionCount = 40
 
     def __init__(self, jsonIn, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
         self.mseconds = mseconds
@@ -175,7 +175,7 @@ class TransactionPeakHelper:
         self.__DivideDataInSeconds(jsonIn)
 
     def GetTransactionPatterns(self):
-        transactionPatterns = self.patternList.keys()
+        transactionPatterns = self.patternList
         returnVal = []
         for transactionPattern in transactionPatterns:
             returnVal.append( transactionPattern.GetFeatures() )
@@ -236,7 +236,7 @@ class TransactionPeakHelper:
 
         pattern = TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
-        if pattern.transactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
+        if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
             return
         if pattern.maxNormalizedCount < 3:
             return
@@ -276,7 +276,7 @@ class TransactionAnalyzer :
         self.featureArr = np.array(allData)
         #print(*allData)
         #print(self.featureArr, ngrams)
-        self.featureArr.reshape(-1, ngrams+5)
+        self.featureArr.reshape(-1, ngrams+6)
         return self.featureArr
 
     def toTransactionCurvesToNumpy(self, ngrams):

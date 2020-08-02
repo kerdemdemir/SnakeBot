@@ -11,7 +11,7 @@ class TransactionParam:
         self.badResults = []
 
     def __repr__(self):
-        return "MSec:%d,GramCount:%d,Results:%s,BadResult:%s" % (self.msec, self.gramCount,str(self.results),str(self.badResults))
+        return "MSec:%d,GramCount:%d,Results:%s,BadResult:%s" % (self.msec, self.gramCount,str(self.goodResults),str(self.badResults))
 
 class ReShapeManager:
     maxFeatureCount = 7

@@ -22,7 +22,7 @@ import TransactionHelper as transHelper
 smallestTime = 125
 transactionBinCountList = [6,8]
 totalTimeCount = 5
-isTrainCurves = True
+isTrainCurves = False
 totalUsedCurveCount = 3
 isConcanateCsv = False
 acceptedProbibilty = 0.9
@@ -204,6 +204,14 @@ if isTrainCurves:
     print(confusion_matrix(y_testMerged, predict_test))
 
 del trainingReshaper
+
+tuneShaper = ReadFileAndCreateReshaper("learning_1_1.txt")
+AddExtraToShaper("learning_2_2.txt", tuneShaper, True)
+
+
+
+
+
 context = zmq.Context()
 socket = context.socket(zmq.REP)
 socket.bind("ipc:///tmp/peakLearner")
@@ -227,8 +235,8 @@ while True:
         resultStr = ""
         for transactionIndex in range(len(transParamList)):
             transParam = transParamList[transactionIndex]
-            extraStuff = resultsTransactionFloat[-3:]
-            justTransactions = resultsTransactionFloat[:-3]
+            extraStuff = resultsTransactionFloat[-4:]
+            justTransactions = resultsTransactionFloat[:-4]
             currentTransactionList = MergeTransactions( justTransactions, transParam.msec, transParam.gramCount)
             totalFeatures = currentTransactionList + extraStuff + [abs(resultsChangeFloat[-1]), resultsTimeFloat[-1]]
             totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
@@ -272,7 +280,7 @@ while True:
         resultStr = ""
         for transactionIndex in range(len(transParamList)):
             transParam = transParamList[transactionIndex]
-            transPeakTemp = transHelper.TransactionPeakHelper( jsonPeak, transParam.msec, isBottom, valueAndTime[0], valueAndTime[1])
+            transPeakTemp = transHelper.TransactionPeakHelper( jsonPeak, transParam.msec, isBottom, valueAndTime[0], valueAndTime[1], None, None)
             transPeakTemp.AssignScores(transParam.gramCount)
             transactionPatterns = transPeakTemp.GetTransactionPatterns()
             for transactionPattern in transactionPatterns:
@@ -289,7 +297,7 @@ while True:
                     transParam.badResults.append(curResult)
                 print("Result after after new peak for: ", transParam.msec, " ", transParam.gramCount, " is ", curResult)
             print("New peak result ", transParam)
-            resultStr = str(transParam.results) + ";" + str(transParam.badResults) + "|"
+            resultStr = str(transParam.goodResults) + ";" + str(transParam.badResults) + "|"
         resultStr = resultStr[:-1]
         print("Final result is ", resultStr)
         socket.send_string(resultStr, encoding='ascii')
