@@ -18,6 +18,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
 import TransactionHelper as transHelper
+import DynamicTuner
 
 smallestTime = 125
 transactionBinCountList = [6,8]
@@ -92,6 +93,56 @@ def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
 
 
     file.close()
+
+def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList ):
+    priceStrList = messageChangeTimeTransactionStrList[0].split(",")
+    timeStrList = messageChangeTimeTransactionStrList[1].split(",")
+    transactionStrList = messageChangeTimeTransactionStrList[2].split(",")
+
+    resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
+    resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
+    resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
+
+    resultStr = ""
+    for transactionIndex in range(len(transParamList)):
+        transParam = transParamList[transactionIndex]
+        extraStuff = resultsTransactionFloat[-4:]
+        justTransactions = resultsTransactionFloat[:-4]
+        currentTransactionList = MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
+        totalFeatures = currentTransactionList + extraStuff + [abs(resultsChangeFloat[-1]), resultsTimeFloat[-1]]
+        totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
+        totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
+        print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)
+        npTotalFeatures = np.array(totalFeaturesScaled)
+        npTotalFeatures = npTotalFeatures.reshape(1, -1)
+        predict_test = mlpTransactionList[transactionIndex].predict_proba(npTotalFeatures)
+        curResultStr = str(predict_test) + ";"
+        resultStr += curResultStr
+
+    totalPredict = []
+    for binCount in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount - 1):
+        curCount = binCount + inputManager.ReShapeManager.minFeatureCount
+        totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
+        npTotalCurves = np.array(totalCurves)
+        npTotalCurves = npTotalCurves.reshape(1, -1)
+        npTotalCurvesScaled = mlpScalerList[binCount].transform(npTotalCurves)
+        print("I will predict the curves: ", totalCurves)
+        predict_test = mlpList[binCount].predict_proba(npTotalCurvesScaled)
+        curResultStr = str(predict_test) + ";"
+        resultStr += curResultStr
+        predict_test = np.delete(predict_test, 0, 1)
+        if binCount < totalUsedCurveCount:
+            totalPredict = np.append(totalPredict, predict_test)
+
+    resultStr = resultStr[:-1]
+    totalPredict = totalPredict.reshape(1, -1)
+    totalPredictResult = mixTransactionLearner.predict_proba(totalPredict)
+
+    totalPredictResultStr = str(totalPredictResult) + ";"
+    resultStr = totalPredictResultStr + resultStr
+    print("Results are: ", resultStr)
+    return resultStr
+
 
 
 onlyTransactions = ["learning_12_10_12.txt"]
@@ -175,6 +226,7 @@ for transactionIndex in range(len(transParamList)):
     predict_test = mlpTransaction.predict_proba(X_test)
     finalResult = predict_test[:,1] >= acceptedProbibilty
     predict_test = np.delete(predict_test, 0 , 1 )
+
     print(" Transactions time: ", transParam.msec, " Transaction Index ", transParam.gramCount, "Index ", transactionIndex)
     print(confusion_matrix(y_test, finalResult))
 
@@ -209,7 +261,7 @@ del trainingReshaper
 context = zmq.Context()
 socket = context.socket(zmq.REP)
 socket.bind("ipc:///tmp/peakLearner")
-transactionTuner = inputManager.PeakTransactionTurner(len(transParamList))
+transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 while True:
     #  Wait for next request from client
     message = socket.recv_string(0, encoding='ascii')
@@ -218,79 +270,23 @@ while True:
     command = messageChangeTimeTransactionStrList[0]
 
     if command == "Predict":
-        priceStrList = messageChangeTimeTransactionStrList[1].split(",")
-        timeStrList = messageChangeTimeTransactionStrList[2].split(",")
-        transactionStrList = messageChangeTimeTransactionStrList[3].split(",")
-
-        resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
-        resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
+        messageChangeTimeTransactionStrList = messageChangeTimeTransactionStrList[1:]
+        resultStr = Predict(messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList)
+        transactionStrList = messageChangeTimeTransactionStrList[2].split(",")
         resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
+        tunerResult = transactionTuner.GetResult(resultsTransactionFloat)
 
-        resultStr = ""
-        for transactionIndex in range(len(transParamList)):
-            transParam = transParamList[transactionIndex]
-            extraStuff = resultsTransactionFloat[-4:]
-            justTransactions = resultsTransactionFloat[:-4]
-            currentTransactionList = MergeTransactions( justTransactions, transParam.msec, transParam.gramCount)
-            totalFeatures = currentTransactionList + extraStuff + [abs(resultsChangeFloat[-1]), resultsTimeFloat[-1]]
-            totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
-            totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
-            print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled )
-            npTotalFeatures = np.array(totalFeaturesScaled)
-            npTotalFeatures = npTotalFeatures.reshape(1, -1)
-            predict_test = mlpTransactionList[transactionIndex].predict_proba(npTotalFeatures)
-            curResultStr = str(predict_test) + ";"
-            resultStr += curResultStr
-        totalPredict = []
-
-        for binCount in range (inputManager.ReShapeManager.maxFeatureCount-inputManager.ReShapeManager.minFeatureCount-1):
-            curCount = binCount + inputManager.ReShapeManager.minFeatureCount
-            totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
-            npTotalCurves = np.array(totalCurves)
-            npTotalCurves = npTotalCurves.reshape(1,-1)
-            npTotalCurvesScaled = mlpScalerList[binCount].transform(npTotalCurves)
-            print("I will predict the curves: ", totalCurves)
-            predict_test = mlpList[binCount].predict_proba(npTotalCurvesScaled)
-            curResultStr = str(predict_test) + ";"
-            resultStr += curResultStr
-            predict_test = np.delete(predict_test, 0, 1)
-            if binCount < totalUsedCurveCount:
-                totalPredict = np.append(totalPredict,predict_test)
-
-        resultStr = resultStr[:-1]
-        totalPredict = totalPredict.reshape(1, -1)
-        totalPredictResult = mixTransactionLearner.predict_proba(totalPredict)
-
-        totalPredictResultStr = str(totalPredictResult) + ";"
-        resultStr = totalPredictResultStr + resultStr
-        print("Results are: " , resultStr)
+        totalPredictTunerResultStr = str(tunerResult) + ";"
+        resultStr = totalPredictTunerResultStr + resultStr
+        print("Results are: ", resultStr)
         #  Send reply back to client
         socket.send_string(resultStr, encoding='ascii')
     elif command == "Train":
-        valueAndTime = messageChangeTimeTransactionStrList[1].split(",")
-        valueAndTime = list(map( lambda x: float(x), valueAndTime))
-        isBottom = valueAndTime[0] < 0.0
-        jsonPeak = json.loads(messageChangeTimeTransactionStrList[2])
-        resultStr = ""
-        for transactionIndex in range(len(transParamList)):
-            transParam = transParamList[transactionIndex]
-            transPeakTemp = transHelper.TransactionPeakHelper( jsonPeak, transParam.msec, isBottom, valueAndTime[0], valueAndTime[1], None, None)
-            transPeakTemp.AssignScores(transParam.gramCount)
-            transactionPatterns = transPeakTemp.GetTransactionPatterns()
-            curResultList = []
-            for transactionPattern in transactionPatterns:
-                totalFeatures = transactionPattern + [abs(valueAndTime[0]), valueAndTime[1]]
-                totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
-                print("I will predict for training: ", totalFeatures, " scaled: ", totalFeaturesScaled)
-                npTotalFeatures = np.array(totalFeaturesScaled)
-                npTotalFeatures = npTotalFeatures.reshape(1, -1)
-                predict_test = mlpTransactionList[transactionIndex].predict_proba(npTotalFeatures)
-                curResult = predict_test[0][1]
-
-                print("Result after after new peak for: ", transParam.msec, " ", transParam.gramCount, " is ", curResult)
-            print("New peak result ", transParam)
-            resultStr = str(transParam.goodResults) + ";" + str(transParam.badResults) + "|"
-        resultStr = resultStr[:-1]
-        print("Final result is ", resultStr)
-        socket.send_string(resultStr, encoding='ascii')
+        isBottom = messageChangeTimeTransactionStrList[1] = "Bottom"
+        requestList = messageChangeTimeTransactionStrList[2].split("|")
+        for request in requestList:
+            print("Training predictions for : ", request )
+            resultStr = Predict(request, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList)
+            transactionTuner.Add(isBottom, resultStr)
+        socket.send_string(transactionTuner.GetCurrentResult(), encoding='ascii')
 
