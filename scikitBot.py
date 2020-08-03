@@ -284,7 +284,9 @@ while True:
         sys.stdout.flush()
     elif command == "Train":
         isBottom = messageChangeTimeTransactionStrList[1] = "Bottom"
-        requestList = messageChangeTimeTransactionStrList[2].split("|")
+        messageChangeTimeTransactionStrList = messageChangeTimeTransactionStrList[2:]
+        reJoinedMessageStr = ";".join(messageChangeTimeTransactionStrList)
+        requestList = messageChangeTimeTransactionStrList.split("|")
         for request in requestList:
             print("Training predictions for : ", request )
             resultStr = Predict(request, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList)
