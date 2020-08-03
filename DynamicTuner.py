@@ -45,7 +45,7 @@ class PeakTransactionTurner:
 
     def GetResult( self, request ):
         if self.lastTrainNumber == 0:
-            return 0
+            return [[1,-1]]
         else:
             return self.transactionTuneLearner.predict_proba(request)
 
