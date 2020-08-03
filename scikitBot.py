@@ -22,7 +22,7 @@ import TransactionHelper as transHelper
 smallestTime = 125
 transactionBinCountList = [6,8]
 totalTimeCount = 5
-isTrainCurves = False
+isTrainCurves = True
 totalUsedCurveCount = 3
 isConcanateCsv = False
 acceptedProbibilty = 0.9
@@ -205,17 +205,11 @@ if isTrainCurves:
 
 del trainingReshaper
 
-tuneShaper = ReadFileAndCreateReshaper("learning_1_1.txt")
-AddExtraToShaper("learning_2_2.txt", tuneShaper, True)
-
-
-
-
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)
 socket.bind("ipc:///tmp/peakLearner")
-
+transactionTuner = inputManager.PeakTransactionTurner(len(transParamList))
 while True:
     #  Wait for next request from client
     message = socket.recv_string(0, encoding='ascii')
@@ -283,6 +277,7 @@ while True:
             transPeakTemp = transHelper.TransactionPeakHelper( jsonPeak, transParam.msec, isBottom, valueAndTime[0], valueAndTime[1], None, None)
             transPeakTemp.AssignScores(transParam.gramCount)
             transactionPatterns = transPeakTemp.GetTransactionPatterns()
+            curResultList = []
             for transactionPattern in transactionPatterns:
                 totalFeatures = transactionPattern + [abs(valueAndTime[0]), valueAndTime[1]]
                 totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
@@ -291,10 +286,7 @@ while True:
                 npTotalFeatures = npTotalFeatures.reshape(1, -1)
                 predict_test = mlpTransactionList[transactionIndex].predict_proba(npTotalFeatures)
                 curResult = predict_test[0][1]
-                if isBottom:
-                    transParam.goodResults.append(curResult)
-                else:
-                    transParam.badResults.append(curResult)
+
                 print("Result after after new peak for: ", transParam.msec, " ", transParam.gramCount, " is ", curResult)
             print("New peak result ", transParam)
             resultStr = str(transParam.goodResults) + ";" + str(transParam.badResults) + "|"

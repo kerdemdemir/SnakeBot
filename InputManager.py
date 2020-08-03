@@ -7,11 +7,21 @@ class TransactionParam:
     def __init__ ( self, msec, gramCount ):
         self.msec = msec
         self.gramCount = gramCount
-        self.goodResults = []
-        self.badResults = []
 
     def __repr__(self):
-        return "MSec:%d,GramCount:%d,Results:%s,BadResult:%s" % (self.msec, self.gramCount,str(self.goodResults),str(self.badResults))
+        return "MSec:%d,GramCount:%d" % (self.msec, self.gramCount)
+
+class PeakTransactionTurner:
+    def __init__(self, totalTransactionCount):
+        self.goodResults = [[] for _ in range(totalTransactionCount)]
+        self.badResults = [[] for _ in range(totalTransactionCount)]
+        self.totalTransactionCount = totalTransactionCount
+
+    def Add(self, isBottom, resultList ):
+        if isBottom :
+            self.goodResults.append(resultList)
+        else:
+            self.badResults.append(resultList)
 
 class ReShapeManager:
     maxFeatureCount = 7
