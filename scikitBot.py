@@ -22,7 +22,7 @@ import DynamicTuner
 
 smallestTime = 125
 transactionBinCountList = [6,8]
-totalTimeCount = 3
+totalTimeCount = 4
 isTrainCurves = True
 totalUsedCurveCount = 3
 isConcanateCsv = False
