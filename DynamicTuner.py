@@ -48,7 +48,7 @@ class PeakTransactionTurner:
 
     def GetResult( self, request ):
         if self.lastTrainNumber == 0 or self.goodCount < 5 or self.badCount < 5:
-            return [[1,-1]]
+            return [[1 -1]]
         else:
             return self.transactionTuneLearner.predict_proba(request)
 
