@@ -276,11 +276,12 @@ while True:
         resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
         tunerResult = transactionTuner.GetResult(resultsTransactionFloat)
 
-        totalPredictTunerResultStr = str(tunerResult) + ";"
+        totalPredictTunerResultStr = tunerResult + ";"
         resultStr = totalPredictTunerResultStr + resultStr
         print("Results are: ", resultStr)
         #  Send reply back to client
         socket.send_string(resultStr, encoding='ascii')
+        sys.stdout.flush()
     elif command == "Train":
         isBottom = messageChangeTimeTransactionStrList[1] = "Bottom"
         requestList = messageChangeTimeTransactionStrList[2].split("|")
@@ -289,4 +290,5 @@ while True:
             resultStr = Predict(request, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList)
             transactionTuner.Add(isBottom, resultStr)
         socket.send_string(transactionTuner.GetCurrentResult(), encoding='ascii')
+        sys.stdout.flush()
 
