@@ -8,7 +8,8 @@ class PeakTransactionTurner:
         self.realResults = []
         self.totalTransactionCount = totalTransactionCount
         self.lastTrainNumber = 0
-
+        self.goodCount = 0
+        self.badCount = 0
         transactionTuneLearner = MLPClassifier(hidden_layer_sizes=(4, 4, 4), activation='relu',
                                                 solver='adam', max_iter=500)
 
@@ -24,8 +25,10 @@ class PeakTransactionTurner:
         self.inputResults.append(transactions)
         if isBottom :
             self.realResults.append(1)
+            self.goodCount += 1
         else:
             self.realResults.append(0)
+            self.badCount += 1
 
         curResultCount = len(self.inputResults)
 
@@ -44,7 +47,7 @@ class PeakTransactionTurner:
 
 
     def GetResult( self, request ):
-        if self.lastTrainNumber == 0:
+        if self.lastTrainNumber == 0 or self.goodCount < 5 or self.badCount < 5:
             return [[1,-1]]
         else:
             return self.transactionTuneLearner.predict_proba(request)
