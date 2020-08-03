@@ -238,8 +238,8 @@ class TransactionPeakHelper:
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
         if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
             return
-        if pattern.maxNormalizedCount < 4:
-            if sum( y > 2 for y in pattern.transactionList ) < 2 :
+        if pattern.maxNormalizedCount < 3:
+            if sum( y > 1 for y in pattern.transactionList ) < 2 :
                 return
         if self.isBottom:
            self.patternList.append(pattern)
