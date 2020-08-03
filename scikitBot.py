@@ -286,7 +286,7 @@ while True:
         isBottom = messageChangeTimeTransactionStrList[1] = "Bottom"
         messageChangeTimeTransactionStrList = messageChangeTimeTransactionStrList[2:]
         reJoinedMessageStr = ";".join(messageChangeTimeTransactionStrList)
-        requestList = messageChangeTimeTransactionStrList.split("|")
+        requestList = reJoinedMessageStr.split("|")
         for request in requestList:
             print("Training predictions for : ", request )
             resultStr = Predict(request, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList)
