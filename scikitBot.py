@@ -22,7 +22,7 @@ import DynamicTuner
 
 smallestTime = 125
 transactionBinCountList = [6,8]
-totalTimeCount = 5
+totalTimeCount = 3
 isTrainCurves = True
 totalUsedCurveCount = 3
 isConcanateCsv = False
@@ -46,7 +46,7 @@ def ReadFileAndCreateReshaper( fileName ):
 
     for transactionBinCount in transactionBinCountList:
         for index in range(totalTimeCount):
-            transactionParam = inputManager.TransactionParam(smallestTime * (index * 2 + 1), transactionBinCount)
+            transactionParam = inputManager.TransactionParam(smallestTime * (index * 3 + 1), transactionBinCount)
             transParamList.append(transactionParam)
     reshaper = inputManager.ReShapeManager(transParamList)
 
