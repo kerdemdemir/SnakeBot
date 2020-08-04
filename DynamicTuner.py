@@ -13,6 +13,7 @@ class PeakTransactionTurner:
         self.transactionTuneLearner = MLPClassifier(hidden_layer_sizes=(5, 5, 5), activation='relu',
                                                 solver='adam', max_iter=500)
 
+
     def GetCurrentResult(self):
         return str(self.inputResults) + "|" + str(self.realResults)
 
@@ -54,6 +55,7 @@ class PeakTransactionTurner:
             return "[[1 -1]]"
         else:
             print("Will predict the fusion with request ", request)
-            featureArr = np.array(request).reshape(-1, 1)
+
+            featureArr = np.array(request).reshape(1, -1)
             return str(self.transactionTuneLearner.predict_proba(featureArr))
 
