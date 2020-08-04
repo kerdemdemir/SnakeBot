@@ -94,11 +94,10 @@ def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
 
     file.close()
 
-def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList ):
+def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList, mixTransactionLearner ):
     priceStrList = messageChangeTimeTransactionStrList[0].split(",")
     timeStrList = messageChangeTimeTransactionStrList[1].split(",")
     transactionStrList = messageChangeTimeTransactionStrList[2].split(",")
-
     resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
     resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
@@ -136,8 +135,8 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
 
     resultStr = resultStr[:-1]
     totalPredict = totalPredict.reshape(1, -1)
+    print("I will predict the fusion: ", totalPredict)
     totalPredictResult = mixTransactionLearner.predict_proba(totalPredict)
-
     totalPredictResultStr = str(totalPredictResult) + ";"
     resultStr = totalPredictResultStr + resultStr
     print("Results are: ", resultStr)
@@ -167,6 +166,7 @@ for fileName in onlyfiles:
         AddExtraToShaper(fileName, trainingReshaper, False)
     else:
         AddExtraToShaper(fileName, trainingReshaper, True)
+
 
 if isConcanateCsv:
     extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
@@ -231,6 +231,8 @@ for transactionIndex in range(len(transParamList)):
     print(confusion_matrix(y_test, finalResult))
 
 resultPredicts = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - 1 - inputManager.ReShapeManager.minFeatureCount)]
+mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(4, 4, 4), activation='relu',
+                                      solver='adam', max_iter=500)
 if isTrainCurves:
     for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount-1):
         curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
@@ -240,7 +242,7 @@ if isTrainCurves:
         X = mlpScalerList[curIndex].transform(numpyArr)
         curResultPredict = mlpList[curIndex].predict_proba(X)
         resultPredicts[curIndex] = np.delete(curResultPredict, 0 , 1 )
-        print( " Transaction Curves Bin Count: ", binCount, " Results: ", curResultPredict)
+        #print( " Transaction Curves Bin Count: ", binCount, " Results: ", curResultPredict)
         sys.stdout.flush()
     y = trainingReshaper.toTransactionResultsNumpy(2)
 
@@ -248,20 +250,18 @@ if isTrainCurves:
     mergedArray = np.concatenate((resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
     print(mergedArray)
     X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y, test_size=0.2, random_state=40)
-    mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(4, 4, 4), activation='relu',
-                                                  solver='adam', max_iter=500)
+
     mixTransactionLearner.fit(X_trainMearged, y_trainMerged)
     predict_test = mixTransactionLearner.predict(X_testMerged)
     print(" Transactions and curves merged: ")
     print(confusion_matrix(y_testMerged, predict_test))
 
 del trainingReshaper
-
+transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)
 socket.bind("ipc:///tmp/peakLearner")
-transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 while True:
     #  Wait for next request from client
     message = socket.recv_string(0, encoding='ascii')
@@ -271,7 +271,7 @@ while True:
 
     if command == "Predict":
         messageChangeTimeTransactionStrList = messageChangeTimeTransactionStrList[1:]
-        resultStr = Predict(messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList)
+        resultStr = Predict(messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList, mixTransactionLearner)
         transactionStrList = messageChangeTimeTransactionStrList[2].split(",")
         resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
         tunerResult = transactionTuner.GetResult(resultsTransactionFloat)
@@ -283,13 +283,13 @@ while True:
         socket.send_string(resultStr, encoding='ascii')
         sys.stdout.flush()
     elif command == "Train":
-        isBottom = messageChangeTimeTransactionStrList[1] = "Bottom"
+        isBottom = messageChangeTimeTransactionStrList[1] == "Bottom"
         messageChangeTimeTransactionStrList = messageChangeTimeTransactionStrList[2:]
         reJoinedMessageStr = ";".join(messageChangeTimeTransactionStrList)
         requestList = reJoinedMessageStr.split("|")
         for request in requestList:
             print("Training predictions for : ", request )
-            resultStr = Predict(request, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList)
+            resultStr = Predict(request, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList, mixTransactionLearner)
             transactionTuner.Add(isBottom, resultStr)
         socket.send_string(transactionTuner.GetCurrentResult(), encoding='ascii')
         sys.stdout.flush()

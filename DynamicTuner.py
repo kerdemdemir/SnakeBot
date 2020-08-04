@@ -4,7 +4,7 @@ from sklearn.neural_network import MLPClassifier
 
 class PeakTransactionTurner:
     def __init__(self, totalTransactionCount):
-        self.inputResults = [[] for _ in range(totalTransactionCount)]
+        self.inputResults = []
         self.realResults = []
         self.totalTransactionCount = totalTransactionCount
         self.lastTrainNumber = 0
@@ -30,7 +30,7 @@ class PeakTransactionTurner:
             self.realResults.append(0)
             self.badCount += 1
 
-        curResultCount = len(self.inputResults)
+        curResultCount = self.goodCount + self.badCount
 
         print("After addition cur results: ", curResultCount)
         elemCount = curResultCount // 10
@@ -43,11 +43,14 @@ class PeakTransactionTurner:
         featureArr.reshape(-1, self.totalTransactionCount)
 
         resultArr = np.array(self.realResults)
+        resultArr.reshape(-1, 1)
+
         self.transactionTuneLearner.fit(featureArr, resultArr)
 
 
+
     def GetResult( self, request ):
-        if self.lastTrainNumber == 0 or self.goodCount < 5 or self.badCount < 5:
+        if self.lastTrainNumber < 2 or self.goodCount < 8 or self.badCount < 8:
             return "[[1 -1]]"
         else:
             return str(self.transactionTuneLearner.predict_proba(request))
