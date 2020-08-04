@@ -257,6 +257,7 @@ if isTrainCurves:
     print(confusion_matrix(y_testMerged, predict_test))
 
 del trainingReshaper
+
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 
 context = zmq.Context()
@@ -289,7 +290,8 @@ while True:
         requestList = reJoinedMessageStr.split("|")
         for request in requestList:
             print("Training predictions for : ", request )
-            resultStr = Predict(request, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList, mixTransactionLearner)
+            requestSplitedList = request.split(";")
+            resultStr = Predict(requestSplitedList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList, mixTransactionLearner)
             transactionTuner.Add(isBottom, resultStr)
         socket.send_string(transactionTuner.GetCurrentResult(), encoding='ascii')
         sys.stdout.flush()
