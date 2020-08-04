@@ -273,8 +273,8 @@ while True:
     if command == "Predict":
         messageChangeTimeTransactionStrList = messageChangeTimeTransactionStrList[1:]
         resultStr = Predict(messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList, mixTransactionLearner)
-        transactionStrList = messageChangeTimeTransactionStrList[2].split(",")
-        resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
+        resultsTransactionFloat = [float(transactionResults[2:-2].split(" ")[1]) for transactionResults in resultStr.split(";")[1:len(transParamList) + 1]]
+        print("Trasaction fusion will be asked: ", resultsTransactionFloat)
         tunerResult = transactionTuner.GetResult(resultsTransactionFloat)
 
         totalPredictTunerResultStr = tunerResult + ";"

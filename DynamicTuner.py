@@ -34,7 +34,7 @@ class PeakTransactionTurner:
 
         print("After addition cur results: ", curResultCount)
         elemCount = curResultCount // 10
-        if  elemCount == self.lastTrainNumber:
+        if elemCount == self.lastTrainNumber:
             return
         self.lastTrainNumber = elemCount
         print("Retraining: ")
@@ -53,5 +53,7 @@ class PeakTransactionTurner:
         if self.lastTrainNumber < 2 or self.goodCount < 8 or self.badCount < 8:
             return "[[1 -1]]"
         else:
-            return str(self.transactionTuneLearner.predict_proba(request))
+            print("Will predict the fusion with request ", request)
+            featureArr = np.array(request).reshape(-1, 1)
+            return str(self.transactionTuneLearner.predict_proba(featureArr))
 
