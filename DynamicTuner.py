@@ -50,7 +50,7 @@ class PeakTransactionTurner:
 
 
     def GetResult( self, request ):
-        if self.lastTrainNumber < 2 or self.goodCount < 8 or self.badCount < 8:
+        if self.lastTrainNumber < 2 or self.goodCount < 15 or self.badCount < 15:
             return "[[1 -1]]"
         else:
             print("Will predict the fusion with request ", request)
