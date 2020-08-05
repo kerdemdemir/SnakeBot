@@ -268,9 +268,6 @@ for jsonElem in jsonDictionary:
 jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/learning_05_05.txt", "r"))
 for jsonElem in jsonDictionary:
     reshaperTuner.addANewCurrency(jsonElem, False)
-jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/learning_37_29_29.txt", "r"))
-for jsonElem in jsonDictionary:
-    reshaperTuner.addANewCurrency(jsonElem, False)
 
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 transactionTuner.Init(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList)
@@ -303,11 +300,14 @@ while True:
         messageChangeTimeTransactionStrList = messageChangeTimeTransactionStrList[2:]
         reJoinedMessageStr = ";".join(messageChangeTimeTransactionStrList)
         requestList = reJoinedMessageStr.split("|")
+        isReTrain = False
         for request in requestList:
             print("Training predictions for : ", request )
             requestSplitedList = request.split(";")
             resultStr = Predict(requestSplitedList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList, mixTransactionLearner)
-            transactionTuner.Add(isBottom, resultStr)
+            isReTrain |= transactionTuner.Add(isBottom, resultStr)
         socket.send_string(transactionTuner.GetCurrentResult(), encoding='ascii')
+        if isReTrain:
+            transactionTuner.Train()
         sys.stdout.flush()
 

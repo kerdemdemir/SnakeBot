@@ -58,7 +58,7 @@ class PeakTransactionTurner:
         self.realResults = list(results)
         self.transactionTuneLearner.fit(totalResult, results)
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
-        self.lastTrainNumber = len(self.realResults) // 10
+        self.lastTrainNumber = len(self.realResults) // 30
 
 
     def Add(self, isBottom, resultStr ):
@@ -76,12 +76,14 @@ class PeakTransactionTurner:
         curResultCount = len(self.realResults)
 
         print("After addition cur results: ", curResultCount)
-        elemCount = curResultCount // 10
+        elemCount = curResultCount // 30
         if elemCount == self.lastTrainNumber:
-            return
-        self.lastTrainNumber = elemCount
-        print("Retraining: ")
+            return False
+        return True
 
+
+    def Train(self):
+        print("Retraining: ")
         featureArr = np.array(self.inputResults)
         featureArr.reshape(-1, self.totalTransactionCount)
 
