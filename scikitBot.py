@@ -144,7 +144,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
 
 
 
-onlyTransactions = ["learning_12_10_12.txt"]
+onlyTransactions = ["learning_15_15_15.txt"]
 folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
 onlyTransactions = list(map( lambda x:  folderPath+x, onlyTransactions))
 
@@ -166,6 +166,7 @@ for fileName in onlyfiles:
         AddExtraToShaper(fileName, trainingReshaper, False)
     else:
         AddExtraToShaper(fileName, trainingReshaper, True)
+
 
 
 if isConcanateCsv:
@@ -258,7 +259,15 @@ if isTrainCurves:
 
 del trainingReshaper
 
+
+print("Start Tuning")
+jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/learning_39_30_31.txt", "r"))
+reshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(125,80)])
+for jsonElem in jsonDictionary:
+    reshaperTuner.addANewCurrency(jsonElem, False)
+
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
+transactionTuner.Init(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList)
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)

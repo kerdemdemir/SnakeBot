@@ -1,5 +1,15 @@
 import numpy as np
 from sklearn.neural_network import MLPClassifier
+import InputManager
+import TransactionHelper as transHelper
+
+def MergeTransactions ( transactionList, msec, transactionBinCount, smallestTime ):
+    index = msec // smallestTime
+    totalElement = index * transactionBinCount
+    arrayList = np.array_split(transactionList[-totalElement:], transactionBinCount)
+    mergeArray = list(map(lambda x: x.sum(), arrayList))
+    summedArray = list(map(lambda x: transHelper.NormalizeTransactionCount(x), mergeArray))
+    return summedArray
 
 
 class PeakTransactionTurner:
@@ -16,6 +26,40 @@ class PeakTransactionTurner:
     def GetCurrentResult(self):
         return str(self.inputResults) + "|" + str(self.realResults)
 
+    def Init(self, inputShaper, mlpTransactionScalerList, mlpTransactionList, transList):
+        transactionFeatures = inputShaper.toTransactionFeaturesNumpy(0)
+        results = inputShaper.toTransactionResultsNumpy(0)
+        resultPredicts = [[] for _ in range(len(transList))]
+        for curIndex in range(len(transList)):
+            trans = transList[curIndex]
+            currentData = []
+
+            for elem in transactionFeatures:
+                justTransactions = elem[:-6]
+                extras = elem[-6:]
+                newSum = MergeTransactions(justTransactions, trans.msec, trans.gramCount, 125)
+                currentData.extend(list(newSum)+list(extras))
+
+            featureArr = np.array(currentData)
+            featureArr = featureArr.reshape(-1, trans.gramCount+6)
+            X = mlpTransactionScalerList[curIndex].transform(featureArr)
+            curResultPredict = mlpTransactionList[curIndex].predict_proba(X)
+            resultPredicts[curIndex] = np.delete(curResultPredict, 0, 1)
+
+
+        totalResult = np.empty([np.size(resultPredicts,1),np.size(resultPredicts,0)])
+        for curIndex in range(len(transList)):
+            np.append(totalResult, resultPredicts[curIndex], axis=1)
+
+        for elem in totalResult:
+            self.inputResults.append(elem)
+
+        self.realResults = list(results)
+        self.transactionTuneLearner.fit(totalResult, results)
+        print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
+        self.lastTrainNumber = len(self.realResults) // 10
+
+
     def Add(self, isBottom, resultStr ):
         print( "I will add: ", resultStr )
         resultStrList = resultStr.split(";")
@@ -25,12 +69,10 @@ class PeakTransactionTurner:
         self.inputResults.append(transactions)
         if isBottom :
             self.realResults.append(1)
-            self.goodCount += 1
         else:
             self.realResults.append(0)
-            self.badCount += 1
 
-        curResultCount = self.goodCount + self.badCount
+        curResultCount = len(self.realResults)
 
         print("After addition cur results: ", curResultCount)
         elemCount = curResultCount // 10
@@ -50,7 +92,7 @@ class PeakTransactionTurner:
 
 
     def GetResult( self, request ):
-        if self.lastTrainNumber < 2 or self.goodCount < 15 or self.badCount < 15:
+        if self.lastTrainNumber < 1:
             return "[[1 -1]]"
         else:
             print("Will predict the fusion with request ", request)

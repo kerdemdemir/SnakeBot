@@ -201,7 +201,7 @@ class TransactionPeakHelper:
             if self.isBottom:
                 if curTime < self.peakTimeSeconds - self.stopTime:
                     return x
-                if price > self.peakVal * (1.00+self.percent):
+                if price > self.peakVal * (1.00+self.percent*1.2):
                     return x
             else:
                 if price < self.peakVal * (1.00-self.percent*2):
@@ -242,7 +242,7 @@ class TransactionPeakHelper:
             if sum( y > 1 for y in pattern.transactionList ) < 2 :
                 return
         if self.isBottom:
-           self.patternList.append(pattern)
+            self.patternList.append(pattern)
         else:
             self.badPatternList.append(pattern)
 
@@ -261,7 +261,7 @@ class TransactionAnalyzer :
                 continue
 
             indexPlusOne = index + 1
-            riseList = list(map( lambda x: x.rise , riseMinuteList[index-maxGrams:indexPlusOne] ))
+            riseList = list(map( lambda x: x.rise, riseMinuteList[index-maxGrams:indexPlusOne] ))
             timeList = list(map(lambda x: x.time, riseMinuteList[index-maxGrams:indexPlusOne]))
             if len(riseList) < maxGrams :
                 riseList = [0.0]*(maxGrams-len(riseList)) + riseList
@@ -296,6 +296,7 @@ class TransactionAnalyzer :
 
 
     def toTransactionResultsNumpy(self):
+        print(len(self.patternList), " ", len(self.badPatternList))
         goodResult = [1]*len(self.patternList)
         badResult = [0] * len(self.badPatternList)
         returnPatternList = goodResult + badResult
