@@ -55,6 +55,11 @@ def ReadFileAndCreateReshaper( fileName ):
     file.close()
     return  reshaper
 
+def AddExtraToTuneShaper ( fileName, shaper):
+    jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + fileName, "r"))
+    for jsonElem in jsonDictionary:
+        shaper.addANewCurrency(jsonElem, False)
+
 def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
     print("Reading ", fileName, " ", IsTransactionOnly)
     file = open(fileName, "r")
@@ -265,12 +270,9 @@ jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/l
 reshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(125,80)])
 for jsonElem in jsonDictionary:
     reshaperTuner.addANewCurrency(jsonElem, False)
-jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/learning_05_05.txt", "r"))
-for jsonElem in jsonDictionary:
-    reshaperTuner.addANewCurrency(jsonElem, False)
-jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/learning_05_07.txt", "r"))
-for jsonElem in jsonDictionary:
-    reshaperTuner.addANewCurrency(jsonElem, False)
+AddExtraToTuneShaper("/Data/TuneData/learning_05_05.txt", reshaperTuner)
+AddExtraToTuneShaper("/Data/TuneData/learning_05_07.txt", reshaperTuner)
+AddExtraToTuneShaper("/Data/TuneData/learning_07_07.txt", reshaperTuner)
 
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 transactionTuner.Init(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList)
