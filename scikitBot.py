@@ -268,6 +268,9 @@ for jsonElem in jsonDictionary:
 jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/learning_05_05.txt", "r"))
 for jsonElem in jsonDictionary:
     reshaperTuner.addANewCurrency(jsonElem, False)
+jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/learning_05_07.txt", "r"))
+for jsonElem in jsonDictionary:
+    reshaperTuner.addANewCurrency(jsonElem, False)
 
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 transactionTuner.Init(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList)
