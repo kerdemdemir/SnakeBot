@@ -316,7 +316,7 @@ while True:
             print("Training predictions for : ", request )
             requestSplitedList = request.split(";")
             resultStr = Predict(requestSplitedList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList, mixTransactionLearner)
-            isReTrain |= transactionShortMemTuner.Add(isBottom, resultStr)
+            isReTrain |= transactionTuner.Add(isBottom, resultStr)
         socket.send_string("Done", encoding='ascii')
         if isReTrain:
             transactionTuner.Train()
