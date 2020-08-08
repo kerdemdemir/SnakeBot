@@ -199,13 +199,12 @@ class TransactionPeakHelper:
             curTime = int(curElem["T"])//1000
 
             if self.isBottom:
-                if curTime < self.peakTimeSeconds - self.stopTime:
-                    return x
-                if price > self.peakVal * (1.00+self.percent*1.2):
+                if price > self.peakVal * (1.00+self.percent*2):
                     return x
             else:
                 if price < self.peakVal * (1.00-self.percent*2):
                     return x
+
         return 0 if step == -1 else len(jsonIn)
 
     def __DivideDataInSeconds(self, jsonIn):

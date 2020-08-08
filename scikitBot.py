@@ -266,16 +266,20 @@ del trainingReshaper
 
 
 print("Start Tuning")
-jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/learning_39_30_31.txt", "r"))
 reshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(125,80)])
-for jsonElem in jsonDictionary:
-    reshaperTuner.addANewCurrency(jsonElem, False)
-AddExtraToTuneShaper("/Data/TuneData/learning_05_05.txt", reshaperTuner)
 AddExtraToTuneShaper("/Data/TuneData/learning_05_07.txt", reshaperTuner)
 AddExtraToTuneShaper("/Data/TuneData/learning_07_07.txt", reshaperTuner)
+AddExtraToTuneShaper("/Data/TuneData/learning_07_08.txt", reshaperTuner)
 
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 transactionTuner.Init(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList)
+
+# print("Start Short memory tuning")
+# shortMemReshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(125,80)])
+# AddExtraToTuneShaper("/Data/TuneData/learning_07_08.txt", shortMemReshaperTuner)
+# transactionShortMemTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
+# transactionShortMemTuner.Init(shortMemReshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList)
+
 
 context = zmq.Context()
 socket = context.socket(zmq.REP)
@@ -293,9 +297,11 @@ while True:
         resultsTransactionFloat = [float(transactionResults[2:-2].split(" ")[1]) for transactionResults in resultStr.split(";")[1:len(transParamList) + 1]]
         print("Trasaction fusion will be asked: ", resultsTransactionFloat)
         tunerResult = transactionTuner.GetResult(resultsTransactionFloat)
+        resultStr = tunerResult + ";" + resultStr
 
-        totalPredictTunerResultStr = tunerResult + ";"
-        resultStr = totalPredictTunerResultStr + resultStr
+        # shortTunerResult = transactionShortMemTuner.GetResult(resultsTransactionFloat)
+        # resultStr = shortTunerResult + ";" + resultStr
+
         print("Results are: ", resultStr)
         #  Send reply back to client
         socket.send_string(resultStr, encoding='ascii')
@@ -310,8 +316,8 @@ while True:
             print("Training predictions for : ", request )
             requestSplitedList = request.split(";")
             resultStr = Predict(requestSplitedList, mlpTransactionScalerList, mlpTransactionList, mlpScalerList, mlpList, mixTransactionLearner)
-            isReTrain |= transactionTuner.Add(isBottom, resultStr)
-        socket.send_string(transactionTuner.GetCurrentResult(), encoding='ascii')
+            isReTrain |= transactionShortMemTuner.Add(isBottom, resultStr)
+        socket.send_string("Done", encoding='ascii')
         if isReTrain:
             transactionTuner.Train()
         sys.stdout.flush()
