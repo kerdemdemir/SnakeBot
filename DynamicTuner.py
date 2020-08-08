@@ -2,6 +2,8 @@ import numpy as np
 from sklearn.neural_network import MLPClassifier
 import InputManager
 import TransactionHelper as transHelper
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report,confusion_matrix
 
 def MergeTransactions ( transactionList, msec, transactionBinCount, smallestTime ):
     index = msec // smallestTime
@@ -45,24 +47,43 @@ class PeakTransactionTurner:
             featureArr = featureArr.reshape(-1, trans.gramCount+6)
             X = mlpTransactionScalerList[curIndex].transform(featureArr)
             curResultPredict = mlpTransactionList[curIndex].predict_proba(X)
+
             resultPredicts[curIndex] = np.delete(curResultPredict, 0, 1)
 
-
-        totalResult = np.empty([np.size(resultPredicts,1),np.size(resultPredicts,0)])
-        for curIndex in range(len(transList)):
-            np.append(totalResult, resultPredicts[curIndex], axis=1)
+        totalResult = resultPredicts[0]
+        for curIndex in range(len(transList)-1):
+            totalResult = np.concatenate((totalResult, resultPredicts[curIndex+1]), axis=1)
 
         for elem in totalResult:
             self.inputResults.append(elem)
 
         self.realResults = list(results)
+
+        X_train, X_test, y_train, y_test = train_test_split(totalResult, results, test_size=0.1, random_state=40)
+
+        self.transactionTuneLearner.fit(X_train, y_train)
+
+        predict_test = self.transactionTuneLearner.predict_proba(X_test)
+        finalResult = predict_test[:, 1] >= 0.5
+        print(confusion_matrix(y_test, finalResult))
+
+        finalResult = predict_test[:, 1] >= 0.6
+        print(confusion_matrix(y_test, finalResult))
+
+        finalResult = predict_test[:, 1] >= 0.7
+        print(confusion_matrix(y_test, finalResult))
+
+        finalResult = predict_test[:, 1] >= 0.9
+        print(confusion_matrix(y_test, finalResult))
+
+
         self.transactionTuneLearner.fit(totalResult, results)
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
         self.lastTrainNumber = len(self.realResults) // 30
 
 
     def Add(self, isBottom, resultStr ):
-        print( "I will add: ", resultStr )
+        print( "I will add isBottom: ", isBottom, " data: " , resultStr )
         resultStrList = resultStr.split(";")
         resultStrList2 = map(lambda x: x[2:-2].split(" ")[1], resultStrList[1:self.totalTransactionCount+1])
         transactions = list(map(float, resultStrList2))
