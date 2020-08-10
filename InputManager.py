@@ -68,9 +68,9 @@ class ReShapeManager:
             for currentElemIndex in range(len(self.inputs[curBinIndex].inputRise)):
                 elem = self.inputs[curBinIndex].inputRise[currentElemIndex]
                 if elem[-1] < 0.0 and curBinIndex + 1 < self.maxFeatureCount - self.minFeatureCount:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex+1])
+                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex+1], curBinIndex+1)
                 elif elem[-1] > 0.0:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex])
+                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex], curBinIndex+1)
 
     def toFeaturesNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
@@ -102,37 +102,39 @@ class ReShapeManager:
             #self.scoreList[curBinIndex].clear()
             self.scoreList[curBinIndex] = [0.0]*len(self.inputs[curBinIndex].inputRise)
 
-    def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteList):
+    def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteList, curIndex):
         score = 0.0
         for elemList in nPlusOneCompleteList.inputRise:
-            score+= self.__getScoreForButtom(oneSampleNBin, elemList)
+            score+= self.__getScoreForButtom(oneSampleNBin, elemList, curIndex)
         return score
 
-    def __getScoreForRisingElement(self, oneSampleNBin, nBinCompleteList):
+    def __getScoreForRisingElement(self, oneSampleNBin, nBinCompleteList, curIndex):
         score = 0
         for elemList in nBinCompleteList.inputRise :
-            score+= self.__getScoreForRising(oneSampleNBin, elemList)
+            score+= self.__getScoreForRising(oneSampleNBin, elemList, curIndex)
         return score
 
-    def __checkPositivitySingleVal(self, lhs, rhs):
+
+    def __checkPositivitySingleVal(self, lhs, rhs, curIndex):
+        ngramFactor = lambda x :  0.8 + 0.15*x + 0.05*x*x
         if lhs * rhs < 0:
             return False
         diff = abs(lhs - rhs)
         if lhs < 5.0:
-            return diff < 0.5
+            return diff < 0.5 * ngramFactor(curIndex)
         elif lhs < 10.0:
-            return diff < 0.75
+            return diff < 0.75 * ngramFactor(curIndex)
         elif lhs < 15.0:
-            return diff < 1.0
+            return diff < 1.0 * ngramFactor(curIndex)
         else:
-            return diff < 1.5
+            return diff < 1.5 * ngramFactor(curIndex)
 
-    def __getScoreForRising(self, oneSampleNBin, oneSampleOtherBin):
+    def __getScoreForRising(self, oneSampleNBin, oneSampleOtherBin, curIndex):
 
-        if not self.__checkPositivitySingleVal(oneSampleNBin[0],oneSampleOtherBin[0]):
+        if not self.__checkPositivitySingleVal(oneSampleNBin[0],oneSampleOtherBin[0], curIndex):
             return False
         isAllValid = all(
-            [self.__checkPositivitySingleVal(x, y) for x, y in zip(oneSampleNBin[:-1], oneSampleOtherBin[:-1])])
+            [self.__checkPositivitySingleVal(x, y, curIndex) for x, y in zip(oneSampleNBin[:-1], oneSampleOtherBin[:-1])])
         if not isAllValid:
             return 0
         diff = oneSampleOtherBin[-1] - oneSampleNBin[-1]
@@ -141,10 +143,10 @@ class ReShapeManager:
 
         return self.__clampVal( diff - 4.0 )
 
-    def __getScoreForButtom(self, oneSampleNBin, oneSampleNPluseOneBin):
-        if not self.__checkPositivitySingleVal(oneSampleNBin[0],oneSampleNPluseOneBin[0]):
+    def __getScoreForButtom(self, oneSampleNBin, oneSampleNPluseOneBin, curIndex):
+        if not self.__checkPositivitySingleVal(oneSampleNBin[0],oneSampleNPluseOneBin[0], curIndex):
             return False
-        isAllValid = all([self.__checkPositivitySingleVal(x, y) for x, y in zip(oneSampleNBin[:-1], oneSampleNPluseOneBin[:-2])])
+        isAllValid = all([self.__checkPositivitySingleVal(x, y, curIndex) for x, y in zip(oneSampleNBin[:-1], oneSampleNPluseOneBin[:-2])])
         if not isAllValid:
             return 0
         diff = oneSampleNBin[-1] - oneSampleNPluseOneBin[-2]

@@ -13,6 +13,18 @@ def MergeTransactions ( transactionList, msec, transactionBinCount, smallestTime
     summedArray = list(map(lambda x: transHelper.NormalizeTransactionCount(x), mergeArray))
     return summedArray
 
+def PredictionPrice( acceptanceLevel, predict_test, y_test ):
+    finalResult = predict_test[:, 1] >= acceptanceLevel
+    print(acceptanceLevel, " ", confusion_matrix(y_test, finalResult))
+
+def FitPredictAndPrint( leaner, X_train, X_test, y_train, y_test):
+    leaner.fit(X_train, y_train)
+    predict_test = leaner.predict_proba(X_test)
+    PredictionPrice(0.5, predict_test, y_test)
+    PredictionPrice(0.6, predict_test, y_test)
+    PredictionPrice(0.7, predict_test, y_test)
+    PredictionPrice(0.8, predict_test, y_test)
+    PredictionPrice(0.9, predict_test, y_test)
 
 class PeakTransactionTurner:
     def __init__(self, totalTransactionCount):
@@ -60,27 +72,8 @@ class PeakTransactionTurner:
         self.realResults = list(results)
 
         X_train, X_test, y_train, y_test = train_test_split(totalResult, results, test_size=0.1, random_state=40)
+        FitPredictAndPrint(self.transactionTuneLearner, X_train, X_test, y_train, y_test)
 
-        self.transactionTuneLearner.fit(X_train, y_train)
-
-        predict_test = self.transactionTuneLearner.predict_proba(X_test)
-        finalResult = predict_test[:, 1] >= 0.5
-        print("50 ",confusion_matrix(y_test, finalResult))
-
-        finalResult = predict_test[:, 1] >= 0.6
-        print("60 ", confusion_matrix(y_test, finalResult))
-
-        finalResult = predict_test[:, 1] >= 0.7
-        print("70 ", confusion_matrix(y_test, finalResult))
-
-        finalResult = predict_test[:, 1] >= 0.8
-        print("80 ", confusion_matrix(y_test, finalResult))
-
-        finalResult = predict_test[:, 1] >= 0.9
-        print("90 ", confusion_matrix(y_test, finalResult))
-
-
-        self.transactionTuneLearner.fit(totalResult, results)
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
         self.lastTrainNumber = len(self.realResults) // 30
 

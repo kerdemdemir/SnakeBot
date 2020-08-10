@@ -92,6 +92,11 @@ def AddExtraToTuneShaper ( fileName, shaper):
                         isAlert = True
                         print(isAlert, " ", jsonStr)
 
+def ReadFilesInTuneFolder( folderPath, reshaperTuner ):
+    onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
+    for fileName in onlyfiles:
+        print(" Reading for tuner: ", fileName)
+        AddExtraToTuneShaper(folderPath + "/" + fileName, reshaperTuner)
 
 def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
     print("Reading ", fileName, " ", IsTransactionOnly)
@@ -272,57 +277,36 @@ for transactionIndex in range(len(transParamList)):
 resultPredicts = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - 1 - inputManager.ReShapeManager.minFeatureCount)]
 mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(4, 4, 4), activation='relu',
                                       solver='adam', max_iter=500)
-if isTrainCurves:
-    for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount-1):
-        curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
-        numpyArr = trainingReshaper.toTransactionCurvesToNumpy(2, binCount)
-        if isConcanateCsv:
-            numpyArr = extraDataManager.ConcanateFeature(numpyArr,binCount)
-        X = mlpScalerList[curIndex].transform(numpyArr)
-        curResultPredict = mlpList[curIndex].predict_proba(X)
-        resultPredicts[curIndex] = np.delete(curResultPredict, 0 , 1 )
-        #print( " Transaction Curves Bin Count: ", binCount, " Results: ", curResultPredict)
-        sys.stdout.flush()
-    y = trainingReshaper.toTransactionResultsNumpy(2)
 
 
-    mergedArray = np.concatenate((resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
-    print(mergedArray)
-    X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y, test_size=0.2, random_state=40)
-
-    mixTransactionLearner.fit(X_trainMearged, y_trainMerged)
-    predict_test = mixTransactionLearner.predict(X_testMerged)
-    print(" Transactions and curves merged: ")
-    predict_test = mixTransactionLearner.predict_proba(X_testMerged)
-    print(" Transactions and curves merged: ")
-
-    finalResult = predict_test[:, 1] >= 0.5
-    print("Curves 50 ", confusion_matrix(y_testMerged, finalResult))
-
-    finalResult = predict_test[:, 1] >= 0.6
-    print("Curves 60 ", confusion_matrix(y_testMerged, finalResult))
-
-    finalResult = predict_test[:, 1] >= 0.7
-    print("Curves 70 ", confusion_matrix(y_testMerged, finalResult))
-
-    finalResult = predict_test[:, 1] >= 0.8
-    print("Curves 80 ", confusion_matrix(y_testMerged, finalResult))
-
-    finalResult = predict_test[:, 1] >= 0.9
-    print("Curves 90 ", confusion_matrix(y_testMerged, finalResult))
 
 del trainingReshaper
 
 
 print("Start Tuning")
 reshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(125,80)])
-AddExtraToTuneShaper("/Data/TuneData/learning_07_07.txt", reshaperTuner)
-AddExtraToTuneShaper("/Data/TuneData/learning_07_08.txt", reshaperTuner)
-AddExtraToTuneShaper("/Data/TuneData/learning_08_09.txt", reshaperTuner)
-AddExtraToTuneShaper("/Data/TuneData/learning_09_10.txt", reshaperTuner)
+ReadFilesInTuneFolder( os.path.abspath(os.getcwd()) + "/Data/TuneData/", reshaperTuner )
 
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 transactionTuner.Init(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList)
+
+
+if isTrainCurves:
+    for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount-1):
+        curIndex = binCount - inputManager.ReShapeManager.minFeatureCount
+        numpyArr = reshaperTuner.toTransactionCurvesToNumpy(0, binCount)
+        X = mlpScalerList[curIndex].transform(numpyArr)
+        curResultPredict = mlpList[curIndex].predict_proba(X)
+        resultPredicts[curIndex] = np.delete(curResultPredict, 0 , 1 )
+        sys.stdout.flush()
+    y = reshaperTuner.toTransactionResultsNumpy(0)
+    mergedArray = np.concatenate((resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
+    X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y, test_size=0.2, random_state=40)
+    print(" Transactions and curves merged: ")
+    DynamicTuner.FitPredictAndPrint(mixTransactionLearner, X_trainMearged, X_testMerged, y_trainMerged, y_testMerged)
+
+
+sys.stdout.flush()
 
 # print("Start Short memory tuning")
 # shortMemReshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(125,80)])
