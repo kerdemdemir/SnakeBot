@@ -58,7 +58,7 @@ def ReadFileAndCreateReshaper( fileName ):
 def AddExtraToTuneShaper ( fileName, shaper):
     jsonDictionary = {}
     try:
-        jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + fileName, "r"))
+        jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/" + fileName, "r"))
         for jsonElem in jsonDictionary:
             shaper.addANewCurrency(jsonElem, True)
     except:
@@ -96,7 +96,7 @@ def ReadFilesInTuneFolder( folderPath, reshaperTuner ):
     onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
     for fileName in onlyfiles:
         print(" Reading for tuner: ", fileName)
-        AddExtraToTuneShaper(folderPath + "/" + fileName, reshaperTuner)
+        AddExtraToTuneShaper(fileName, reshaperTuner)
 
 def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
     print("Reading ", fileName, " ", IsTransactionOnly)
