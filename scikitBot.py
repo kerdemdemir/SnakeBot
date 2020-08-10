@@ -260,7 +260,23 @@ if isTrainCurves:
     mixTransactionLearner.fit(X_trainMearged, y_trainMerged)
     predict_test = mixTransactionLearner.predict(X_testMerged)
     print(" Transactions and curves merged: ")
-    print(confusion_matrix(y_testMerged, predict_test))
+    predict_test = mixTransactionLearner.predict_proba(X_testMerged)
+    print(" Transactions and curves merged: ")
+
+    finalResult = predict_test[:, 1] >= 0.5
+    print("Curves 50 ", confusion_matrix(y_testMerged, finalResult))
+
+    finalResult = predict_test[:, 1] >= 0.6
+    print("Curves 60 ", confusion_matrix(y_testMerged, finalResult))
+
+    finalResult = predict_test[:, 1] >= 0.7
+    print("Curves 70 ", confusion_matrix(y_testMerged, finalResult))
+
+    finalResult = predict_test[:, 1] >= 0.8
+    print("Curves 80 ", confusion_matrix(y_testMerged, finalResult))
+
+    finalResult = predict_test[:, 1] >= 0.9
+    print("Curves 90 ", confusion_matrix(y_testMerged, finalResult))
 
 del trainingReshaper
 
@@ -270,6 +286,8 @@ reshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(125,8
 AddExtraToTuneShaper("/Data/TuneData/learning_05_07.txt", reshaperTuner)
 AddExtraToTuneShaper("/Data/TuneData/learning_07_07.txt", reshaperTuner)
 AddExtraToTuneShaper("/Data/TuneData/learning_07_08.txt", reshaperTuner)
+AddExtraToTuneShaper("/Data/TuneData/learning_08_09.txt", reshaperTuner)
+AddExtraToTuneShaper("/Data/TuneData/learning_09_10.txt", reshaperTuner)
 
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 transactionTuner.Init(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList)

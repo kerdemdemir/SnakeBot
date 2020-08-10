@@ -65,16 +65,19 @@ class PeakTransactionTurner:
 
         predict_test = self.transactionTuneLearner.predict_proba(X_test)
         finalResult = predict_test[:, 1] >= 0.5
-        print(confusion_matrix(y_test, finalResult))
+        print("50 ",confusion_matrix(y_test, finalResult))
 
         finalResult = predict_test[:, 1] >= 0.6
-        print(confusion_matrix(y_test, finalResult))
+        print("60 ", confusion_matrix(y_test, finalResult))
 
         finalResult = predict_test[:, 1] >= 0.7
-        print(confusion_matrix(y_test, finalResult))
+        print("70 ", confusion_matrix(y_test, finalResult))
+
+        finalResult = predict_test[:, 1] >= 0.8
+        print("80 ", confusion_matrix(y_test, finalResult))
 
         finalResult = predict_test[:, 1] >= 0.9
-        print(confusion_matrix(y_test, finalResult))
+        print("90 ", confusion_matrix(y_test, finalResult))
 
 
         self.transactionTuneLearner.fit(totalResult, results)
