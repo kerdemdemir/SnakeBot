@@ -283,7 +283,6 @@ del trainingReshaper
 
 print("Start Tuning")
 reshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(125,80)])
-AddExtraToTuneShaper("/Data/TuneData/learning_05_07.txt", reshaperTuner)
 AddExtraToTuneShaper("/Data/TuneData/learning_07_07.txt", reshaperTuner)
 AddExtraToTuneShaper("/Data/TuneData/learning_07_08.txt", reshaperTuner)
 AddExtraToTuneShaper("/Data/TuneData/learning_08_09.txt", reshaperTuner)
