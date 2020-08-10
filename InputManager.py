@@ -68,9 +68,9 @@ class ReShapeManager:
             for currentElemIndex in range(len(self.inputs[curBinIndex].inputRise)):
                 elem = self.inputs[curBinIndex].inputRise[currentElemIndex]
                 if elem[-1] < 0.0 and curBinIndex + 1 < self.maxFeatureCount - self.minFeatureCount:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex+1], curBinIndex+1)
+                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex+1].inputRise, curBinIndex+1)
                 elif elem[-1] > 0.0:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex], curBinIndex+1)
+                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex].inputRise, curBinIndex+1)
 
     def toFeaturesNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
@@ -79,9 +79,30 @@ class ReShapeManager:
     def toTransactionCurvesToNumpy(self, index , binCount):
         return self.transactionHelperList[index].toTransactionCurvesToNumpy(binCount)
 
+    def toTransactionScores(self, index):
+        self.resetScores()
+        curTransactionHelper = self.transactionHelperList[index]
+        print(" Transaction scores ", len(curTransactionHelper.peakHelperList))
+        results = [ 0.0 ] * len(curTransactionHelper.peakHelperList)
+        for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
+            curBinIndex = curBinCount - self.minFeatureCount
+            curBins = curTransactionHelper.toTransactionCurves(curBinCount)
+            curBinsPlusOne = curTransactionHelper.toTransactionCurves(curBinCount+1)
+            print( len(curBins))
+            for currentElemIndex in range(len(curBins)):
+                elem = curBins[currentElemIndex]
+                if elem[-1] < 0.0 and curBinIndex + 1 < (self.maxFeatureCount - self.minFeatureCount):
+                    results[currentElemIndex] += self.__getScoreForButtomElement(elem, curBinsPlusOne, curBinIndex+1)
+                elif elem[-1] > 0.0:
+                    results[currentElemIndex] += self.__getScoreForRisingElement(elem, curBins, curBinIndex+1)
+
+        results = list(map(lambda x: 0.0 if x/(self.maxFeatureCount - self.minFeatureCount) < 4.0 else 1.0, results ))
+        return np.array(results)
+
+
     def toResultsNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
-        newArray = list(map ( lambda elem: 0.0 if elem < 5.0 else 1.0, self.scoreList[curBinIndex] ))
+        newArray = list(map ( lambda elem: 0.0 if elem < 4.0 else 1.0, self.scoreList[curBinIndex] ))
         return np.array(newArray)
 
     def toTestResultNumpy(self, xTest, gramCount):
@@ -96,6 +117,10 @@ class ReShapeManager:
     def toTransactionResultsNumpy(self, index):
         return self.transactionHelperList[index].toTransactionResultsNumpy()
 
+    def toTransactionPeakResultsNumpy(self, index):
+        return self.transactionHelperList[index].toTransactionPeakResultsNumpy()
+
+
     def resetScores(self):
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             curBinIndex = curBinCount - self.minFeatureCount
@@ -104,13 +129,13 @@ class ReShapeManager:
 
     def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteList, curIndex):
         score = 0.0
-        for elemList in nPlusOneCompleteList.inputRise:
+        for elemList in  nPlusOneCompleteList:
             score+= self.__getScoreForButtom(oneSampleNBin, elemList, curIndex)
         return score
 
     def __getScoreForRisingElement(self, oneSampleNBin, nBinCompleteList, curIndex):
         score = 0
-        for elemList in nBinCompleteList.inputRise :
+        for elemList in nBinCompleteList :
             score+= self.__getScoreForRising(oneSampleNBin, elemList, curIndex)
         return score
 

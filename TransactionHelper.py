@@ -279,15 +279,18 @@ class TransactionAnalyzer :
         self.featureArr.reshape(-1, ngrams+6)
         return self.featureArr
 
+    def toTransactionCurves(self, ngrams):
+        returnVal = []
+        for peakHelper in self.peakHelperList:
+                returnVal.append( peakHelper.inputRise[-ngrams:] )
+
+        return returnVal
+
+
     def toTransactionCurvesToNumpy(self, ngrams):
         returnVal = []
         for peakHelper in self.peakHelperList:
-            for pattern in peakHelper.patternList:
-                returnVal.append(peakHelper.inputRise[-ngrams:] + peakHelper.inputTime[-ngrams:])
-
-        for peakHelper in self.peakHelperList:
-            for pattern in peakHelper.badPatternList:
-                returnVal.append(peakHelper.inputRise[-ngrams:] + peakHelper.inputTime[-ngrams:])
+            returnVal.append(peakHelper.inputRise[-ngrams:] + peakHelper.inputTime[-ngrams:])
 
         self.featureArr = np.array(returnVal)
         self.featureArr.reshape(-1, ngrams*2)
@@ -301,6 +304,14 @@ class TransactionAnalyzer :
         returnPatternList = goodResult + badResult
 
         return np.array(returnPatternList)
+
+    def toTransactionPeakResultsNumpy(self):
+        returnPatternList = []
+        for peakHelper in self.peakHelperList:
+            returnPatternList.append( 1.0 if peakHelper.isBottom else 0.0)
+
+        return np.array(returnPatternList)
+
 
     def Print( self ):
         peakPatternValues = list(self.patternList)

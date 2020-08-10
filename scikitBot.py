@@ -58,11 +58,11 @@ def ReadFileAndCreateReshaper( fileName ):
 def AddExtraToTuneShaper ( fileName, shaper):
     jsonDictionary = {}
     try:
-        jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/" + fileName, "r"))
+        jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/" + fileName, "r"))
         for jsonElem in jsonDictionary:
             shaper.addANewCurrency(jsonElem, True)
     except:
-        file = open(os.path.abspath(os.getcwd()) + "/" + fileName, "r")
+        file = open(os.path.abspath(os.getcwd()) + "/Data/TuneData/" + fileName, "r")
         temp = file.readline()
         startIndex = 0
         curCount = 0
@@ -124,8 +124,12 @@ def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
                     if  temp[index - 1] == "]":
                         #print(jsonStr)
                         if not isAlert:
-                            jsonElem = json.loads( jsonStr )
-                            shaper.addANewCurrency(jsonElem, IsTransactionOnly)
+                            try:
+                                jsonElem = json.loads( jsonStr )
+                                shaper.addANewCurrency(jsonElem, IsTransactionOnly)
+                            except:
+                                print("Another exception")
+                                continue
                         else:
                             isAlert = False
                     else:
@@ -211,13 +215,6 @@ for fileName in onlyfiles:
         AddExtraToShaper(fileName, trainingReshaper, True)
 
 
-
-if isConcanateCsv:
-    extraDataManager = extraDataMan.ExtraDataManager( inputManager.ReShapeManager.minFeatureCount,
-                                                  inputManager.ReShapeManager.maxFeatureCount,
-                                                  9,
-                                                  os.path.abspath(os.getcwd()) + "/Data")
-
 print("All added now scores")
 #trainingReshaper.transactionHelper.Print()
 if isTrainCurves:
@@ -251,8 +248,6 @@ mlpTransactionScalerList = []
 for transactionIndex in range(len(transParamList)):
     transParam = transParamList[transactionIndex]
     numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
-    if isConcanateCsv:
-        numpyArr = extraDataManager.ConcanateTransactions(numpyArr, 6+5)
     mlpTransaction = MLPClassifier(hidden_layer_sizes=(transParam.gramCount+3, transParam.gramCount+3, transParam.gramCount+3), activation='relu',
                                                   solver='adam', max_iter=750)
     mlpTransactionList.append(mlpTransaction)
@@ -260,8 +255,6 @@ for transactionIndex in range(len(transParamList)):
     mlpTransactionScalerList.append(transactionScaler)
     X = transactionScaler.transform(numpyArr)
     y = trainingReshaper.toTransactionResultsNumpy(transactionIndex)
-    if isConcanateCsv:
-        y = extraDataManager.ConcanateResults(y)
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
 
@@ -299,7 +292,7 @@ if isTrainCurves:
         curResultPredict = mlpList[curIndex].predict_proba(X)
         resultPredicts[curIndex] = np.delete(curResultPredict, 0 , 1 )
         sys.stdout.flush()
-    y = reshaperTuner.toTransactionResultsNumpy(0)
+    y = reshaperTuner.toTransactionPeakResultsNumpy(0)
     mergedArray = np.concatenate((resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
     X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y, test_size=0.2, random_state=40)
     print(" Transactions and curves merged: ")
