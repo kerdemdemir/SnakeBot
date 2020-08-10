@@ -56,9 +56,38 @@ def ReadFileAndCreateReshaper( fileName ):
     return  reshaper
 
 def AddExtraToTuneShaper ( fileName, shaper):
-    jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + fileName, "r"))
+    jsonDictionary = {}
     for jsonElem in jsonDictionary:
-        shaper.addANewCurrency(jsonElem, False)
+        try:
+            jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + fileName, "r"))
+            shaper.addANewCurrency(jsonElem, True)
+        except:
+            file = open(os.path.abspath(os.getcwd()) + fileName, "r")
+            temp = file.readline()
+            startIndex = 0
+            curCount = 0
+            isAlert = False
+            for index in range(len(temp)):
+                if temp[index] == "{":
+                    curCount += 1
+                    if curCount == 1:
+                        startIndex = index
+                elif temp[index] == "}" :
+                    curCount -= 1
+                    if curCount == 0 :
+                        jsonStr = temp[startIndex:index + 1]
+                        if  temp[index - 1] == "]":
+                            #print(jsonStr)
+                            if not isAlert:
+                                jsonElem = json.loads( jsonStr )
+                                shaper.addANewCurrency(jsonElem, True)
+                            else:
+                                isAlert = False
+                        else:
+                            curCount = 1
+                            isAlert = True
+                            print(isAlert, " ", jsonStr)
+
 
 def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
     print("Reading ", fileName, " ", IsTransactionOnly)
