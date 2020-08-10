@@ -83,6 +83,7 @@ def AddExtraToTuneShaper ( fileName, shaper):
                                 jsonElem = json.loads( jsonStr )
                                 shaper.addANewCurrency(jsonElem, True)
                             except:
+                                print("Another exception")
                                 continue
                         else:
                             isAlert = False
