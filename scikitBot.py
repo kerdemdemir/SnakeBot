@@ -79,8 +79,11 @@ def AddExtraToTuneShaper ( fileName, shaper):
                     if  temp[index - 1] == "]":
                         #print(jsonStr)
                         if not isAlert:
-                            jsonElem = json.loads( jsonStr )
-                            shaper.addANewCurrency(jsonElem, True)
+                            try:
+                                jsonElem = json.loads( jsonStr )
+                                shaper.addANewCurrency(jsonElem, True)
+                            except:
+                                continue
                         else:
                             isAlert = False
                     else:
