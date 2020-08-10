@@ -34,7 +34,7 @@ class PeakTransactionTurner:
         self.lastTrainNumber = 0
         self.goodCount = 0
         self.badCount = 0
-        self.transactionTuneLearner = MLPClassifier(hidden_layer_sizes=(5, 5, 5), activation='relu',
+        self.transactionTuneLearner = MLPClassifier(hidden_layer_sizes=(7, 7, 7), activation='relu',
                                                 solver='adam', max_iter=500)
 
 
