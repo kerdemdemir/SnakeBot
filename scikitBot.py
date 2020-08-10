@@ -62,7 +62,7 @@ def AddExtraToTuneShaper ( fileName, shaper):
         for jsonElem in jsonDictionary:
             shaper.addANewCurrency(jsonElem, True)
     except:
-        file = open(os.path.abspath(os.getcwd()) + fileName, "r")
+        file = open(os.path.abspath(os.getcwd()) + "/" + fileName, "r")
         temp = file.readline()
         startIndex = 0
         curCount = 0
