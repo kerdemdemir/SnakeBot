@@ -20,9 +20,9 @@ from sklearn.metrics import classification_report,confusion_matrix
 import TransactionHelper as transHelper
 import DynamicTuner
 
-smallestTime = 125
+smallestTime = 250
 transactionBinCountList = [6,8]
-totalTimeCount = 4
+totalTimeCount = 3
 isTrainCurves = True
 totalUsedCurveCount = 3
 isConcanateCsv = False
@@ -46,7 +46,7 @@ def ReadFileAndCreateReshaper( fileName ):
 
     for transactionBinCount in transactionBinCountList:
         for index in range(totalTimeCount):
-            transactionParam = inputManager.TransactionParam(smallestTime * (index * 3 + 1), transactionBinCount)
+            transactionParam = inputManager.TransactionParam(smallestTime * (index * 2 + 1), transactionBinCount)
             transParamList.append(transactionParam)
     reshaper = inputManager.ReShapeManager(transParamList)
 

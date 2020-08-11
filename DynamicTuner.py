@@ -34,7 +34,7 @@ class PeakTransactionTurner:
         self.lastTrainNumber = 0
         self.goodCount = 0
         self.badCount = 0
-        self.transactionTuneLearner = MLPClassifier(hidden_layer_sizes=(7, 7, 7), activation='relu',
+        self.transactionTuneLearner = MLPClassifier(hidden_layer_sizes=(6,6,6), activation='relu',
                                                 solver='adam', max_iter=500)
 
 
@@ -52,7 +52,7 @@ class PeakTransactionTurner:
             for elem in transactionFeatures:
                 justTransactions = elem[:-6]
                 extras = elem[-6:]
-                newSum = MergeTransactions(justTransactions, trans.msec, trans.gramCount, 125)
+                newSum = MergeTransactions(justTransactions, trans.msec, trans.gramCount, 250)
                 currentData.extend(list(newSum)+list(extras))
 
             featureArr = np.array(currentData)
