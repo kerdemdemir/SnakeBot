@@ -145,9 +145,8 @@ class TransactionPattern:
 class TransactionPeakHelper:
     percent = 0.01
     stopTime = 25
-    lowestAcceptedTotalTransactionCount = 40
 
-    def __init__(self, jsonIn, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
+    def __init__(self, jsonIn, lowestAcceptedTotalTransactionCount, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
         self.mseconds = mseconds
         totalSize = len(jsonIn)
         self.patternList = []
@@ -158,6 +157,7 @@ class TransactionPeakHelper:
         self.curveTime = curveTime
         self.inputRise = riseList
         self.inputTime = timeList
+        self.lowestAcceptedTotalTransactionCount = lowestAcceptedTotalTransactionCount
 
         prices = list(map( lambda x: float(x["p"]), jsonIn))
         if len(prices) == 0:
@@ -235,7 +235,7 @@ class TransactionPeakHelper:
 
         pattern = TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
-        if pattern.totalTransactionCount < TransactionPeakHelper.lowestAcceptedTotalTransactionCount:
+        if pattern.totalTransactionCount < self.lowestAcceptedTotalTransactionCount:
             return
         if pattern.maxNormalizedCount < 4:
             if sum( y > 1 for y in pattern.transactionList ) < 3 :
@@ -247,6 +247,9 @@ class TransactionPeakHelper:
 
 
 class TransactionAnalyzer :
+    TransactionCountPerSecBase = 40
+    TransactionCountPerSecIncrease = 3
+
     def __init__(self ):
         self.featureArr = []
         self.patternList = []
@@ -258,7 +261,6 @@ class TransactionAnalyzer :
             isBottom = riseMinuteList[index].rise < 0.0
             if len(jsonIn[index]) == 0:
                 continue
-
             indexPlusOne = index + 1
             riseList = list(map( lambda x: x.rise, riseMinuteList[index-maxGrams:indexPlusOne] ))
             timeList = list(map(lambda x: x.time, riseMinuteList[index-maxGrams:indexPlusOne]))
@@ -266,16 +268,24 @@ class TransactionAnalyzer :
                 riseList = [0.0]*(maxGrams-len(riseList)) + riseList
                 timeList = [0.0]*(maxGrams-len(timeList)) + timeList
 
-            peakHelper = TransactionPeakHelper(jsonIn[index], msec, isBottom, riseMinuteList[index].rise, riseMinuteList[index].time, riseList, timeList)
+            totalSec = msec*ngrams//1000
+            lowestTransaction = TransactionAnalyzer.TransactionCountPerSecBase + TransactionAnalyzer.TransactionCountPerSecIncrease * totalSec
+            peakHelper = TransactionPeakHelper(jsonIn[index], lowestTransaction, msec, isBottom, riseMinuteList[index].rise, riseMinuteList[index].time, riseList, timeList)
             peakHelper.AssignScores(ngrams)
             self.peakHelperList.append(peakHelper)
             self.__MergeInTransactions(peakHelper,riseList,timeList)
 
-    def toTransactionNumpy(self, ngrams):
+    def toTransactionNumpy(self, ngrams ):
+        goodSize = len(self.patternList)
+        badSize = len(self.badPatternList)
+        if (goodSize < badSize*0.75):
+            upsampleSize = int(badSize*0.75) - goodSize
+            print("I will upsample good: ", goodSize, " bad: ", badSize, " upsample: ", upsampleSize)
+            for i in range(upsampleSize):
+                self.patternList.append(self.patternList[goodSize-1-(i%goodSize)])
         allData = self.patternList + self.badPatternList
+
         self.featureArr = np.array(allData)
-        #print(*allData)
-        #print(self.featureArr, ngrams)
         self.featureArr.reshape(-1, ngrams+6)
         return self.featureArr
 
