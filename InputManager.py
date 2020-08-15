@@ -13,7 +13,7 @@ class TransactionParam:
 
 
 class ReShapeManager:
-    maxFeatureCount = 7
+    maxFeatureCount = 8
     minFeatureCount = 3
 
     def __init__( self, transactionParams ):
@@ -102,7 +102,7 @@ class ReShapeManager:
 
     def toResultsNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
-        newArray = list(map ( lambda elem: 0.0 if elem < 4.0 else 1.0, self.scoreList[curBinIndex] ))
+        newArray = list(map ( lambda elem: 0.0 if elem < 6.0 else 1.0, self.scoreList[curBinIndex] ))
         return np.array(newArray)
 
     def toTestResultNumpy(self, xTest, gramCount):
@@ -183,4 +183,4 @@ class ReShapeManager:
             return -self.__clampVal(diff)#Negative effect
 
     def __clampVal(self, val ):
-        return min(6.0, max(val, -7.0))
+        return min(5.0, max(val, -5.0))

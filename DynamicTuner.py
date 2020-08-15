@@ -4,6 +4,8 @@ import InputManager
 import TransactionHelper as transHelper
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
+from scipy import stats
+import sys
 
 def MergeTransactions ( transactionList, msec, transactionBinCount, smallestTime ):
     index = msec // smallestTime
@@ -25,6 +27,81 @@ def FitPredictAndPrint( leaner, X_train, X_test, y_train, y_test):
     PredictionPrice(0.7, predict_test, y_test)
     PredictionPrice(0.8, predict_test, y_test)
     PredictionPrice(0.9, predict_test, y_test)
+
+def argsort(seq):
+    return sorted(range(len(seq)), key=seq.__getitem__)
+
+
+def FindBestPoint( badData, goodData , gram ):
+    bestVal = sys.maxsize
+    bestIndex = 0
+    bestElimanateGoodCount = 0
+
+    for curBadIndex in range(np.size(badData)//2):
+        curScore = badData[curBadIndex]
+        eliminateGoodCount = np.count_nonzero(goodData < curScore)
+        curVal = curBadIndex+eliminateGoodCount
+        if curVal < bestVal:
+            bestIndex = curBadIndex
+            bestVal = curVal
+            bestElimanateGoodCount = eliminateGoodCount
+
+    print( " Gram: ", gram, " Best index: ", bestIndex, " Best score: ", badData[bestIndex], " Best val: ", bestVal, " Eliminate good: ", bestElimanateGoodCount)
+    return badData[bestIndex]
+
+
+def AdjustTheBestCurve( mergeResults, realResults, finalResult):
+    goodIndexes = [i for i, x in enumerate(realResults) if x == 1.0 ]
+    badIndexes = [i for i, x in enumerate(realResults) if x == 0.0 ]
+
+    resultBadGoodAvarageDiff = []
+    goodDataList = []
+    badDataList = []
+
+    print( " Current shape : ", mergeResults.shape, " Good count: ", len(goodIndexes), " Bad count: ", len(badIndexes) )
+    if len(badIndexes) < 5:
+        return
+    if mergeResults.shape[1] == 0:
+        return
+    for col in range(mergeResults.shape[1]):
+        curCol = mergeResults[:, col]
+        goodData = -np.sort(-np.take(curCol, goodIndexes))
+        badData = -np.sort(-np.take(curCol, badIndexes))
+        goodDataTrimmed = stats.trim1(goodData, 0.05,  tail='left')
+        badDataTrimmed = stats.trim_mean(badData, 0.05)
+
+        goodAvarage = np.mean(goodDataTrimmed)
+        badAvarage = np.mean(badDataTrimmed)
+        resultBadGoodAvarageDiff.append(  goodAvarage - 2 * badAvarage)
+        goodDataList.append(goodData)
+        badDataList.append(badData)
+
+    sortedIndexes = argsort(resultBadGoodAvarageDiff)
+    print(sortedIndexes)
+    for gramIndex in range(len(sortedIndexes)):
+        sortedElem = sortedIndexes[-(gramIndex+1)]
+        FindBestPoint(badDataList[sortedElem], goodDataList[sortedElem], sortedElem)
+
+    bestIndex = sortedIndexes[-1]
+    bestPoint = FindBestPoint(badDataList[bestIndex], goodDataList[bestIndex], bestIndex)
+
+    bestIndexReal = bestIndex
+    for i in range(len(finalResult)):
+        if finalResult[i] != 0.0:
+            bestIndexReal += 1
+        if bestIndexReal == i:
+            break
+
+    print(" Best point: ", bestPoint, " Real: ", bestIndexReal, " Final Result: ", finalResult)
+    finalResult[bestIndexReal] = bestPoint
+    removeList = np.where(mergeResults[:, bestIndex] < bestPoint)
+    mergeResultsNew = np.delete(mergeResults, removeList, 0)
+    realResultsNew =  np.delete(realResults, removeList)
+    print ( " Best elem was : ", bestIndex , " Now I will remove and try again ")
+    mergeResultsNew = np.delete(mergeResultsNew, bestIndex , 1)
+    AdjustTheBestCurve(mergeResultsNew, realResultsNew, finalResult)
+
+
 
 class PeakTransactionTurner:
     def __init__(self, totalTransactionCount):
@@ -75,6 +152,9 @@ class PeakTransactionTurner:
         FitPredictAndPrint(self.transactionTuneLearner, X_train, X_test, y_train, y_test)
 
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
+        finalResult = [0.0] * totalResult.shape[1]
+        AdjustTheBestCurve(totalResult, results, finalResult)
+        print("Tuner final result is: ", finalResult)
         self.lastTrainNumber = len(self.realResults) // 30
 
 

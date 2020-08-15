@@ -21,10 +21,10 @@ import TransactionHelper as transHelper
 import DynamicTuner
 
 smallestTime = 250
-transactionBinCountList = [6,8]
+transactionBinCountList = [6,7]
 totalTimeCount = 3
 isTrainCurves = True
-totalUsedCurveCount = 3
+totalUsedCurveCount = 4
 isConcanateCsv = False
 acceptedProbibilty = 0.9
 testRatio = 4
@@ -293,11 +293,14 @@ if isTrainCurves:
         resultPredicts[curIndex] = np.delete(curResultPredict, 0 , 1 )
         sys.stdout.flush()
     y = reshaperTuner.toTransactionPeakResultsNumpy(0)
-    mergedArray = np.concatenate((resultPredicts[0], resultPredicts[1], resultPredicts[2]), axis=1)
+    mergedArray = np.concatenate((resultPredicts[0], resultPredicts[1], resultPredicts[2], resultPredicts[3]), axis=1)
     X_trainMearged, X_testMerged, y_trainMerged, y_testMerged = train_test_split(mergedArray, y, test_size=0.2, random_state=40)
     print(" Transactions and curves merged: ")
     DynamicTuner.FitPredictAndPrint(mixTransactionLearner, X_trainMearged, X_testMerged, y_trainMerged, y_testMerged)
-
+    print(" Tuning the curves ")
+    finalResultNew = [0.0] * mergedArray.shape[1]
+    DynamicTuner.AdjustTheBestCurve(mergedArray, y, finalResultNew)
+    print( " Tuning result is ", finalResultNew)
 
 sys.stdout.flush()
 

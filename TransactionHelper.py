@@ -278,11 +278,11 @@ class TransactionAnalyzer :
     def toTransactionNumpy(self, ngrams ):
         goodSize = len(self.patternList)
         badSize = len(self.badPatternList)
-        if (goodSize < badSize*0.75):
-            upsampleSize = int(badSize*0.75) - goodSize
-            print("I will upsample good: ", goodSize, " bad: ", badSize, " upsample: ", upsampleSize)
-            for i in range(upsampleSize):
-                self.patternList.append(self.patternList[goodSize-1-(i%goodSize)])
+        # if (goodSize < badSize*0.75):
+        #     upsampleSize = int(badSize*0.75) - goodSize
+        #     print("I will upsample good: ", goodSize, " bad: ", badSize, " upsample: ", upsampleSize)
+        #     for i in range(upsampleSize):
+        #         self.patternList.append(self.patternList[goodSize-1-(i%goodSize)])
         allData = self.patternList + self.badPatternList
 
         self.featureArr = np.array(allData)
