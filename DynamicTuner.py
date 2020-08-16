@@ -32,16 +32,16 @@ def argsort(seq):
     return sorted(range(len(seq)), key=seq.__getitem__)
 
 
-def FindBestPoint( badData, goodData , gram, leftOverBadFactor ):
+def FindBestPoint( badData, goodData , gram ):
     bestVal = sys.maxsize
     bestIndex = 0
     bestElimanateGoodCount = 0
     badSize = np.size(badData)
-    for curBadIndex in range(badSize//2):
+    for curBadIndex in range(badSize):
         curScore = badData[curBadIndex]
         eliminateGoodCount = np.count_nonzero(goodData < curScore)
-        leftOverBadCount = badSize - curBadIndex
-        curVal = leftOverBadCount*leftOverBadFactor+eliminateGoodCount
+        #leftOverBadCount = badSize - curBadIndex
+        curVal = curBadIndex+int(eliminateGoodCount*1.2)
         if curVal < bestVal:
             bestIndex = curBadIndex
             bestVal = curVal
@@ -51,7 +51,7 @@ def FindBestPoint( badData, goodData , gram, leftOverBadFactor ):
     return badData[bestIndex]
 
 
-def AdjustTheBestCurve( mergeResults, realResults, finalResult):
+def AdjustTheBestCurve( mergeResults, realResults, finalResult, startIndex = -1):
     goodIndexes = [i for i, x in enumerate(realResults) if x == 1.0 ]
     badIndexes = [i for i, x in enumerate(realResults) if x == 0.0 ]
 
@@ -59,7 +59,10 @@ def AdjustTheBestCurve( mergeResults, realResults, finalResult):
     goodDataList = []
     badDataList = []
 
-    print( " Current shape : ", mergeResults.shape, " Good count: ", len(goodIndexes), " Bad count: ", len(badIndexes) )
+    firstGoodCount = len(goodIndexes)
+    firstBadCount = len(badIndexes)
+
+    print( " Current shape : ", mergeResults.shape, " Good count: ", firstGoodCount, " Bad count: ", firstBadCount )
     if len(badIndexes) < 5:
         return
     if mergeResults.shape[1] == 0:
@@ -77,19 +80,16 @@ def AdjustTheBestCurve( mergeResults, realResults, finalResult):
         goodDataList.append(goodData)
         badDataList.append(badData)
 
+
     sortedIndexes = argsort(resultBadGoodAvarageDiff)
+
     print(sortedIndexes)
 
-    currentGuessCount = sum(y != 0.0 for y in finalResult)
-    leftOverBadFactor = 1
-    if currentGuessCount == 0:
-        leftOverBadFactor = 3
-    elif currentGuessCount == 1:
-        leftOverBadFactor = 2
-
     bestIndex = sortedIndexes[-1]
-    bestPoint = FindBestPoint(badDataList[bestIndex], goodDataList[bestIndex], bestIndex, leftOverBadFactor)
-
+    if startIndex != -1:
+        print("Best index was: ", bestIndex, " But that index forced instead: ", startIndex)
+        bestIndex = startIndex
+    bestPoint = FindBestPoint(badDataList[bestIndex], goodDataList[bestIndex], bestIndex)
     bestIndexReal = bestIndex
     for i in range(len(finalResult)):
         if finalResult[i] != 0.0:
@@ -97,14 +97,51 @@ def AdjustTheBestCurve( mergeResults, realResults, finalResult):
         if bestIndexReal == i:
             break
 
-    print(" Best point: ", bestPoint, " Real: ", bestIndexReal, " Final Result: ", finalResult)
+    if bestPoint > 0.95:
+        print("Results was really big I am normalizing to 0.95 index:", bestIndexReal )
+        bestPoint = 0.95
+
     finalResult[bestIndexReal] = bestPoint
     removeList = np.where(mergeResults[:, bestIndex] < bestPoint)
     mergeResultsNew = np.delete(mergeResults, removeList, 0)
     realResultsNew =  np.delete(realResults, removeList)
+
+    curGoodCount = (realResultsNew > 0.0).sum()
+    curBadCount  =  realResultsNew.size - curGoodCount
+    if firstGoodCount - curGoodCount > firstBadCount - curBadCount :
+        finalResult[bestIndexReal] = 0.0
+        print( " There are more  good result removed than bad results removed goods: ", firstGoodCount - curGoodCount, " bads: ", firstBadCount - curBadCount)
+    print(" Best point: ", bestPoint, " Real: ", bestIndexReal, " Final Result: ", finalResult)
+
     print ( " Best elem was : ", bestIndex , " Now I will remove and try again ")
     mergeResultsNew = np.delete(mergeResultsNew, bestIndex , 1)
-    AdjustTheBestCurve(mergeResultsNew, realResultsNew, finalResult)
+    AdjustTheBestCurve(mergeResultsNew, realResultsNew, finalResult, -1)
+
+class DesicionTree:
+    def __init__(self):
+        self.transNumpyInput = []
+        self.transNumpyResult = []
+        self.curveNumpyInput = []
+        self.curveNumpyResult = []
+        self.goodIndexes = []
+        self.badIndexes = []
+        self.goodDataList = []
+        self.badDataList = []
+
+    def SetTransInput(self, transIn, transRes):
+        self.transNumpyInput = transIn
+        self.transNumpyResult = transRes
+        self.goodIndexes = [i for i, x in enumerate(transRes) if x == 1.0]
+        self.badIndexes = [i for i, x in enumerate(transRes) if x == 0.0]
+
+        self.goodDataList = []
+        self.badDataList = []
+        for col in range(transIn.shape[1]):
+            curCol = transIn[:, col]
+            goodData = -np.sort(-np.take(curCol, self.goodIndexes))
+            badData = -np.sort(-np.take(curCol, self.badIndexes))
+            self.goodDataList.append(goodData)
+            self.badDataList.append(badData)
 
 
 
@@ -159,7 +196,7 @@ class PeakTransactionTurner:
 
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
         self.finalResult = [0.0] * totalResult.shape[1]
-        AdjustTheBestCurve(totalResult, results, self.finalResult)
+        AdjustTheBestCurve(totalResult, results, self.finalResult, 1)
         print("Tuner final result is: ", self.finalResult)
         self.lastTrainNumber = len(self.realResults) // 30
 
@@ -196,7 +233,7 @@ class PeakTransactionTurner:
         self.transactionTuneLearner.fit(featureArr, resultArr)
 
         self.finalResult = [0.0] * featureArr.shape[1]
-        AdjustTheBestCurve(featureArr, resultArr, self.finalResult)
+        AdjustTheBestCurve(featureArr, resultArr, self.finalResult, 1)
         print("Tuner new result is: ", self.finalResult)
 
 
