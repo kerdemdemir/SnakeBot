@@ -29,6 +29,7 @@ isConcanateCsv = False
 acceptedProbibilty = 0.9
 testRatio = 4
 transParamList = []
+currentProbs = []
 
 def MergeTransactions ( transactionList, msec, transactionBinCount ):
     index = msec // smallestTime
@@ -191,7 +192,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
 
 
 
-onlyTransactions = ["learning_15_15_15.txt"]
+onlyTransactions = ["learning_15_15_15.txt", "learning_42_05_05.txt"]
 folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
 onlyTransactions = list(map( lambda x:  folderPath+x, onlyTransactions))
 
@@ -300,8 +301,10 @@ if isTrainCurves:
     print(" Tuning the curves ")
     finalResultNew = [0.0] * mergedArray.shape[1]
     DynamicTuner.AdjustTheBestCurve(mergedArray, y, finalResultNew)
+    currentProbs = transactionTuner.finalResult + finalResultNew
     print( " Tuning result is ", finalResultNew)
 
+print( " Current tuned probibilities are : ", currentProbs)
 sys.stdout.flush()
 
 # print("Start Short memory tuning")
@@ -351,4 +354,7 @@ while True:
         if isReTrain:
             transactionTuner.Train()
         sys.stdout.flush()
+    if command == "Adjust":
+        print( " I will send back the new probabilities ", currentProbs)
+        socket.send_string(str(currentProbs), encoding='ascii')
 

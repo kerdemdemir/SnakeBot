@@ -32,15 +32,16 @@ def argsort(seq):
     return sorted(range(len(seq)), key=seq.__getitem__)
 
 
-def FindBestPoint( badData, goodData , gram ):
+def FindBestPoint( badData, goodData , gram, leftOverBadFactor ):
     bestVal = sys.maxsize
     bestIndex = 0
     bestElimanateGoodCount = 0
-
-    for curBadIndex in range(np.size(badData)//2):
+    badSize = np.size(badData)
+    for curBadIndex in range(badSize//2):
         curScore = badData[curBadIndex]
         eliminateGoodCount = np.count_nonzero(goodData < curScore)
-        curVal = curBadIndex+eliminateGoodCount
+        leftOverBadCount = badSize - curBadIndex
+        curVal = leftOverBadCount*leftOverBadFactor+eliminateGoodCount
         if curVal < bestVal:
             bestIndex = curBadIndex
             bestVal = curVal
@@ -78,12 +79,16 @@ def AdjustTheBestCurve( mergeResults, realResults, finalResult):
 
     sortedIndexes = argsort(resultBadGoodAvarageDiff)
     print(sortedIndexes)
-    for gramIndex in range(len(sortedIndexes)):
-        sortedElem = sortedIndexes[-(gramIndex+1)]
-        FindBestPoint(badDataList[sortedElem], goodDataList[sortedElem], sortedElem)
+
+    currentGuessCount = sum(y != 0.0 for y in finalResult)
+    leftOverBadFactor = 1
+    if currentGuessCount == 0:
+        leftOverBadFactor = 3
+    elif currentGuessCount == 1:
+        leftOverBadFactor = 2
 
     bestIndex = sortedIndexes[-1]
-    bestPoint = FindBestPoint(badDataList[bestIndex], goodDataList[bestIndex], bestIndex)
+    bestPoint = FindBestPoint(badDataList[bestIndex], goodDataList[bestIndex], bestIndex, leftOverBadFactor)
 
     bestIndexReal = bestIndex
     for i in range(len(finalResult)):
@@ -113,6 +118,7 @@ class PeakTransactionTurner:
         self.badCount = 0
         self.transactionTuneLearner = MLPClassifier(hidden_layer_sizes=(6,6,6), activation='relu',
                                                 solver='adam', max_iter=500)
+        self.finalResult = []
 
 
     def GetCurrentResult(self):
@@ -152,9 +158,9 @@ class PeakTransactionTurner:
         FitPredictAndPrint(self.transactionTuneLearner, X_train, X_test, y_train, y_test)
 
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
-        finalResult = [0.0] * totalResult.shape[1]
-        AdjustTheBestCurve(totalResult, results, finalResult)
-        print("Tuner final result is: ", finalResult)
+        self.finalResult = [0.0] * totalResult.shape[1]
+        AdjustTheBestCurve(totalResult, results, self.finalResult)
+        print("Tuner final result is: ", self.finalResult)
         self.lastTrainNumber = len(self.realResults) // 30
 
 
@@ -189,6 +195,9 @@ class PeakTransactionTurner:
 
         self.transactionTuneLearner.fit(featureArr, resultArr)
 
+        self.finalResult = [0.0] * featureArr.shape[1]
+        AdjustTheBestCurve(featureArr, resultArr, self.finalResult)
+        print("Tuner new result is: ", self.finalResult)
 
 
     def GetResult( self, request ):
