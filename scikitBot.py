@@ -21,7 +21,7 @@ import TransactionHelper as transHelper
 import DynamicTuner
 
 smallestTime = 250
-transactionBinCountList = [6,7]
+transactionBinCountList = [6,8]
 totalTimeCount = 3
 isTrainCurves = True
 totalUsedCurveCount = 4
