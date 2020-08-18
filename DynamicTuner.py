@@ -193,7 +193,7 @@ class PeakTransactionTurner:
 
         X_train, X_test, y_train, y_test = train_test_split(totalResult, results, test_size=0.1, random_state=40)
         FitPredictAndPrint(self.transactionTuneLearner, X_train, X_test, y_train, y_test)
-
+        self.lastTrainNumber = len(self.realResults) // 60
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
 
         forceList = [0.5, 0.9, 0.5, 0.5, 0.9]
