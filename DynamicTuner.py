@@ -216,7 +216,7 @@ class PeakTransactionTurner:
         curResultCount = len(self.realResults)
 
         print("After addition cur results: ", curResultCount)
-        elemCount = curResultCount // 30
+        elemCount = curResultCount // 60
         if elemCount == self.lastTrainNumber:
             return False
         return True
@@ -231,11 +231,6 @@ class PeakTransactionTurner:
         resultArr.reshape(-1, 1)
 
         self.transactionTuneLearner.fit(featureArr, resultArr)
-
-        self.finalResult = [0.0] * featureArr.shape[1]
-        AdjustTheBestCurve(featureArr, resultArr, self.finalResult, 1)
-        print("Tuner new result is: ", self.finalResult)
-
 
     def GetResult( self, request ):
         if self.lastTrainNumber < 1:
