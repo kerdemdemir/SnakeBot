@@ -37,7 +37,7 @@ def argsort(seq):
     return sorted(range(len(seq)), key=seq.__getitem__)
 
 
-def FindBestPoint( badData, goodData , gram ):
+def FindBestPoint( badData, goodData , gram, factor = 1 ):
     bestVal = sys.maxsize
     bestIndex = 0
     bestElimanateGoodCount = 0
@@ -46,7 +46,7 @@ def FindBestPoint( badData, goodData , gram ):
         curScore = badData[curBadIndex]
         eliminateGoodCount = np.count_nonzero(goodData < curScore)
         #leftOverBadCount = badSize - curBadIndex
-        curVal = curBadIndex+eliminateGoodCount
+        curVal = curBadIndex+(eliminateGoodCount*factor)
         if curVal < bestVal:
             bestIndex = curBadIndex
             bestVal = curVal
@@ -93,7 +93,8 @@ def AdjustTheBestCurve( mergeResults, realResults, finalResult, startIndex = -1)
     if startIndex != -1:
         print("Best index was: ", bestIndex, " But that index forced instead: ", startIndex)
         bestIndex = startIndex
-    bestPoint = FindBestPoint(badDataList[bestIndex], goodDataList[bestIndex], bestIndex)
+    eliminateFactor = 1.5 if startIndex != -1 else 1.2
+    bestPoint = FindBestPoint(badDataList[bestIndex], goodDataList[bestIndex], bestIndex, eliminateFactor)
     bestIndexReal = bestIndex
     for i in range(len(finalResult)):
         if finalResult[i] != 0.0:
@@ -101,9 +102,9 @@ def AdjustTheBestCurve( mergeResults, realResults, finalResult, startIndex = -1)
         if bestIndexReal == i:
             break
 
-    if bestPoint > 0.95:
-        print("Results was really big I am normalizing to 0.95 index:", bestIndexReal )
-        bestPoint = 0.95
+    if bestPoint > 0.85:
+        print("Results was really big I am normalizing to 0.85 index:", bestIndexReal )
+        bestPoint = 0.85
 
     finalResult[bestIndexReal] = bestPoint
     removeList = np.where(mergeResults[:, bestIndex] < bestPoint)
@@ -113,7 +114,6 @@ def AdjustTheBestCurve( mergeResults, realResults, finalResult, startIndex = -1)
     curGoodCount =  len([i for i, x in enumerate(realResultsNew) if x == 1.0 ])
     curBadCount  =  len([i for i, x in enumerate(realResultsNew) if x == 0.0 ])
     if firstGoodCount - curGoodCount > firstBadCount - curBadCount :
-        if firstGoodCount / firstBadCount < curGoodCount / curBadCount:
             finalResult[bestIndexReal] = 0.001
             bestPoint = 0.001
             print( " There are more  good result removed than bad results removed goods: ", firstGoodCount - curGoodCount,
@@ -131,6 +131,16 @@ def AdjustTheBestCurve( mergeResults, realResults, finalResult, startIndex = -1)
     print(" Best point: ", bestPoint, " Real: ", bestIndexReal, " Final Result: ", finalResult)
     mergeResultsNew = np.delete(mergeResultsNew, bestIndex , 1)
     AdjustTheBestCurve(mergeResultsNew, realResultsNew, finalResult, -1)
+
+def ForceTheBestCurve( mergeResults, realResults, finalResultForced):
+    mergeResultsNew = mergeResults
+    realResultsNew = realResults
+    indexes = np.where((mergeResultsNew < finalResultForced).any(axis=1))
+    resultTemp = np.delete(realResultsNew, indexes, 0)
+
+    curGoodCount = len([i for i, x in enumerate(resultTemp) if x == 1.0])
+    curBadCount = len([i for i, x in enumerate(resultTemp) if x == 0.0])
+    print(" Second Forcing method: ", curGoodCount, " ", curBadCount)
 
 
 class PeakTransactionTurner:
@@ -185,10 +195,10 @@ class PeakTransactionTurner:
         FitPredictAndPrint(self.transactionTuneLearner, X_train, X_test, y_train, y_test)
 
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
-        self.finalResult = [0.0] * totalResult.shape[1]
-        AdjustTheBestCurve(totalResult, results, self.finalResult, 4)
-        print("Tuner final result is: ", self.finalResult)
-        self.lastTrainNumber = len(self.realResults) // 30
+
+        forceList = [0.5, 0.9, 0.5, 0.5, 0.9]
+        ForceTheBestCurve(totalResult, results, forceList)
+
 
 
     def Add(self, isBottom, resultStr ):
