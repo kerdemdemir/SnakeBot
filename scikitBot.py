@@ -23,7 +23,7 @@ import DynamicTuner
 
 transactionBinCountList = [6,8]
 totalTimeCount = 6
-isTrainCurves = False
+isTrainCurves = True
 totalUsedCurveCount = 4
 isConcanateCsv = False
 acceptedProbibilty = 0.9
@@ -300,9 +300,8 @@ if isTrainCurves:
     currentProbs = transactionTuner.finalResult + finalResultNew
     print( " Tuning result is ", finalResultNew)
 
-currentProbsFinal = [0.5,0.5] + currentProbs
-
-print( " Current tuned probibilities are : ", currentProbsFinal)
+currentProbs = [0.5, 0.5] + currentProbs
+print( " Current tuned probibilities are : ", currentProbs)
 sys.stdout.flush()
 
 # print("Start Short memory tuning")
@@ -353,6 +352,6 @@ while True:
             transactionTuner.Train()
         sys.stdout.flush()
     if command == "Adjust":
-        print( " I will send back the new probabilities ", currentProbsFinal)
-        socket.send_string(str(currentProbsFinal), encoding='ascii')
+        print( " I will send back the new probabilities ", currentProbs)
+        socket.send_string(str(currentProbs), encoding='ascii')
 
