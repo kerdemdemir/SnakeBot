@@ -20,35 +20,31 @@ from sklearn.metrics import classification_report,confusion_matrix
 import TransactionHelper as transHelper
 import DynamicTuner
 
-smallestTime = 250
+
 transactionBinCountList = [6,8]
-totalTimeCount = 3
-isTrainCurves = True
+totalTimeCount = 6
+isTrainCurves = False
 totalUsedCurveCount = 4
 isConcanateCsv = False
 acceptedProbibilty = 0.9
 testRatio = 4
-transParamList = []
+transParamList = [inputManager.TransactionParam(500,  7),
+                  inputManager.TransactionParam(750,  7),
+                  inputManager.TransactionParam(1000, 7),
+                  inputManager.TransactionParam(1500, 7),
+                  inputManager.TransactionParam(3500, 7)]
 currentProbs = []
 
-def MergeTransactions ( transactionList, msec, transactionBinCount ):
-    index = msec // smallestTime
-    totalElement = index * transactionBinCount
-    arrayList = np.array_split(transactionList[-totalElement:], transactionBinCount)
-    print(arrayList)
-    mergeArray = list(map(lambda x: x.sum(), arrayList))
-    summedArray = list(map(lambda x: transHelper.NormalizeTransactionCount(x), mergeArray))
-    return summedArray
 
 def ReadFileAndCreateReshaper( fileName ):
     print("Reading ", fileName )
     file = open(fileName, "r")
     jsonDictionary = json.load(file)
 
-    for transactionBinCount in transactionBinCountList:
-        for index in range(totalTimeCount):
-            transactionParam = inputManager.TransactionParam(smallestTime * (index * 2 + 1), transactionBinCount)
-            transParamList.append(transactionParam)
+    # for transactionBinCount in transactionBinCountList:
+    #     for index in range(totalTimeCount):
+    #         transactionParam = inputManager.TransactionParam(DynamicTuner.startTime + DynamicTuner.smallestTime * (index * 2 + 1), transactionBinCount)
+    #         transParamList.append(transactionParam)
     reshaper = inputManager.ReShapeManager(transParamList)
 
     for jsonElem in jsonDictionary:
@@ -155,7 +151,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         transParam = transParamList[transactionIndex]
         extraStuff = resultsTransactionFloat[-4:]
         justTransactions = resultsTransactionFloat[:-4]
-        currentTransactionList = MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
+        currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
         totalFeatures = currentTransactionList + extraStuff + [abs(resultsChangeFloat[-1]), resultsTimeFloat[-1]]
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
@@ -278,7 +274,7 @@ del trainingReshaper
 
 
 print("Start Tuning")
-reshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(125,80)])
+reshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(DynamicTuner.smallestTime,DynamicTuner.totalTransactions)])
 ReadFilesInTuneFolder( os.path.abspath(os.getcwd()) + "/Data/TuneData/", reshaperTuner )
 
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
@@ -304,7 +300,9 @@ if isTrainCurves:
     currentProbs = transactionTuner.finalResult + finalResultNew
     print( " Tuning result is ", finalResultNew)
 
-print( " Current tuned probibilities are : ", currentProbs)
+currentProbsFinal = [0.5,0.5] + currentProbs
+
+print( " Current tuned probibilities are : ", currentProbsFinal)
 sys.stdout.flush()
 
 # print("Start Short memory tuning")
@@ -355,6 +353,6 @@ while True:
             transactionTuner.Train()
         sys.stdout.flush()
     if command == "Adjust":
-        print( " I will send back the new probabilities ", currentProbs)
-        socket.send_string(str(currentProbs), encoding='ascii')
+        print( " I will send back the new probabilities ", currentProbsFinal)
+        socket.send_string(str(currentProbsFinal), encoding='ascii')
 

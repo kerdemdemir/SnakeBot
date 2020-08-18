@@ -7,13 +7,18 @@ from sklearn.metrics import classification_report,confusion_matrix
 from scipy import stats
 import sys
 
-def MergeTransactions ( transactionList, msec, transactionBinCount, smallestTime ):
-    index = msec // smallestTime
+smallestTime = 250
+totalTransactions = 100
+startTime = 0
+
+def MergeTransactions ( transactionList, msec, transactionBinCount ):
+    index = (msec - startTime) // smallestTime
     totalElement = index * transactionBinCount
     arrayList = np.array_split(transactionList[-totalElement:], transactionBinCount)
     mergeArray = list(map(lambda x: x.sum(), arrayList))
     summedArray = list(map(lambda x: transHelper.NormalizeTransactionCount(x), mergeArray))
     return summedArray
+
 
 def PredictionPrice( acceptanceLevel, predict_test, y_test ):
     finalResult = predict_test[:, 1] >= acceptanceLevel
@@ -41,7 +46,7 @@ def FindBestPoint( badData, goodData , gram ):
         curScore = badData[curBadIndex]
         eliminateGoodCount = np.count_nonzero(goodData < curScore)
         #leftOverBadCount = badSize - curBadIndex
-        curVal = curBadIndex+int(eliminateGoodCount*1.2)
+        curVal = curBadIndex+eliminateGoodCount
         if curVal < bestVal:
             bestIndex = curBadIndex
             bestVal = curVal
@@ -71,12 +76,11 @@ def AdjustTheBestCurve( mergeResults, realResults, finalResult, startIndex = -1)
         curCol = mergeResults[:, col]
         goodData = -np.sort(-np.take(curCol, goodIndexes))
         badData = -np.sort(-np.take(curCol, badIndexes))
-        goodDataTrimmed = stats.trim1(goodData, 0.05,  tail='left')
-        badDataTrimmed = stats.trim_mean(badData, 0.05)
 
-        goodAvarage = np.mean(goodDataTrimmed)
-        badAvarage = np.mean(badDataTrimmed)
-        resultBadGoodAvarageDiff.append(  goodAvarage - 2 * badAvarage)
+
+        goodAvarage = np.mean(goodData)
+        badAvarage = np.mean(badData)
+        resultBadGoodAvarageDiff.append(  goodAvarage -  badAvarage)
         goodDataList.append(goodData)
         badDataList.append(badData)
 
@@ -106,43 +110,27 @@ def AdjustTheBestCurve( mergeResults, realResults, finalResult, startIndex = -1)
     mergeResultsNew = np.delete(mergeResults, removeList, 0)
     realResultsNew =  np.delete(realResults, removeList)
 
-    curGoodCount = (realResultsNew > 0.0).sum()
-    curBadCount  =  realResultsNew.size - curGoodCount
+    curGoodCount =  len([i for i, x in enumerate(realResultsNew) if x == 1.0 ])
+    curBadCount  =  len([i for i, x in enumerate(realResultsNew) if x == 0.0 ])
     if firstGoodCount - curGoodCount > firstBadCount - curBadCount :
-        finalResult[bestIndexReal] = 0.0
-        print( " There are more  good result removed than bad results removed goods: ", firstGoodCount - curGoodCount, " bads: ", firstBadCount - curBadCount)
-    print(" Best point: ", bestPoint, " Real: ", bestIndexReal, " Final Result: ", finalResult)
+        if firstGoodCount / firstBadCount < curGoodCount / curBadCount:
+            finalResult[bestIndexReal] = 0.001
+            bestPoint = 0.001
+            print( " There are more  good result removed than bad results removed goods: ", firstGoodCount - curGoodCount,
+                   " bads: ", firstBadCount - curBadCount, " Real index, ", bestIndexReal)
+    elif (firstBadCount - curBadCount) < 10:
+        finalResult[bestIndexReal] = 0.001
+        bestPoint = 0.001
+        print( " Too little bad eliminated goods: ", firstGoodCount - curGoodCount, " bads: ", firstBadCount - curBadCount,
+               " Real index, ", bestIndexReal )
+    else:
+        print( "Index ", bestIndexReal, "eliminated bads: ", firstBadCount - curBadCount, " eliminated goods: ",
+               firstGoodCount - curGoodCount)
 
-    print ( " Best elem was : ", bestIndex , " Now I will remove and try again ")
+
+    print(" Best point: ", bestPoint, " Real: ", bestIndexReal, " Final Result: ", finalResult)
     mergeResultsNew = np.delete(mergeResultsNew, bestIndex , 1)
     AdjustTheBestCurve(mergeResultsNew, realResultsNew, finalResult, -1)
-
-class DesicionTree:
-    def __init__(self):
-        self.transNumpyInput = []
-        self.transNumpyResult = []
-        self.curveNumpyInput = []
-        self.curveNumpyResult = []
-        self.goodIndexes = []
-        self.badIndexes = []
-        self.goodDataList = []
-        self.badDataList = []
-
-    def SetTransInput(self, transIn, transRes):
-        self.transNumpyInput = transIn
-        self.transNumpyResult = transRes
-        self.goodIndexes = [i for i, x in enumerate(transRes) if x == 1.0]
-        self.badIndexes = [i for i, x in enumerate(transRes) if x == 0.0]
-
-        self.goodDataList = []
-        self.badDataList = []
-        for col in range(transIn.shape[1]):
-            curCol = transIn[:, col]
-            goodData = -np.sort(-np.take(curCol, self.goodIndexes))
-            badData = -np.sort(-np.take(curCol, self.badIndexes))
-            self.goodDataList.append(goodData)
-            self.badDataList.append(badData)
-
 
 
 class PeakTransactionTurner:
@@ -172,11 +160,13 @@ class PeakTransactionTurner:
             for elem in transactionFeatures:
                 justTransactions = elem[:-6]
                 extras = elem[-6:]
-                newSum = MergeTransactions(justTransactions, trans.msec, trans.gramCount, 250)
+                newSum = MergeTransactions(justTransactions, trans.msec, trans.gramCount)
                 currentData.extend(list(newSum)+list(extras))
 
             featureArr = np.array(currentData)
             featureArr = featureArr.reshape(-1, trans.gramCount+6)
+            if featureArr.size == 0:
+                continue
             X = mlpTransactionScalerList[curIndex].transform(featureArr)
             curResultPredict = mlpTransactionList[curIndex].predict_proba(X)
 
@@ -196,7 +186,7 @@ class PeakTransactionTurner:
 
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
         self.finalResult = [0.0] * totalResult.shape[1]
-        AdjustTheBestCurve(totalResult, results, self.finalResult, 1)
+        AdjustTheBestCurve(totalResult, results, self.finalResult, 4)
         print("Tuner final result is: ", self.finalResult)
         self.lastTrainNumber = len(self.realResults) // 30
 
