@@ -29,12 +29,12 @@ class ReShapeManager:
 
     def ClearMemory(self):
         print("Releasing memory")
-        self.scoreList.clear()
-        self.features.clear()
+        del self.scoreList
+        del self.features
         for input in self.inputs:
-            input.inputRise.clear()
-            input.inputTime.clear()
-            input.featureArr.clear()
+            del input.inputRise
+            del input.inputTime
+            del input.featureArr
 
     def addANewCurrency( self, jsonIn, isAddOnlyTransactionPeaks ):
         peakData = jsonIn["peak"]

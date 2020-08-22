@@ -296,12 +296,12 @@ for elem in curves:
     if score > 1.0:
         if isButtom:
             goodCount+=1
-            print("Good ", elem)
+            #print("Good ", elem)
         else:
             goodNegativeCount+=1
     elif score < -1.0:
         if isButtom:
-            print("Was good but eliminated", elem)
+            #print("Was good but eliminated", elem)
             badCount+=1
         else:
             badNegativeCount+=1
