@@ -1,4 +1,6 @@
 import json
+from fileinput import input
+
 import Input as input
 import InputManager as inputManager
 import ExtraDataManager as extraDataMan
@@ -9,7 +11,7 @@ import os
 import functools
 from os import listdir
 from os.path import isfile, join
-
+import datetime
 
 from sklearn.neural_network import MLPClassifier
 from sklearn import preprocessing
@@ -214,9 +216,12 @@ for fileName in onlyfiles:
 
 print("All added now scores")
 #trainingReshaper.transactionHelper.Print()
+a = datetime.datetime.now()
 if isTrainCurves:
     trainingReshaper.assignScores()
-print("Assigned scores")
+b = datetime.datetime.now()
+elapsedTime = b - a
+print("Assigned scores ", elapsedTime.seconds)
 sys.stdout.flush()
 
 mlpList = [[] for _ in range(inputManager.ReShapeManager.maxFeatureCount - inputManager.ReShapeManager.minFeatureCount)]
@@ -270,7 +275,6 @@ mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(4, 4, 4), activation='
 
 
 
-del trainingReshaper
 
 
 print("Start Tuning")
@@ -280,6 +284,30 @@ ReadFilesInTuneFolder( os.path.abspath(os.getcwd()) + "/Data/TuneData/", reshape
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 transactionTuner.Init(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList)
 
+
+curves = reshaperTuner.toTransactionCurves(0)
+goodCount = 0
+goodNegativeCount = 0
+badCount = 0
+badNegativeCount = 0
+for elem in curves:
+    isButtom = elem[-1] < 0.0
+    score = trainingReshaper.getScore(elem)
+    if score > 1.0:
+        if isButtom:
+            goodCount+=1
+            print("Good ", elem)
+        else:
+            goodNegativeCount+=1
+    elif score < -1.0:
+        if isButtom:
+            print("Was good but eliminated", elem)
+            badCount+=1
+        else:
+            badNegativeCount+=1
+
+print( " Good ", goodCount, " Negative good ", goodNegativeCount, " Bad ", badCount, " Bad negative ", badNegativeCount, " Total ", len(curves))
+trainingReshaper.ClearMemory()
 
 if isTrainCurves:
     for binCount in range (inputManager.ReShapeManager.minFeatureCount, inputManager.ReShapeManager.maxFeatureCount-1):
@@ -351,6 +379,12 @@ while True:
         if isReTrain:
             transactionTuner.Train()
         sys.stdout.flush()
+    if command == "GetScore":
+        priceStrList = messageChangeTimeTransactionStrList[1].split(",")
+        resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
+        score = trainingReshaper.getScore(resultsChangeFloat)
+        print( " Score for list: ", priceStrList, " is ", score)
+        socket.send_string(str(score), encoding='ascii')
     if command == "Adjust":
         print( " I will send back the new probabilities ", currentProbs)
         socket.send_string(str(currentProbs), encoding='ascii')

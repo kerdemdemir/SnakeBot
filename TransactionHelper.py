@@ -289,10 +289,10 @@ class TransactionAnalyzer :
         self.featureArr.reshape(-1, ngrams+6)
         return self.featureArr
 
-    def toTransactionCurves(self, ngrams):
+    def toTransactionCurves(self):
         returnVal = []
         for peakHelper in self.peakHelperList:
-                returnVal.append( peakHelper.inputRise[-ngrams:] )
+                returnVal.append( peakHelper.inputRise )
 
         return returnVal
 

@@ -18,7 +18,6 @@ class ReShapeManager:
 
     def __init__( self, transactionParams ):
         self.inputs = []
-        self.features = []
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             self.inputs.append( input.ReShapedInput(curBinCount) )
         self.scoreList = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
@@ -27,6 +26,15 @@ class ReShapeManager:
         self.transactionParams = transactionParams
         for _ in range(len(transactionParams)):
             self.transactionHelperList.append(TransactionHelper.TransactionAnalyzer())
+
+    def ClearMemory(self):
+        print("Releasing memory")
+        self.scoreList.clear()
+        self.features.clear()
+        for input in self.inputs:
+            input.inputRise.clear()
+            input.inputTime.clear()
+            input.featureArr.clear()
 
     def addANewCurrency( self, jsonIn, isAddOnlyTransactionPeaks ):
         peakData = jsonIn["peak"]
@@ -59,8 +67,6 @@ class ReShapeManager:
             if len(riseAndTimeList) >= curBinCount:
                 self.inputs[curBinIndex].concanate(riseAndTimeList)
 
-
-
     def assignScores(self):
         self.resetScores()
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
@@ -68,9 +74,26 @@ class ReShapeManager:
             for currentElemIndex in range(len(self.inputs[curBinIndex].inputRise)):
                 elem = self.inputs[curBinIndex].inputRise[currentElemIndex]
                 if elem[-1] < 0.0 and curBinIndex + 1 < self.maxFeatureCount - self.minFeatureCount:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex+1].inputRise, curBinIndex+1)
+                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex+1].getSorter(), curBinIndex+1)
                 elif elem[-1] > 0.0:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex].inputRise, curBinIndex+1)
+                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex].getSorter(), curBinIndex+1)
+
+
+
+    def getScore(self, list ):
+        for curBinCount in range(self.maxFeatureCount-2, self.minFeatureCount-1, -1):
+            curBinIndex = curBinCount - self.minFeatureCount
+            lookUpList = list[-curBinCount:]
+            score = 0.0
+            if lookUpList[-1] < 0.0:
+                score = self.__getScoreForButtomElement(lookUpList, self.inputs[curBinIndex+1].inputSorter, curBinIndex + 1)
+            elif lookUpList[-1] > 0.0:
+                score = self.__getScoreForRisingElement(lookUpList, self.inputs[curBinIndex].inputSorter, curBinIndex + 1)
+
+            if abs(score) > 6.0:
+                return score
+
+        return 0.0
 
     def toFeaturesNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
@@ -78,6 +101,9 @@ class ReShapeManager:
 
     def toTransactionCurvesToNumpy(self, index , binCount):
         return self.transactionHelperList[index].toTransactionCurvesToNumpy(binCount)
+
+    def toTransactionCurves(self, index):
+        return self.transactionHelperList[index].toTransactionCurves()
 
     def toTransactionScores(self, index):
         self.resetScores()
@@ -127,15 +153,39 @@ class ReShapeManager:
             #self.scoreList[curBinIndex].clear()
             self.scoreList[curBinIndex] = [0.0]*len(self.inputs[curBinIndex].inputRise)
 
-    def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteList, curIndex):
+    def __getFactor(self, val, curIndex ):
+        ngramFactor = lambda x :  0.8 + 0.15*x + 0.05*x*x
+        if val < 5.0:
+            return 0.5 * ngramFactor(curIndex)
+        elif val < 10.0:
+            return 0.75 * ngramFactor(curIndex)
+        elif val < 15.0:
+            return ngramFactor(curIndex)
+        else:
+            return 1.5 * ngramFactor(curIndex)
+
+    def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteInputSorter
+                                   , curIndex):
         score = 0.0
-        for elemList in  nPlusOneCompleteList:
+        firstElem = oneSampleNBin[0]
+        factor = self.__getFactor(firstElem, curIndex)
+        startIndex = nPlusOneCompleteInputSorter.getIndex( firstElem - factor)
+        endIndex = nPlusOneCompleteInputSorter.getIndex( firstElem + factor)
+        #print(firstElem, " ",curIndex , " ", startIndex, " ", endIndex, " ",  len(nPlusOneCompleteInputSorter.sortedPriceList), )
+        for index in  range(startIndex, endIndex):
+            elemList = nPlusOneCompleteInputSorter.sortedPriceList[index]
             score+= self.__getScoreForButtom(oneSampleNBin, elemList, curIndex)
         return score
 
-    def __getScoreForRisingElement(self, oneSampleNBin, nBinCompleteList, curIndex):
+    def __getScoreForRisingElement(self, oneSampleNBin, nBinCompleteInputSorter, curIndex):
         score = 0
-        for elemList in nBinCompleteList :
+        firstElem = oneSampleNBin[0]
+        factor = self.__getFactor(firstElem, curIndex)
+        startIndex = nBinCompleteInputSorter.getIndex( firstElem - factor)
+        endIndex = nBinCompleteInputSorter.getIndex( firstElem + factor)
+
+        for index in  range(startIndex, endIndex):
+            elemList = nBinCompleteInputSorter.sortedPriceList[index]
             score+= self.__getScoreForRising(oneSampleNBin, elemList, curIndex)
         return score
 

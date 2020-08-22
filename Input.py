@@ -1,6 +1,7 @@
 import numpy as np
 import TransactionHelper
 import itertools
+import bisect
 
 class RiseMinute:
     def __init__(self, riseAndTimeStr):
@@ -11,11 +12,27 @@ class RiseMinute:
     def __repr__(self):
         return "Rise:%f,Time:%s" % (self.rise, self.time)
 
+class InputRiseSorter:
+
+    def __init__(self, featureCount ):
+        self.sortedPriceList = []
+        self.sortedPriceKeys = []
+        self.featureCount = featureCount
+
+    def add(self,inputRise):
+        self.sortedPriceList = inputRise
+        self.sortedPriceList = sorted(self.sortedPriceList, key=lambda l: l[0])
+        self.sortedPriceKeys = [elem[0] for elem in self.sortedPriceList]
+
+    def getIndex(self, elem):
+        return bisect.bisect(self.sortedPriceKeys, elem)
+
 
 class ReShapedInput:
 
     def __init__(self, featureCount ):
         self.inputRise = []
+        self.inputSorter = InputRiseSorter(featureCount)
         self.inputTime = []
         self.featureCount = featureCount
         self.featureArr = []
@@ -25,14 +42,21 @@ class ReShapedInput:
         newList = list(map(lambda x: riseList[x:x+self.featureCount],
                                   range( len( riseList ) - self.featureCount)))
 
+
         timeList = list(map( lambda x: float(x.time), riseAndTimeList ))
         newTimeList = list(map(lambda x: timeList[x:x+self.featureCount],
                                   range( len( timeList ) - self.featureCount)))
 
-
-
         self.inputRise.extend(newList)
         self.inputTime.extend(newTimeList)
+
+    def getSorter(self):
+        if ( len(self.inputSorter.sortedPriceKeys) == 0 ):
+            self.inputSorter.add(self.inputRise)
+
+        return self.inputSorter
+
+
 
     def toNumpy(self):
         inputSize = len(self.inputRise)
@@ -44,4 +68,5 @@ class ReShapedInput:
             temp.append(newRow)
         self.featureArr = np.array(temp)
         self.featureArr.reshape(-1, self.featureCount*2)
+        self.featureArr[self.featureArr[:, 0].argsort()]
         return self.featureArr
