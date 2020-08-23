@@ -151,8 +151,8 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     resultStr = ""
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
-        extraStuff = resultsTransactionFloat[-4:]
-        justTransactions = resultsTransactionFloat[:-4]
+        extraStuff = resultsTransactionFloat[-(transHelper.ExtraFeatureCount-2):]
+        justTransactions = resultsTransactionFloat[:-(transHelper.ExtraFeatureCount-2)]
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
         totalFeatures = currentTransactionList + extraStuff + [abs(resultsChangeFloat[-1]), resultsTimeFloat[-1]]
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)

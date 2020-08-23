@@ -79,6 +79,11 @@ class ReShapeManager:
                     self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex].getSorter(), curBinIndex+1)
 
 
+        # for transHelper in self.transactionHelperList:
+        #     for peakHelper in transHelper.peakHelperList:
+        #         score = self.getScore(peakHelper.inputRise)
+        #         peakHelper.score = score
+
 
     def getScore(self, list ):
         for curBinCount in range(self.maxFeatureCount-2, self.minFeatureCount-1, -1):

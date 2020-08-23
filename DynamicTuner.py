@@ -168,13 +168,13 @@ class PeakTransactionTurner:
             currentData = []
 
             for elem in transactionFeatures:
-                justTransactions = elem[:-6]
-                extras = elem[-6:]
+                justTransactions = elem[:-transHelper.ExtraFeatureCount]
+                extras = elem[-transHelper.ExtraFeatureCount:]
                 newSum = MergeTransactions(justTransactions, trans.msec, trans.gramCount)
                 currentData.extend(list(newSum)+list(extras))
 
             featureArr = np.array(currentData)
-            featureArr = featureArr.reshape(-1, trans.gramCount+6)
+            featureArr = featureArr.reshape(-1, trans.gramCount+transHelper.ExtraFeatureCount)
             if featureArr.size == 0:
                 continue
             X = mlpTransactionScalerList[curIndex].transform(featureArr)

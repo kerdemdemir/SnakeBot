@@ -30,6 +30,7 @@ def NormalizeTransactionCount( totalCount ):
         return 10
     return 11
 
+ExtraFeatureCount = 6
 
 class TransactionData:
     def __init__(self):
@@ -157,6 +158,7 @@ class TransactionPeakHelper:
         self.curveTime = curveTime
         self.inputRise = riseList
         self.inputTime = timeList
+        self.score = 0
         self.lowestAcceptedTotalTransactionCount = lowestAcceptedTotalTransactionCount
 
         prices = list(map( lambda x: float(x["p"]), jsonIn))
@@ -275,6 +277,7 @@ class TransactionAnalyzer :
             self.peakHelperList.append(peakHelper)
             self.__MergeInTransactions(peakHelper,riseList,timeList)
 
+
     def toTransactionNumpy(self, ngrams ):
         goodSize = len(self.patternList)
         badSize = len(self.badPatternList)
@@ -286,7 +289,7 @@ class TransactionAnalyzer :
         allData = self.patternList + self.badPatternList
 
         self.featureArr = np.array(allData)
-        self.featureArr.reshape(-1, ngrams+6)
+        self.featureArr.reshape(-1, ngrams+ExtraFeatureCount)
         return self.featureArr
 
     def toTransactionCurves(self):
@@ -334,7 +337,9 @@ class TransactionAnalyzer :
     def __MergeInTransactions(self, transactionPeakHelper,riseList,timeList ):
         # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
         for pattern in transactionPeakHelper.patternList:
-            self.patternList.append(pattern.GetFeatures() + [abs(transactionPeakHelper.curveVal),float(transactionPeakHelper.curveTime)])
+            self.patternList.append(pattern.GetFeatures() + [abs(transactionPeakHelper.curveVal),
+                                                             float(transactionPeakHelper.curveTime)])
 
         for pattern in transactionPeakHelper.badPatternList:
-            self.badPatternList.append(pattern.GetFeatures() + [abs(transactionPeakHelper.curveVal),float(transactionPeakHelper.curveTime)])
+            self.badPatternList.append(pattern.GetFeatures() + [abs(transactionPeakHelper.curveVal),
+                                                                float(transactionPeakHelper.curveTime)])
