@@ -31,6 +31,7 @@ class ReShapeManager:
         print("Releasing memory")
         del self.scoreList
         del self.features
+        del self.transactionHelperList
         for input in self.inputs:
             del input.inputRise
             del input.inputTime
