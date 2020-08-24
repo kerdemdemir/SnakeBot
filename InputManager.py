@@ -176,11 +176,11 @@ class ReShapeManager:
         elif val < 10.0:
             return 1.0 * ngramFactor(curIndex)
         elif val < 15.0:
-            return 1.2 * ngramFactor(curIndex)
-        elif val < 20.0:
             return 1.5 * ngramFactor(curIndex)
-        elif val < 30.0:
+        elif val < 20.0:
             return 2.0 * ngramFactor(curIndex)
+        elif val < 30.0:
+            return 3.0 * ngramFactor(curIndex)
         else:
             return 5.0 * ngramFactor(curIndex)
 
@@ -224,11 +224,11 @@ class ReShapeManager:
         elif lhs < 10.0:
             return diff < 1.0 * ngramFactor(curIndex)
         elif lhs < 15.0:
-            return diff < 1.2 * ngramFactor(curIndex)
-        elif lhs < 20.0:
             return diff < 1.5 * ngramFactor(curIndex)
-        elif lhs < 30.0:
+        elif lhs < 20.0:
             return diff < 2.0 * ngramFactor(curIndex)
+        elif lhs < 30.0:
+            return diff < 3.0 * ngramFactor(curIndex)
         else:
             return diff < 5.0 * ngramFactor(curIndex)
 
