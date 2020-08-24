@@ -101,6 +101,9 @@ class ReShapeManager:
 
         return 0.0
 
+    def setScore( self, transIndex, peakIndex, score ):
+        self.transactionHelperList[transIndex].peakHelperList[peakIndex].score = score
+
     def toFeaturesNumpy(self, binCount):
         curBinIndex = binCount - self.minFeatureCount
         return self.inputs[curBinIndex].toNumpy()
@@ -146,6 +149,9 @@ class ReShapeManager:
     def toTransactionFeaturesNumpy(self, index ):
         return self.transactionHelperList[index].toTransactionNumpy(self.transactionParams[index].gramCount)
 
+    def toTransactionFeaturesWithScoreNumpy(self, index ,score ):
+        return self.transactionHelperList[index].toTransactionNumpyWithScore(self.transactionParams[index].gramCount, score)
+
     def toTransactionResultsNumpy(self, index):
         return self.transactionHelperList[index].toTransactionResultsNumpy()
 
@@ -161,14 +167,22 @@ class ReShapeManager:
 
     def __getFactor(self, val, curIndex ):
         ngramFactor = lambda x :  0.8 + 0.15*x + 0.05*x*x
-        if val < 5.0:
+        if val < 4.0:
             return 0.5 * ngramFactor(curIndex)
+        elif val < 5.0:
+            return 0.6 * ngramFactor(curIndex)
+        elif val < 7.5:
+            return 0.8 * ngramFactor(curIndex)
         elif val < 10.0:
-            return 0.75 * ngramFactor(curIndex)
+            return 1.0 * ngramFactor(curIndex)
         elif val < 15.0:
-            return ngramFactor(curIndex)
-        else:
+            return 1.2 * ngramFactor(curIndex)
+        elif val < 20.0:
             return 1.5 * ngramFactor(curIndex)
+        elif val < 30.0:
+            return 2.0 * ngramFactor(curIndex)
+        else:
+            return 5.0 * ngramFactor(curIndex)
 
     def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteInputSorter
                                    , curIndex):
@@ -201,14 +215,22 @@ class ReShapeManager:
         if lhs * rhs < 0:
             return False
         diff = abs(lhs - rhs)
-        if lhs < 5.0:
+        if lhs < 4.0:
             return diff < 0.5 * ngramFactor(curIndex)
+        elif lhs < 5.0:
+            return diff < 0.6 * ngramFactor(curIndex)
+        elif lhs < 7.5:
+            return diff < 0.8 * ngramFactor(curIndex)
         elif lhs < 10.0:
-            return diff < 0.75 * ngramFactor(curIndex)
-        elif lhs < 15.0:
             return diff < 1.0 * ngramFactor(curIndex)
-        else:
+        elif lhs < 15.0:
+            return diff < 1.2 * ngramFactor(curIndex)
+        elif lhs < 20.0:
             return diff < 1.5 * ngramFactor(curIndex)
+        elif lhs < 30.0:
+            return diff < 2.0 * ngramFactor(curIndex)
+        else:
+            return diff < 5.0 * ngramFactor(curIndex)
 
     def __getScoreForRising(self, oneSampleNBin, oneSampleOtherBin, curIndex):
 

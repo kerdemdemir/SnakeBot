@@ -192,6 +192,7 @@ class PeakTransactionTurner:
         self.realResults = list(results)
 
         X_train, X_test, y_train, y_test = train_test_split(totalResult, results, test_size=0.1, random_state=40)
+
         FitPredictAndPrint(self.transactionTuneLearner, X_train, X_test, y_train, y_test)
         self.lastTrainNumber = len(self.realResults) // 60
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
@@ -199,7 +200,65 @@ class PeakTransactionTurner:
         forceList = [0.5, 0.9, 0.5, 0.5, 0.9]
         ForceTheBestCurve(totalResult, results, forceList)
 
+    def InitWithScore(self, inputShaper, mlpTransactionScalerList, mlpTransactionList, transList, score ):
+        transactionFeatures = inputShaper.toTransactionFeaturesWithScoreNumpy(0, score)
+        results = inputShaper.toTransactionResultsNumpy(0)
+        resultPredicts = [[] for _ in range(len(transList))]
+        for curIndex in range(len(transList)):
+            trans = transList[curIndex]
+            currentData = []
 
+            for elem in transactionFeatures:
+                justTransactions = elem[:-transHelper.ExtraFeatureCount]
+                extras = elem[-transHelper.ExtraFeatureCount:]
+                newSum = MergeTransactions(justTransactions, trans.msec, trans.gramCount)
+                currentData.extend(list(newSum) + list(extras))
+
+            featureArr = np.array(currentData)
+            featureArr = featureArr.reshape(-1, trans.gramCount + transHelper.ExtraFeatureCount)
+            if featureArr.size == 0:
+                continue
+            X = mlpTransactionScalerList[curIndex].transform(featureArr)
+            curResultPredict = mlpTransactionList[curIndex].predict_proba(X)
+
+            resultPredicts[curIndex] = np.delete(curResultPredict, 0, 1)
+
+        totalResult = resultPredicts[0]
+        for curIndex in range(len(transList) - 1):
+            totalResult = np.concatenate((totalResult, resultPredicts[curIndex + 1]), axis=1)
+
+        self.inputResults.clear()
+        for elem in totalResult:
+            self.inputResults.append(elem)
+
+        self.realResults = list(results)
+
+        X_train, X_test, y_train, y_test = train_test_split(totalResult, results, test_size=0.1, random_state=40)
+
+        FitPredictAndPrint(self.transactionTuneLearner, X_train, X_test, y_train, y_test)
+        self.lastTrainNumber = len(self.realResults) // 60
+        print("Tuner good size", sum(y > 0 for y in self.realResults), " Total size ", len(self.realResults))
+
+        forceList = [0.5, 0.9, 0.5, 0.5, 0.9]
+        ForceTheBestCurve(totalResult, results, forceList)
+
+        forceList = [0.5, 0.5, 0.5, 0.5, 0.9]
+        ForceTheBestCurve(totalResult, results, forceList)
+
+        forceList = [0.5, 0.5, 0.5, 0.5, 0.5]
+        ForceTheBestCurve(totalResult, results, forceList)
+
+        forceList = [0.5, 0.7, 0.5, 0.5, 0.7]
+        ForceTheBestCurve(totalResult, results, forceList)
+
+        forceList = [0.7, 0.5, 0.5, 0.5, 0.5]
+        ForceTheBestCurve(totalResult, results, forceList)
+
+        forceList = [0.5, 0.5, 0.7, 0.5, 0.5]
+        ForceTheBestCurve(totalResult, results, forceList)
+
+        forceList = [0.5, 0.5, 0.5, 0.7, 0.5]
+        ForceTheBestCurve(totalResult, results, forceList)
 
     def Add(self, isBottom, resultStr ):
         print( "I will add isBottom: ", isBottom, " data: " , resultStr )

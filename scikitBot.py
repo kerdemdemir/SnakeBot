@@ -290,10 +290,12 @@ goodCount = 0
 goodNegativeCount = 0
 badCount = 0
 badNegativeCount = 0
-for elem in curves:
+for index in range(len(curves)):
+    elem = curves[index]
     isButtom = elem[-1] < 0.0
     score = trainingReshaper.getScore(elem)
-    if score > 1.0:
+    reshaperTuner.setScore(0, index, score)
+    if score > 10.0:
         if isButtom:
             goodCount+=1
             #print("Good ", elem)
@@ -305,8 +307,27 @@ for elem in curves:
             badCount+=1
         else:
             badNegativeCount+=1
-
 print( " Good ", goodCount, " Negative good ", goodNegativeCount, " Bad ", badCount, " Bad negative ", badNegativeCount, " Total ", len(curves))
+
+print("Score 0" )
+transactionTuner.InitWithScore(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList, 0)
+print("Score 8" )
+transactionTuner.InitWithScore(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList, 8)
+print("Score 7" )
+transactionTuner.InitWithScore(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList, 7)
+print("Score 10" )
+transactionTuner.InitWithScore(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList, 10)
+print("Score 3" )
+transactionTuner.InitWithScore(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList, 3)
+print("Score 6" )
+transactionTuner.InitWithScore(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList, 6)
+print("Score -3" )
+transactionTuner.InitWithScore(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList, -3)
+print("Score -6" )
+transactionTuner.InitWithScore(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList, -6)
+print("Score -10" )
+transactionTuner.InitWithScore(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList, -10)
+
 trainingReshaper.ClearMemory()
 
 if isTrainCurves:
