@@ -188,7 +188,7 @@ class ReShapeManager:
                                    , curIndex):
         score = 0.0
         firstElem = oneSampleNBin[0]
-        factor = self.__getFactor(firstElem, curIndex)
+        factor = self.__getFactor(abs(firstElem), curIndex)
         startIndex = nPlusOneCompleteInputSorter.getIndex( firstElem - factor)
         endIndex = nPlusOneCompleteInputSorter.getIndex( firstElem + factor)
         #print(firstElem, " ",curIndex , " ", startIndex, " ", endIndex, " ",  len(nPlusOneCompleteInputSorter.sortedPriceList), )
@@ -215,19 +215,20 @@ class ReShapeManager:
         if lhs * rhs < 0:
             return False
         diff = abs(lhs - rhs)
-        if lhs < 4.0:
+        lshAbs = abs(lhs)
+        if lshAbs < 4.0:
             return diff < 0.5 * ngramFactor(curIndex)
-        elif lhs < 5.0:
+        elif lshAbs < 5.0:
             return diff < 0.6 * ngramFactor(curIndex)
-        elif lhs < 7.5:
+        elif lshAbs < 7.5:
             return diff < 0.8 * ngramFactor(curIndex)
-        elif lhs < 10.0:
+        elif lshAbs < 10.0:
             return diff < 1.0 * ngramFactor(curIndex)
-        elif lhs < 15.0:
+        elif lshAbs < 15.0:
             return diff < 1.5 * ngramFactor(curIndex)
-        elif lhs < 20.0:
+        elif lshAbs < 20.0:
             return diff < 2.0 * ngramFactor(curIndex)
-        elif lhs < 30.0:
+        elif lshAbs < 30.0:
             return diff < 3.0 * ngramFactor(curIndex)
         else:
             return diff < 5.0 * ngramFactor(curIndex)
