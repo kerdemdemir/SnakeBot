@@ -200,7 +200,7 @@ class ReShapeManager:
     def __getScoreForRisingElement(self, oneSampleNBin, nBinCompleteInputSorter, curIndex):
         score = 0
         firstElem = oneSampleNBin[0]
-        factor = self.__getFactor(firstElem, curIndex)
+        factor = self.__getFactor(abs(firstElem), curIndex)
         startIndex = nBinCompleteInputSorter.getIndex( firstElem - factor)
         endIndex = nBinCompleteInputSorter.getIndex( firstElem + factor)
 
