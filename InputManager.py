@@ -75,7 +75,7 @@ class ReShapeManager:
             for currentElemIndex in range(len(self.inputs[curBinIndex].inputRise)):
                 elem = self.inputs[curBinIndex].inputRise[currentElemIndex]
                 if elem[-1] < 0.0 and curBinIndex + 1 < self.maxFeatureCount - self.minFeatureCount:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex+1].getSorter(), curBinIndex+1)
+                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex + 1].getSorter(), curBinIndex + 1)
                 elif elem[-1] > 0.0:
                     self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex].getSorter(), curBinIndex+1)
 
@@ -184,8 +184,7 @@ class ReShapeManager:
         else:
             return 5.0 * ngramFactor(curIndex)
 
-    def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteInputSorter
-                                   , curIndex):
+    def __getScoreForButtomElement(self, oneSampleNBin, nPlusOneCompleteInputSorter, curIndex):
         score = 0.0
         firstElem = oneSampleNBin[0]
         factor = self.__getFactor(abs(firstElem), curIndex)
@@ -194,7 +193,7 @@ class ReShapeManager:
         #print(firstElem, " ",curIndex , " ", startIndex, " ", endIndex, " ",  len(nPlusOneCompleteInputSorter.sortedPriceList), )
         for index in  range(startIndex, endIndex):
             elemList = nPlusOneCompleteInputSorter.sortedPriceList[index]
-            score+= self.__getScoreForButtom(oneSampleNBin, elemList, curIndex)
+            score += self.__getScoreForButtom(oneSampleNBin, elemList, curIndex)
         return score
 
     def __getScoreForRisingElement(self, oneSampleNBin, nBinCompleteInputSorter, curIndex):
@@ -206,7 +205,7 @@ class ReShapeManager:
 
         for index in  range(startIndex, endIndex):
             elemList = nBinCompleteInputSorter.sortedPriceList[index]
-            score+= self.__getScoreForRising(oneSampleNBin, elemList, curIndex)
+            score += self.__getScoreForRising(oneSampleNBin, elemList, curIndex)
         return score
 
 
@@ -242,7 +241,7 @@ class ReShapeManager:
         if not isAllValid:
             return 0
         diff = oneSampleOtherBin[-1] - oneSampleNBin[-1]
-        if diff < -1:
+        if diff < -1.6:
             return 0
 
         return self.__clampVal( diff - 4.0 )
@@ -254,9 +253,9 @@ class ReShapeManager:
         if not isAllValid:
             return 0
         diff = oneSampleNBin[-1] - oneSampleNPluseOneBin[-2]
-        if diff < -1:
-            return 0
-        elif diff < 1:
+        if diff < -1.6:
+            return self.__clampVal(oneSampleNPluseOneBin[-1] - abs(diff))
+        elif diff < 1.6:
             return self.__clampVal(oneSampleNPluseOneBin[-1] - abs(diff))#Positive effect
         else:
             return -self.__clampVal(diff)#Negative effect
