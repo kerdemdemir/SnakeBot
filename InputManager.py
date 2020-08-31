@@ -241,7 +241,7 @@ class ReShapeManager:
         if not isAllValid:
             return 0
         diff = oneSampleOtherBin[-1] - oneSampleNBin[-1]
-        if diff < -1.6:
+        if diff < -1.5:
             return 0
 
         return self.__clampVal( diff - 4.0 )
@@ -253,9 +253,9 @@ class ReShapeManager:
         if not isAllValid:
             return 0
         diff = oneSampleNBin[-1] - oneSampleNPluseOneBin[-2]
-        if diff < -1.6:
-            return self.__clampVal(oneSampleNPluseOneBin[-1] - abs(diff))
-        elif diff < 1.6:
+        if diff < -1.5:
+            return 0
+        elif diff < 1.5:
             return self.__clampVal(oneSampleNPluseOneBin[-1] - abs(diff))#Positive effect
         else:
             return -self.__clampVal(diff)#Negative effect
