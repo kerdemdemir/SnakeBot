@@ -30,11 +30,12 @@ totalUsedCurveCount = 4
 isConcanateCsv = False
 acceptedProbibilty = 0.9
 testRatio = 4
-transParamList = [inputManager.TransactionParam(500,  7),
-                  inputManager.TransactionParam(750,  7),
-                  inputManager.TransactionParam(1000, 7),
-                  inputManager.TransactionParam(1500, 7),
-                  inputManager.TransactionParam(3500, 7)]
+transParamList = [inputManager.TransactionParam(250,  10),
+                  inputManager.TransactionParam(500,  10),
+                  inputManager.TransactionParam(750,  10),
+                  inputManager.TransactionParam(1000, 10),
+                  inputManager.TransactionParam(1500, 10),
+                  inputManager.TransactionParam(2500, 10)]
 currentProbs = []
 
 

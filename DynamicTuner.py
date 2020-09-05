@@ -197,7 +197,7 @@ class PeakTransactionTurner:
         self.lastTrainNumber = len(self.realResults) // 60
         print("Tuner good size" , sum( y > 0 for y in self.realResults ),  " Total size ", len(self.realResults) )
 
-        forceList = [0.5, 0.9, 0.5, 0.5, 0.9]
+        forceList = [0.5, 0.5, 0.9, 0.5, 0.5, 0.9]
         ForceTheBestCurve(totalResult, results, forceList)
 
     def InitWithScore(self, inputShaper, mlpTransactionScalerList, mlpTransactionList, transList, score ):
@@ -239,25 +239,25 @@ class PeakTransactionTurner:
         self.lastTrainNumber = len(self.realResults) // 60
         print("Tuner good size", sum(y > 0 for y in self.realResults), " Total size ", len(self.realResults))
 
-        forceList = [0.5, 0.9, 0.5, 0.5, 0.9]
+        forceList = [0.5, 0.5, 0.9, 0.5, 0.5, 0.9]
         ForceTheBestCurve(totalResult, results, forceList)
 
-        forceList = [0.5, 0.5, 0.5, 0.5, 0.9]
+        forceList = [0.5, 0.5, 0.5, 0.5, 0.5, 0.9]
         ForceTheBestCurve(totalResult, results, forceList)
 
-        forceList = [0.5, 0.5, 0.5, 0.5, 0.5]
+        forceList = [0.5, 0.5, 0.5, 0.5, 0.5, 0.5]
         ForceTheBestCurve(totalResult, results, forceList)
 
-        forceList = [0.5, 0.7, 0.5, 0.5, 0.7]
+        forceList = [0.5, 0.5, 0.7, 0.5, 0.5, 0.7]
         ForceTheBestCurve(totalResult, results, forceList)
 
-        forceList = [0.7, 0.5, 0.5, 0.5, 0.5]
+        forceList = [0.5, 0.7, 0.5, 0.5, 0.5, 0.5]
         ForceTheBestCurve(totalResult, results, forceList)
 
-        forceList = [0.5, 0.5, 0.7, 0.5, 0.5]
+        forceList = [0.5, 0.5, 0.5, 0.7, 0.5, 0.5]
         ForceTheBestCurve(totalResult, results, forceList)
 
-        forceList = [0.5, 0.5, 0.5, 0.7, 0.5]
+        forceList = [0.5, 0.5, 0.5, 0.5, 0.7, 0.5]
         ForceTheBestCurve(totalResult, results, forceList)
 
     def Add(self, isBottom, resultStr ):
