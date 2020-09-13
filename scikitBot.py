@@ -152,8 +152,8 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     resultStr = ""
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
-        extraStuff = resultsTransactionFloat[-(transHelper.ExtraFeatureCount-2):]
-        justTransactions = resultsTransactionFloat[:-(transHelper.ExtraFeatureCount-2)]
+        extraStuff = resultsTransactionFloat[-transHelper.ExtraFeatureCount:]
+        justTransactions = resultsTransactionFloat[:-transHelper.ExtraFeatureCount]
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
         scores = reshaperTuner.getScoreList(resultsChangeFloat)
 
