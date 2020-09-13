@@ -166,15 +166,16 @@ class PeakTransactionTurner:
         for curIndex in range(len(transList)):
             trans = transList[curIndex]
             currentData = []
+            totalExtraFeatures = transHelper.ExtraFeatureCount + transHelper.TransactionPeakHelper.PeakFeatureCount
 
             for elem in transactionFeatures:
-                justTransactions = elem[:-transHelper.ExtraFeatureCount]
-                extras = elem[-transHelper.ExtraFeatureCount:]
+                justTransactions = elem[:-totalExtraFeatures]
+                extras = elem[-totalExtraFeatures:]
                 newSum = MergeTransactions(justTransactions, trans.msec, trans.gramCount)
                 currentData.extend(list(newSum)+list(extras))
 
             featureArr = np.array(currentData)
-            featureArr = featureArr.reshape(-1, trans.gramCount+transHelper.ExtraFeatureCount)
+            featureArr = featureArr.reshape(-1, trans.gramCount+totalExtraFeatures)
             if featureArr.size == 0:
                 continue
             X = mlpTransactionScalerList[curIndex].transform(featureArr)
@@ -184,7 +185,7 @@ class PeakTransactionTurner:
 
         totalResult = resultPredicts[0]
         for curIndex in range(len(transList)-1):
-            totalResult = np.concatenate((totalResult, resultPredicts[curIndex+1]), axis=1)
+           totalResult = np.concatenate((totalResult, resultPredicts[curIndex+1]), axis=1)
 
         for elem in totalResult:
             self.inputResults.append(elem)
@@ -207,15 +208,16 @@ class PeakTransactionTurner:
         for curIndex in range(len(transList)):
             trans = transList[curIndex]
             currentData = []
+            totalExtraFeatures = transHelper.ExtraFeatureCount + transHelper.TransactionPeakHelper.PeakFeatureCount
 
             for elem in transactionFeatures:
-                justTransactions = elem[:-transHelper.ExtraFeatureCount]
-                extras = elem[-transHelper.ExtraFeatureCount:]
+                justTransactions = elem[:-totalExtraFeatures]
+                extras = elem[-totalExtraFeatures:]
                 newSum = MergeTransactions(justTransactions, trans.msec, trans.gramCount)
                 currentData.extend(list(newSum) + list(extras))
 
             featureArr = np.array(currentData)
-            featureArr = featureArr.reshape(-1, trans.gramCount + transHelper.ExtraFeatureCount)
+            featureArr = featureArr.reshape(-1, trans.gramCount + totalExtraFeatures)
             if featureArr.size == 0:
                 continue
             X = mlpTransactionScalerList[curIndex].transform(featureArr)

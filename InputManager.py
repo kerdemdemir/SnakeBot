@@ -3,6 +3,14 @@ import numpy as np
 import json
 import TransactionHelper
 
+def keyMaker(list):
+    key = 0
+    for index in range(len(list)):
+        key += int(min(999, int(abs(list[index]) * 10))* pow(1000, index))
+    if list[0] < 0.0:
+      key *= -1
+    return key
+
 class TransactionParam:
     def __init__ ( self, msec, gramCount ):
         self.msec = msec
@@ -24,6 +32,9 @@ class ReShapeManager:
         self.features = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
         self.transactionHelperList = []
         self.transactionParams = transactionParams
+        self.scoreMap = {}
+        self.notMissCount = 0
+        self.missCount = 0
         for _ in range(len(transactionParams)):
             self.transactionHelperList.append(TransactionHelper.TransactionAnalyzer())
 
@@ -50,13 +61,26 @@ class ReShapeManager:
             print(peakSize , " ", transactionDataSize)
             return
         riseAndTimeList = []
+        skipIndexes = []
         for x in range(peakSize):
             riseMinute = input.RiseMinute(riseAndTimeStrList[x])
-            riseAndTimeList.append(riseMinute)
+            if len(riseAndTimeList) > 0 and riseAndTimeList[-1].rise * riseMinute.rise > 0:
+                skipIndexes.append(x-1)
+                riseAndTimeList[-1] = riseMinute
+            else:
+                riseAndTimeList.append(riseMinute)
 
         if not isAddOnlyTransactionPeaks:
             self.addLinePeaks(riseAndTimeList)
 
+        newTransParams = []
+        for i in range(len(transactionData)):
+            if i in skipIndexes:
+                #print("Dont add ", i, " ", transactionData[i])
+                continue
+            newTransParams.append(transactionData[i])
+
+        transactionData = newTransParams
         for i in range(len(self.transactionParams)):
             transParam = self.transactionParams[i]
             self.transactionHelperList[i].AddPeak( transactionData, riseAndTimeList,transParam.msec,transParam.gramCount,self.maxFeatureCount )
@@ -70,36 +94,73 @@ class ReShapeManager:
 
     def assignScores(self):
         self.resetScores()
+
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             curBinIndex = curBinCount - self.minFeatureCount
             for currentElemIndex in range(len(self.inputs[curBinIndex].inputRise)):
                 elem = self.inputs[curBinIndex].inputRise[currentElemIndex]
+                curKey = keyMaker(elem)
+                if curKey in self.scoreMap:
+                    self.scoreList[curBinIndex][currentElemIndex] = self.scoreMap[curKey]
+                    continue
                 if elem[-1] < 0.0 and curBinIndex + 1 < self.maxFeatureCount - self.minFeatureCount:
                     self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex + 1].getSorter(), curBinIndex + 1)
                 elif elem[-1] > 0.0:
                     self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex].getSorter(), curBinIndex+1)
+                self.scoreMap[curKey] = self.scoreList[curBinIndex][currentElemIndex]
 
-
-        # for transHelper in self.transactionHelperList:
-        #     for peakHelper in transHelper.peakHelperList:
-        #         score = self.getScore(peakHelper.inputRise)
-        #         peakHelper.score = score
-
+        counter = 0
+        for transHelper in self.transactionHelperList:
+            for peakHelper in transHelper.peakHelperList:
+                scoreList = self.getScoreList(peakHelper.inputRise)
+                peakHelper.scoreList = scoreList
+            print("Finalizing index", counter, " Not missed " , self.notMissCount, " missed ", self.missCount)
+            counter += 1
+            transHelper.Finalize()
 
     def getScore(self, list ):
         for curBinCount in range(self.maxFeatureCount-2, self.minFeatureCount-1, -1):
             curBinIndex = curBinCount - self.minFeatureCount
             lookUpList = list[-curBinCount:]
+
             score = 0.0
-            if lookUpList[-1] < 0.0:
-                score = self.__getScoreForButtomElement(lookUpList, self.inputs[curBinIndex+1].inputSorter, curBinIndex + 1)
-            elif lookUpList[-1] > 0.0:
-                score = self.__getScoreForRisingElement(lookUpList, self.inputs[curBinIndex].inputSorter, curBinIndex + 1)
+            curKey = keyMaker(lookUpList)
+            if curKey in self.scoreMap:
+                score = self.scoreMap[curKey]
+            else:
+                if lookUpList[-1] < 0.0:
+                    score = self.__getScoreForButtomElement(lookUpList, self.inputs[curBinIndex+1].getSorter(), curBinIndex + 1)
+                elif lookUpList[-1] > 0.0:
+                    score = self.__getScoreForRisingElement(lookUpList, self.inputs[curBinIndex].getSorter(), curBinIndex + 1)
+                self.scoreMap[curKey] = score
 
             if abs(score) > 6.0:
                 return score
 
         return 0.0
+
+    def getScoreList(self, list ):
+        returnList = []
+        for curBinCount in range(self.maxFeatureCount-2, self.minFeatureCount-1, -1):
+            curBinIndex = curBinCount - self.minFeatureCount
+            lookUpList = list[-curBinCount:]
+            score = 0.0
+            curKey = keyMaker(lookUpList)
+            if curKey in self.scoreMap:
+                score = self.scoreMap[curKey]
+                returnList.append(score)
+                self.notMissCount += 1
+                continue
+            self.missCount += 1
+            if lookUpList[-1] < 0.0:
+                score = self.__getScoreForButtomElement(lookUpList, self.inputs[curBinIndex+1].getSorter(), curBinIndex + 1)
+            elif lookUpList[-1] > 0.0:
+                score = self.__getScoreForRisingElement(lookUpList, self.inputs[curBinIndex].getSorter(), curBinIndex + 1)
+            self.scoreMap[curKey] = score
+
+            returnList.append(score)
+
+        return returnList
 
     def setScore( self, transIndex, peakIndex, score ):
         self.transactionHelperList[transIndex].peakHelperList[peakIndex].score = score
@@ -239,10 +300,10 @@ class ReShapeManager:
         isAllValid = all(
             [self.__checkPositivitySingleVal(x, y, curIndex) for x, y in zip(oneSampleNBin[:-1], oneSampleOtherBin[:-1])])
         if not isAllValid:
-            return 0
+            return 0.0
         diff = oneSampleOtherBin[-1] - oneSampleNBin[-1]
         if diff < -1.5:
-            return 0
+            return 0.0
 
         return self.__clampVal( diff - 4.0 )
 
@@ -251,10 +312,10 @@ class ReShapeManager:
             return False
         isAllValid = all([self.__checkPositivitySingleVal(x, y, curIndex) for x, y in zip(oneSampleNBin[:-1], oneSampleNPluseOneBin[:-2])])
         if not isAllValid:
-            return 0
+            return 0.0
         diff = oneSampleNBin[-1] - oneSampleNPluseOneBin[-2]
         if diff < -1.5:
-            return 0
+            return 0.0
         elif diff < 1.5:
             return self.__clampVal(oneSampleNPluseOneBin[-1] - abs(diff))#Positive effect
         else:

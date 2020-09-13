@@ -40,12 +40,12 @@ class ReShapedInput:
     def concanate(self, riseAndTimeList):
         riseList = list(map( lambda x: float(x.rise), riseAndTimeList ))
         newList = list(map(lambda x: riseList[x:x+self.featureCount],
-                                  range( len( riseList ) - self.featureCount)))
+                                  range( len( riseList ) + 1 - self.featureCount)))
 
 
         timeList = list(map( lambda x: float(x.time), riseAndTimeList ))
         newTimeList = list(map(lambda x: timeList[x:x+self.featureCount],
-                                  range( len( timeList ) - self.featureCount)))
+                                  range( len( timeList ) + 1 - self.featureCount)))
 
         self.inputRise.extend(newList)
         self.inputTime.extend(newTimeList)

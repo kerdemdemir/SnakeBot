@@ -155,7 +155,9 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         extraStuff = resultsTransactionFloat[-(transHelper.ExtraFeatureCount-2):]
         justTransactions = resultsTransactionFloat[:-(transHelper.ExtraFeatureCount-2)]
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
-        totalFeatures = currentTransactionList + extraStuff + [abs(resultsChangeFloat[-1]), resultsTimeFloat[-1]]
+        scores = reshaperTuner.getScoreList(resultsChangeFloat)
+
+        totalFeatures = currentTransactionList + extraStuff + resultsTimeFloat[-3:] + scores
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)
@@ -191,7 +193,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
 
 
 
-onlyTransactions = ["learning_15_15_15.txt", "learning_42_05_05.txt"]
+onlyTransactions = ["learning_15_15_15.txt", "learning_42_05_05.txt", "learning_71_25_26.txt"]
 folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
 onlyTransactions = list(map( lambda x:  folderPath+x, onlyTransactions))
 
@@ -201,7 +203,6 @@ def compareInt(x,y):
     return int(x.split("_")[1]) - int(y.split("_")[1])
 
 onlyfiles = list(sorted( onlyfiles, key=functools.cmp_to_key(compareInt) ))
-
 onlyfiles = list(map( lambda x:  folderPath+x, onlyfiles))
 trainingReshaper = ReadFileAndCreateReshaper(onlyfiles[0])
 for fileName in onlyfiles:
@@ -213,6 +214,8 @@ for fileName in onlyfiles:
         AddExtraToShaper(fileName, trainingReshaper, False)
     else:
         AddExtraToShaper(fileName, trainingReshaper, True)
+
+
 
 
 print("All added now scores")
@@ -251,7 +254,7 @@ mlpTransactionScalerList = []
 for transactionIndex in range(len(transParamList)):
     transParam = transParamList[transactionIndex]
     numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
-    mlpTransaction = MLPClassifier(hidden_layer_sizes=(transParam.gramCount+3, transParam.gramCount+3, transParam.gramCount+3), activation='relu',
+    mlpTransaction = MLPClassifier(hidden_layer_sizes=(10, 10, 10), activation='relu',
                                                   solver='adam', max_iter=750)
     mlpTransactionList.append(mlpTransaction)
     transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
@@ -281,7 +284,7 @@ mixTransactionLearner = MLPClassifier(hidden_layer_sizes=(4, 4, 4), activation='
 print("Start Tuning")
 reshaperTuner = inputManager.ReShapeManager([inputManager.TransactionParam(DynamicTuner.smallestTime,DynamicTuner.totalTransactions)])
 ReadFilesInTuneFolder( os.path.abspath(os.getcwd()) + "/Data/TuneData/", reshaperTuner )
-
+reshaperTuner.assignScores()
 transactionTuner = DynamicTuner.PeakTransactionTurner(len(transParamList))
 transactionTuner.Init(reshaperTuner, mlpTransactionScalerList, mlpTransactionList,transParamList)
 

@@ -30,7 +30,7 @@ def NormalizeTransactionCount( totalCount ):
         return 10
     return 11
 
-ExtraFeatureCount = 6
+ExtraFeatureCount = 4
 
 class TransactionData:
     def __init__(self):
@@ -146,6 +146,7 @@ class TransactionPattern:
 class TransactionPeakHelper:
     percent = 0.01
     stopTime = 25
+    PeakFeatureCount = 7
 
     def __init__(self, jsonIn, lowestAcceptedTotalTransactionCount, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
         self.mseconds = mseconds
@@ -157,8 +158,8 @@ class TransactionPeakHelper:
         self.curveVal = curveVal
         self.curveTime = curveTime
         self.inputRise = riseList
-        self.inputTime = timeList
-        self.score = 0
+        self.inputTime = [float(x) for x in timeList]
+        self.scoreList = []
         self.lowestAcceptedTotalTransactionCount = lowestAcceptedTotalTransactionCount
 
         prices = list(map( lambda x: float(x["p"]), jsonIn))
@@ -175,6 +176,9 @@ class TransactionPeakHelper:
         self.startIndex = max(0, self.__FindIndexWithPriceAndPercent(jsonIn, self.peakIndex, -1, -1))
         self.stopIndex = min(totalSize, self.__FindIndexWithPriceAndPercent(jsonIn, self.peakIndex, totalSize,1))
         self.__DivideDataInSeconds(jsonIn)
+
+    def GetPeakFeatures(self):
+        return self.inputTime[-3:] + self.scoreList
 
     def GetTransactionPatterns(self):
         transactionPatterns = self.patternList
@@ -275,21 +279,16 @@ class TransactionAnalyzer :
             peakHelper = TransactionPeakHelper(jsonIn[index], lowestTransaction, msec, isBottom, riseMinuteList[index].rise, riseMinuteList[index].time, riseList, timeList)
             peakHelper.AssignScores(ngrams)
             self.peakHelperList.append(peakHelper)
-            self.__MergeInTransactions(peakHelper)
 
+    def Finalize(self):
+        for peak in self.peakHelperList:
+            self.__MergeInTransactions(peak)
 
     def toTransactionNumpy(self, ngrams ):
-        goodSize = len(self.patternList)
-        badSize = len(self.badPatternList)
-        # if (goodSize < badSize*0.75):
-        #     upsampleSize = int(badSize*0.75) - goodSize
-        #     print("I will upsample good: ", goodSize, " bad: ", badSize, " upsample: ", upsampleSize)
-        #     for i in range(upsampleSize):
-        #         self.patternList.append(self.patternList[goodSize-1-(i%goodSize)])
         allData = self.patternList + self.badPatternList
-
+        print(len(allData))
         self.featureArr = np.array(allData)
-        self.featureArr.reshape(-1, ngrams+ExtraFeatureCount)
+        self.featureArr.reshape(-1, ngrams+ExtraFeatureCount+TransactionPeakHelper.PeakFeatureCount)
         return self.featureArr
 
     def toTransactionNumpyWithScore(self, ngrams, score):
@@ -358,9 +357,7 @@ class TransactionAnalyzer :
     def __MergeInTransactions(self, transactionPeakHelper ):
         # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
         for pattern in transactionPeakHelper.patternList:
-            self.patternList.append(pattern.GetFeatures() + [abs(transactionPeakHelper.curveVal),
-                                                             float(transactionPeakHelper.curveTime)])
+            self.patternList.append(pattern.GetFeatures() + transactionPeakHelper.GetPeakFeatures())
 
         for pattern in transactionPeakHelper.badPatternList:
-            self.badPatternList.append(pattern.GetFeatures() + [abs(transactionPeakHelper.curveVal),
-                                                                float(transactionPeakHelper.curveTime)])
+            self.badPatternList.append(pattern.GetFeatures() + transactionPeakHelper.GetPeakFeatures())
