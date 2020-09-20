@@ -100,6 +100,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         curResultStr = str(predict_test) + ";"
         resultStr += curResultStr
 
+    resultStr = resultStr[:-1]
     print("Results are: ", resultStr)
     return resultStr
 
