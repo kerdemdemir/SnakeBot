@@ -110,7 +110,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
 
 
 
-onlyTransactions = ["learning_15_15_15.txt", "learning_42_05_05.txt", "learning_71_25_26.txt"]
+onlyTransactions = ["learning_15_15_15.txt", "learning_42_05_05.txt", "learning_71_25_26.txt", "learning_87_18_19.txt" ]
 folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
 onlyTransactions = list(map( lambda x:  folderPath+x, onlyTransactions))
 
