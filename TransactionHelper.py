@@ -254,7 +254,7 @@ class TransactionPeakHelper:
 
 class TransactionAnalyzer :
     TransactionCountPerSecBase = 50
-    TransactionCountPerSecIncrease = 5
+    TransactionCountPerSecIncrease = 2
 
     def __init__(self ):
         self.featureArr = []
