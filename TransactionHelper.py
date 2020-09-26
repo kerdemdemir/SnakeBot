@@ -200,6 +200,7 @@ class TransactionPeakHelper:
             curElement = self.dataList[x]
             curElement.NormalizeTransactionCount()
             self.__AppendToPatternList(ngramCount, x, lenArray)
+        del self.dataList
 
     def __FindIndexWithPriceAndPercent(self, jsonIn, curStartIndex, curStopIndex, step):
         for x in range(curStartIndex, curStopIndex, step ):
@@ -219,6 +220,7 @@ class TransactionPeakHelper:
     def __DivideDataInSeconds(self, jsonIn):
         transactionData = TransactionData()
         lastEndTime = 0
+        stopMiliSecs = int(jsonIn[self.stopIndex-1]["T"])
         for x in range(self.startIndex, self.stopIndex):
             curElement = jsonIn[x]
             curMiliSecs = int(curElement["T"])
@@ -232,7 +234,7 @@ class TransactionPeakHelper:
                 transactionData.SetTime(curMiliSecs // 1000)
                 lastEndTime += self.mseconds
                 while True:
-                    if curMiliSecs > lastEndTime:
+                    if curMiliSecs > lastEndTime and lastEndTime < stopMiliSecs:
                         lastEndTime += self.mseconds
                         self.dataList.append(TransactionData())
                     else:

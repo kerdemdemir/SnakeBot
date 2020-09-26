@@ -35,7 +35,6 @@ class ReShapedInput:
         self.inputSorter = InputRiseSorter(featureCount)
         self.inputTime = []
         self.featureCount = featureCount
-        self.featureArr = []
 
     def concanate(self, riseAndTimeList):
         riseList = list(map( lambda x: float(x.rise), riseAndTimeList ))
@@ -60,13 +59,11 @@ class ReShapedInput:
 
     def toNumpy(self):
         inputSize = len(self.inputRise)
-        if np.size(self.featureArr, 0) == inputSize:
-            return self.featureArr
         temp = []
         for curIndex in range(inputSize):
             newRow = self.inputRise[curIndex] + self.inputTime[curIndex]
             temp.append(newRow)
-        self.featureArr = np.array(temp)
-        self.featureArr.reshape(-1, self.featureCount*2)
-        self.featureArr[self.featureArr[:, 0].argsort()]
-        return self.featureArr
+        featureArr = np.array(temp)
+        featureArr.reshape(-1, self.featureCount*2)
+        featureArr[featureArr[:, 0].argsort()]
+        return featureArr

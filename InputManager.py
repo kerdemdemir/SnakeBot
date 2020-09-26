@@ -28,8 +28,6 @@ class ReShapeManager:
         self.inputs = []
         for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
             self.inputs.append( input.ReShapedInput(curBinCount) )
-        self.scoreList = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
-        self.features = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
         self.transactionHelperList = []
         self.transactionParams = transactionParams
         self.scoreMap = {}
@@ -40,13 +38,10 @@ class ReShapeManager:
 
     def ClearMemory(self):
         print("Releasing memory")
-        del self.scoreList
-        del self.features
         del self.transactionHelperList
         for input in self.inputs:
             del input.inputRise
             del input.inputTime
-            del input.featureArr
 
     def addANewCurrency( self, jsonIn, isAddOnlyTransactionPeaks ):
         peakData = jsonIn["peak"]
@@ -93,22 +88,6 @@ class ReShapeManager:
                 self.inputs[curBinIndex].concanate(riseAndTimeList)
 
     def assignScores(self):
-        self.resetScores()
-
-        for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
-            curBinIndex = curBinCount - self.minFeatureCount
-            for currentElemIndex in range(len(self.inputs[curBinIndex].inputRise)):
-                elem = self.inputs[curBinIndex].inputRise[currentElemIndex]
-                curKey = keyMaker(elem)
-                if curKey in self.scoreMap:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.scoreMap[curKey]
-                    continue
-                if elem[-1] < 0.0 and curBinIndex + 1 < self.maxFeatureCount - self.minFeatureCount:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForButtomElement(elem, self.inputs[curBinIndex + 1].getSorter(), curBinIndex + 1)
-                elif elem[-1] > 0.0:
-                    self.scoreList[curBinIndex][currentElemIndex] = self.__getScoreForRisingElement(elem, self.inputs[curBinIndex].getSorter(), curBinIndex+1)
-                self.scoreMap[curKey] = self.scoreList[curBinIndex][currentElemIndex]
-
         counter = 0
         for transHelper in self.transactionHelperList:
             for peakHelper in transHelper.peakHelperList:
@@ -218,13 +197,6 @@ class ReShapeManager:
 
     def toTransactionPeakResultsNumpy(self, index):
         return self.transactionHelperList[index].toTransactionPeakResultsNumpy()
-
-
-    def resetScores(self):
-        for curBinCount in range(self.minFeatureCount, self.maxFeatureCount):
-            curBinIndex = curBinCount - self.minFeatureCount
-            #self.scoreList[curBinIndex].clear()
-            self.scoreList[curBinIndex] = [0.0]*len(self.inputs[curBinIndex].inputRise)
 
     def __getFactor(self, val, curIndex ):
         ngramFactor = lambda x :  0.8 + 0.15*x + 0.05*x*x
