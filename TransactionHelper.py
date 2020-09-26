@@ -93,7 +93,7 @@ class TransactionPattern:
         self.priceRatio = 1.0
 
     def Append( self, dataList, peakTime ):
-        if len(dataList) > 0:
+        if len(dataList) > 0 and dataList[0].firstPrice != 0.0 :
             self.priceRatio = int((1.0 - dataList[-1].lastPrice / dataList[0].firstPrice)*1000)
 
         for elem in dataList:
@@ -147,6 +147,8 @@ class TransactionPeakHelper:
     percent = 0.01
     stopTime = 25
     PeakFeatureCount = 7
+    customTimesForMerge = [2500, 2500, 2500, 2500, 2500, 2500, 2500, 2500, 1000, 1000, 500, 500, 500, 500, 250, 250, 125, 125, 50, 50, 50, 50,
+     25, 25]
 
     def __init__(self, jsonIn, lowestAcceptedTotalTransactionCount, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
         self.mseconds = mseconds
@@ -160,6 +162,7 @@ class TransactionPeakHelper:
         self.inputRise = riseList
         self.inputTime = [float(x) for x in timeList]
         self.scoreList = []
+
         self.lowestAcceptedTotalTransactionCount = lowestAcceptedTotalTransactionCount
 
         prices = list(map( lambda x: float(x["p"]), jsonIn))
@@ -215,20 +218,26 @@ class TransactionPeakHelper:
 
     def __DivideDataInSeconds(self, jsonIn):
         transactionData = TransactionData()
-        lastTime = 0
+        lastEndTime = 0
         for x in range(self.startIndex, self.stopIndex):
             curElement = jsonIn[x]
             curMiliSecs = int(curElement["T"])
             if x == self.startIndex:
-                lastTime = curMiliSecs
+                lastEndTime = curMiliSecs + self.mseconds
 
-            diffTime = curMiliSecs - lastTime
-            if diffTime > self.mseconds:
-                lastTime = curMiliSecs
-                self.dataList.append( copy.deepcopy(transactionData) )
+            if curMiliSecs > lastEndTime:
+                self.dataList.append(copy.deepcopy(transactionData))
                 transactionData.Reset()
                 transactionData.AddData(curElement)
-                transactionData.SetTime(curMiliSecs//1000)
+                transactionData.SetTime(curMiliSecs // 1000)
+                lastEndTime += self.mseconds
+                while True:
+                    if curMiliSecs > lastEndTime:
+                        lastEndTime += self.mseconds
+                        self.dataList.append(TransactionData())
+                    else:
+                        break
+
             else:
                 transactionData.AddData(curElement)
         self.dataList.append(copy.deepcopy(transactionData))
