@@ -272,7 +272,7 @@ class TransactionPeakHelper:
 class TransactionAnalyzer :
     TransactionCountPerSecBase = 50
     TransactionCountPerSecIncrease = 1
-    TransactionLimitPerSecBase = 3.0
+    TransactionLimitPerSecBase = 2.5
     TransactionLimitPerSecBaseIncrease = 0.1
 
     def __init__(self ):
