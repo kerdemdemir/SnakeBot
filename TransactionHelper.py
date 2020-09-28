@@ -128,8 +128,8 @@ class TransactionPattern:
         return "list:%s,buySellRatio:%d,timeDiff:%d,totalBuy:%f,totalSell:%f,transactionCount:%f,score:%f, maxNormalizedCount:%d" % (
                                                                                 str(self.transactionList), self.BuyVsSellRatio(), self.timeDiffInSeconds,
                                                                                 self.totalBuy, self.totalSell,
-                                                                                self.transactionCount,self.score,
-                                                                                self.maxNormalizedCount )
+                                                                                self.transactionCount, self.score,
+                                                                                self.maxNormalizedCount)
 
     def __eq__(self, another):
         return len(self.transactionList) == len(another.transactionList) and \
@@ -332,14 +332,6 @@ class TransactionAnalyzer :
         self.featureArr = np.array(returnVal)
         self.featureArr.reshape(-1, ngrams*2)
         return self.featureArr
-
-    def toTransactionResultsNumpyWithCount(self, countList):
-        print(countList[0], " ", countList[1])
-        goodResult = [1]*countList[0]
-        badResult = [0] *countList[1]
-        returnPatternList = goodResult + badResult
-
-        return np.array(returnPatternList)
 
     def toTransactionResultsNumpy(self):
         print(len(self.patternList), " ", len(self.badPatternList))
