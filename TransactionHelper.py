@@ -147,10 +147,12 @@ class TransactionPeakHelper:
     percent = 0.01
     stopTime = 25
     PeakFeatureCount = 7
+    LowestTransactionCount = 1
     customTimesForMerge = [2500, 2500, 2500, 2500, 2500, 2500, 2500, 2500, 1000, 1000, 500, 500, 500, 500, 250, 250, 125, 125, 50, 50, 50, 50,
      25, 25]
 
-    def __init__(self, jsonIn, lowestAcceptedTotalTransactionCount, mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
+    def __init__(self, jsonIn, lowestAcceptedTotalTransactionCount, acceptedTotalTransactionLimit,
+                 mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
         self.mseconds = mseconds
         totalSize = len(jsonIn)
         self.patternList = []
@@ -164,7 +166,7 @@ class TransactionPeakHelper:
         self.scoreList = []
 
         self.lowestAcceptedTotalTransactionCount = lowestAcceptedTotalTransactionCount
-
+        self.acceptedTotalTransactionLimit = acceptedTotalTransactionLimit
         prices = list(map( lambda x: float(x["p"]), jsonIn))
         if len(prices) == 0:
             return
@@ -253,7 +255,11 @@ class TransactionPeakHelper:
         pattern = TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
         if pattern.totalTransactionCount < self.lowestAcceptedTotalTransactionCount:
+            if pattern.TotalTrade() < self.acceptedTotalTransactionLimit:
+                return
+        if pattern.TotalTrade() < self.LowestTransactionCount:
             return
+
         if pattern.maxNormalizedCount < 4:
             if sum( y > 1 for y in pattern.transactionList ) < 3 :
                 return
@@ -266,6 +272,8 @@ class TransactionPeakHelper:
 class TransactionAnalyzer :
     TransactionCountPerSecBase = 50
     TransactionCountPerSecIncrease = 1
+    TransactionLimitPerSecBase = 3.0
+    TransactionLimitPerSecBaseIncrease = 0.1
 
     def __init__(self ):
         self.featureArr = []
@@ -287,7 +295,10 @@ class TransactionAnalyzer :
 
             totalSec = msec*ngrams//1000
             lowestTransaction = TransactionAnalyzer.TransactionCountPerSecBase + TransactionAnalyzer.TransactionCountPerSecIncrease * totalSec
-            peakHelper = TransactionPeakHelper(jsonIn[index], lowestTransaction, msec, isBottom, riseMinuteList[index].rise, riseMinuteList[index].time, riseList, timeList)
+            acceptedTransLimit = TransactionAnalyzer.TransactionLimitPerSecBase + TransactionAnalyzer.TransactionLimitPerSecBaseIncrease * totalSec
+
+            peakHelper = TransactionPeakHelper(jsonIn[index], lowestTransaction, acceptedTransLimit, msec, isBottom,
+                                               riseMinuteList[index].rise, riseMinuteList[index].time, riseList, timeList)
             peakHelper.AssignScores(ngrams)
             self.peakHelperList.append(peakHelper)
 
