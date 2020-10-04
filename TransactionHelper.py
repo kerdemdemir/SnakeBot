@@ -257,8 +257,6 @@ class TransactionPeakHelper:
         if pattern.totalTransactionCount < self.lowestAcceptedTotalTransactionCount:
             if pattern.TotalTrade() < self.acceptedTotalTransactionLimit:
                 return
-        if pattern.TotalTrade() < self.LowestTransactionCount:
-            return
 
         if pattern.maxNormalizedCount < 4:
             if sum( y > 1 for y in pattern.transactionList ) < 3 :
@@ -270,7 +268,7 @@ class TransactionPeakHelper:
 
 
 class TransactionAnalyzer :
-    TransactionCountPerSecBase = 50
+    TransactionCountPerSecBase = 20
     TransactionCountPerSecIncrease = 1
     TransactionLimitPerSecBase = 2.5
     TransactionLimitPerSecBaseIncrease = 0.1
