@@ -43,9 +43,8 @@ def ReadFileAndCreateReshaper( fileName ):
     jsonDictionary = json.load(file)
 
     reshaper = inputManager.ReShapeManager(transParamList)
+    reshaper.addNewFileData(jsonDictionary)
 
-    for jsonElem in jsonDictionary:
-        reshaper.addANewCurrency(jsonElem,False)
     file.close()
     return  reshaper
 
@@ -53,8 +52,7 @@ def AddExtraToTuneShaper ( fileName, shaper):
     jsonDictionary = {}
     try:
         jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/" + fileName, "r"))
-        for jsonElem in jsonDictionary:
-            shaper.addANewCurrency(jsonElem, True)
+        shaper.addNewFileData(jsonDictionary)
     except:
         print("There was a exception in ", fileName)
 
@@ -64,14 +62,13 @@ def ReadFilesInTuneFolder( folderPath, reshaperTuner ):
         print(" Reading for tuner: ", fileName)
         AddExtraToTuneShaper(fileName, reshaperTuner)
 
-def AddExtraToShaper ( fileName, shaper, IsTransactionOnly):
-    print("Reading ", fileName, " ", IsTransactionOnly)
+def AddExtraToShaper ( fileName, shaper):
+    print("Reading ", fileName, " ")
     file = open(fileName, "r")
     jsonDictionary = {}
     try:
         jsonDictionary = json.load(file)
-        for jsonElem in jsonDictionary:
-            shaper.addANewCurrency(jsonElem, IsTransactionOnly)
+        shaper.addNewFileData(jsonDictionary)
     except:
         print("There was a exception in ", fileName)
     file.close()
@@ -91,8 +88,8 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         justTransactions = resultsTransactionFloat[:-transHelper.ExtraFeatureCount]
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
         scores = trainingReshaper.getScoreList(resultsChangeFloat)
-
-        totalFeatures = currentTransactionList + extraStuff + resultsTimeFloat[-3:] + scores
+        marketState = trainingReshaper.marketState.curUpDowns;
+        totalFeatures = currentTransactionList + extraStuff + resultsTimeFloat[-3:] + scores + marketState
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)
@@ -108,11 +105,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
 
 
 
-onlyTransactions = ["learning_15_15_15.txt", "learning_42_05_05.txt", "learning_71_25_26.txt", "learning_87_18_19.txt" ]
 folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
-onlyTransactions = list(map( lambda x:  folderPath+x, onlyTransactions))
-
-
 onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
 def compareInt(x,y):
     return int(x.split("_")[1]) - int(y.split("_")[1])
@@ -123,14 +116,7 @@ trainingReshaper = ReadFileAndCreateReshaper(onlyfiles[0])
 for fileName in onlyfiles:
     if fileName == onlyfiles[0]:
         continue
-    elif fileName == onlyfiles[-1]:
-        AddExtraToShaper(fileName, trainingReshaper, False)
-    elif fileName in onlyTransactions:
-        AddExtraToShaper(fileName, trainingReshaper, False)
-    else:
-        AddExtraToShaper(fileName, trainingReshaper, True)
-
-
+    AddExtraToShaper(fileName, trainingReshaper)
 
 
 print("All added now scores")
@@ -167,10 +153,6 @@ for transactionIndex in range(len(transParamList)):
     print(confusion_matrix(y_test, finalResult))
 
 trainingReshaper.ClearMemory()
-
-
-currentProbs = [0.5, 0.5] + currentProbs
-print( " Current tuned probibilities are : ", currentProbs)
 sys.stdout.flush()
 
 context = zmq.Context()
@@ -196,7 +178,9 @@ while True:
         score = trainingReshaper.getScore(resultsChangeFloat)
         print( " Score for list: ", priceStrList, " is ", score)
         socket.send_string(str(score), encoding='ascii')
-    elif command == "Adjust":
-        print( " I will send back the new probabilities ", currentProbs)
-        socket.send_string(str(currentProbs), encoding='ascii')
+    elif command == "Peak":
+        print( " New peak will be added ")
+        isBottom = messageChangeTimeTransactionStrList[1] == "Bottom"
+        trainingReshaper.marketState.add(isBottom)
+        socket.send_string("Done", encoding='ascii')
 

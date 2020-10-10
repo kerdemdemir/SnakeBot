@@ -1,5 +1,4 @@
 import numpy as np
-import TransactionHelper
 import itertools
 import bisect
 
@@ -54,16 +53,3 @@ class ReShapedInput:
             self.inputSorter.add(self.inputRise)
 
         return self.inputSorter
-
-
-
-    def toNumpy(self):
-        inputSize = len(self.inputRise)
-        temp = []
-        for curIndex in range(inputSize):
-            newRow = self.inputRise[curIndex] + self.inputTime[curIndex]
-            temp.append(newRow)
-        featureArr = np.array(temp)
-        featureArr.reshape(-1, self.featureCount*2)
-        featureArr[featureArr[:, 0].argsort()]
-        return featureArr

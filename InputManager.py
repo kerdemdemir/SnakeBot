@@ -2,6 +2,7 @@ import Input as input
 import numpy as np
 import json
 import TransactionHelper
+import MarketStateManager
 
 def keyMaker(list):
     key = 0
@@ -33,6 +34,7 @@ class ReShapeManager:
         self.scoreMap = {}
         self.notMissCount = 0
         self.missCount = 0
+        self.marketState = MarketStateManager.MarketStateManager()
         for _ in range(len(transactionParams)):
             self.transactionHelperList.append(TransactionHelper.TransactionAnalyzer())
 
@@ -43,7 +45,11 @@ class ReShapeManager:
             del input.inputRise
             del input.inputTime
 
-    def addANewCurrency( self, jsonIn, isAddOnlyTransactionPeaks ):
+    def addNewFileData( self, jsonDictionary ):
+        for jsonElem in jsonDictionary:
+            self.addANewCurrency(jsonElem)
+
+    def addANewCurrency( self, jsonIn ):
         peakData = jsonIn["peak"]
         riseAndTimeStrList = peakData.split(",")
         if len(riseAndTimeStrList) < 2:
@@ -65,20 +71,25 @@ class ReShapeManager:
             else:
                 riseAndTimeList.append(riseMinute)
 
-        if not isAddOnlyTransactionPeaks:
-            self.addLinePeaks(riseAndTimeList)
-
         newTransParams = []
         for i in range(len(transactionData)):
             if i in skipIndexes:
-                #print("Dont add ", i, " ", transactionData[i])
                 continue
             newTransParams.append(transactionData[i])
 
         transactionData = newTransParams
+
+        startIndex = self.transactionHelperList[-1].GetStartIndex(transactionData)
+        if startIndex == -1:
+            return
+        self.addLinePeaks(riseAndTimeList[startIndex:])
+
         for i in range(len(self.transactionParams)):
             transParam = self.transactionParams[i]
-            self.transactionHelperList[i].AddPeak( transactionData, riseAndTimeList,transParam.msec,transParam.gramCount,self.maxFeatureCount )
+            self.transactionHelperList[i].AddCurrency( transactionData, riseAndTimeList,transParam.msec,
+                                                       transParam.gramCount,self.maxFeatureCount, self.marketState if i == 0 else None )
+
+
 
 
     def addLinePeaks(self, riseAndTimeList):
@@ -89,6 +100,12 @@ class ReShapeManager:
 
     def assignScores(self):
         counter = 0
+        self.marketState.sort()
+
+        for transHelper in self.transactionHelperList:
+            for peakHelper in transHelper.peakHelperList:
+                peakHelper.SetMarketState( self.marketState.getState(peakHelper.peakTimeSeconds) )
+
         for transHelper in self.transactionHelperList:
             for peakHelper in transHelper.peakHelperList:
                 scoreList = self.getScoreList(peakHelper.inputRise)

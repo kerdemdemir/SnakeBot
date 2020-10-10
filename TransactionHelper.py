@@ -3,6 +3,7 @@ import datetime
 import bisect
 import copy
 import numpy as np
+import MarketStateManager
 
 
 def NormalizeTransactionCount( totalCount ):
@@ -146,7 +147,7 @@ class TransactionPattern:
 class TransactionPeakHelper:
     percent = 0.01
     stopTime = 25
-    PeakFeatureCount = 7
+    PeakFeatureCount = 13
     LowestTransactionCount = 1
     customTimesForMerge = [2500, 2500, 2500, 2500, 2500, 2500, 2500, 2500, 1000, 1000, 500, 500, 500, 500, 250, 250, 125, 125, 50, 50, 50, 50,
      25, 25]
@@ -164,6 +165,8 @@ class TransactionPeakHelper:
         self.inputRise = riseList
         self.inputTime = [float(x) for x in timeList]
         self.scoreList = []
+        self.marketStates = []
+        self.marketState = 1
 
         self.lowestAcceptedTotalTransactionCount = lowestAcceptedTotalTransactionCount
         self.acceptedTotalTransactionLimit = acceptedTotalTransactionLimit
@@ -183,7 +186,7 @@ class TransactionPeakHelper:
         self.__DivideDataInSeconds(jsonIn)
 
     def GetPeakFeatures(self):
-        return self.inputTime[-3:] + self.scoreList
+        return self.inputTime[-3:] + self.scoreList + self.marketStates
 
     def GetTransactionPatterns(self):
         transactionPatterns = self.patternList
@@ -203,6 +206,18 @@ class TransactionPeakHelper:
             curElement.NormalizeTransactionCount()
             self.__AppendToPatternList(ngramCount, x, lenArray)
         del self.dataList
+
+    def SetMarketState(self, marketStates):
+        self.marketStates = marketStates
+        for index in range( len(marketStates)//2 ):
+            ratio = marketStates[index]/max(2,marketStates[index+1])
+            if ratio < 0.66 and marketStates[index+1] > 2:
+                self.marketState = 0
+            elif ratio > 2.0:
+                self.marketState = 2
+        self.marketState = 1
+
+
 
     def __FindIndexWithPriceAndPercent(self, jsonIn, curStartIndex, curStopIndex, step):
         for x in range(curStartIndex, curStopIndex, step ):
@@ -279,7 +294,14 @@ class TransactionAnalyzer :
         self.badPatternList = []
         self.peakHelperList = []
 
-    def AddPeak(self, jsonIn, riseMinuteList, msec, ngrams, maxGrams ):
+    def GetStartIndex(self, jsonIn):
+        for index in range(len(jsonIn)):
+            if len(jsonIn[index]) == 0:
+                continue
+            return index
+        return -1
+
+    def AddCurrency(self, jsonIn, riseMinuteList, msec, ngrams, maxGrams, marketState ):
         for index in range(len(jsonIn)):
             isBottom = riseMinuteList[index].rise < 0.0
             if len(jsonIn[index]) == 0:
@@ -298,6 +320,8 @@ class TransactionAnalyzer :
             peakHelper = TransactionPeakHelper(jsonIn[index], lowestTransaction, acceptedTransLimit, msec, isBottom,
                                                riseMinuteList[index].rise, riseMinuteList[index].time, riseList, timeList)
             peakHelper.AssignScores(ngrams)
+            if marketState is not None:
+                marketState.add(peakHelper)
             self.peakHelperList.append(peakHelper)
 
     def Finalize(self):
