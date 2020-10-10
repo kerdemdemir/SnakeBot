@@ -181,6 +181,6 @@ while True:
     elif command == "Peak":
         print( " New peak will be added ")
         isBottom = messageChangeTimeTransactionStrList[1] == "Bottom"
-        trainingReshaper.marketState.add(isBottom)
+        trainingReshaper.marketState.addRecent(isBottom)
         socket.send_string("Done", encoding='ascii')
 

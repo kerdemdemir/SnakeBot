@@ -25,7 +25,7 @@ class MarketStateManager:
     def add(self, transactionPeakHelper):
         self.stateList.append(PeakStateAndTime( transactionPeakHelper.peakTimeSeconds, transactionPeakHelper.isBottom))
 
-    def add(self, isBottom):
+    def addRecent(self, isBottom):
         curSeconds = int(time.time())
         newStateAndTime = PeakStateAndTime(curSeconds, isBottom)
         self.curStateList.append(newStateAndTime)
