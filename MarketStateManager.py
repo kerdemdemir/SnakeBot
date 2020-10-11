@@ -36,8 +36,8 @@ class MarketStateManager:
                 break
         for index in range( len(self.durationList) ):
             curDuration = self.durationList[index]
-            self.curUpDowns[index] = self.getCount(True, curDuration,curSeconds)
-            self.curUpDowns[index+1] = self.getCount(False, curDuration, curSeconds)
+            self.curUpDowns[index*2] = self.getCount(True, curDuration,curSeconds)
+            self.curUpDowns[index*2+1] = self.getCount(False, curDuration, curSeconds)
         print("New ups and downs " , self.curUpDowns)
 
 
