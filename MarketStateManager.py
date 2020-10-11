@@ -29,11 +29,16 @@ class MarketStateManager:
         curSeconds = int(time.time())
         newStateAndTime = PeakStateAndTime(curSeconds, isBottom)
         self.curStateList.append(newStateAndTime)
+        popCount = 0
         for elem in self.curStateList:
             if curSeconds - elem.time > 21600:
-                self.curStateList.popleft()
+                popCount += 1
             else :
                 break
+                
+        for i in range (popCount):
+            self.curStateList.popleft()
+            
         for index in range( len(self.durationList) ):
             curDuration = self.durationList[index]
             self.curUpDowns[index*2] = self.getCount(True, curDuration,curSeconds)
