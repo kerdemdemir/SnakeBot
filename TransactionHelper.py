@@ -83,9 +83,13 @@ class TransactionPattern:
 
 
     def GetFeatures(self):
-        returnval = self.transactionBuyList + self.transactionSellList + self.transactionBuyPowerList +\
-                    self.transactionSellPowerList
-        return returnval
+        returnList = []
+        for i in range(len(self.transactionBuyList)):
+            returnList.append(self.transactionBuyList[i])
+            returnList.append(self.transactionSellList[i])
+            returnList.append(self.transactionBuyPowerList[i])
+            returnList.append(self.transactionSellPowerList[i])
+        return returnList
 
 
     def __repr__(self):
