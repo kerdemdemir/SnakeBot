@@ -51,5 +51,5 @@ class ReShapedInput:
     def getSorter(self):
         if ( len(self.inputSorter.sortedPriceKeys) == 0 ):
             self.inputSorter.add(self.inputRise)
-
+            del self.inputRise
         return self.inputSorter
