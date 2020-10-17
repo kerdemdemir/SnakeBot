@@ -237,7 +237,7 @@ class TransactionPeakHelper:
         self.dataList.append(copy.deepcopy(transactionData))
 
 class TransactionAnalyzer :
-    TransactionCountPerSecBase = 10
+    TransactionCountPerSecBase = 20
     TransactionCountPerSecIncrease = 0.5
     TransactionLimitPerSecBase = 2.5
     TransactionLimitPerSecBaseIncrease = 0.1
