@@ -22,7 +22,7 @@ class MyTestCase(unittest.TestCase):
         # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
         self.assertNotEqual( singleData.totalBuy, 0)
         self.assertNotEqual( singleData.totalSell, 0)
-        self.assertEqual( singleData.transactionCount, 1)
+        self.assertEqual(singleData.transactionBuyCount, 1)
 
     def __testTransactionPeak(self):
         manyDataLine = self.jsonData[1]["transactionList"][36]

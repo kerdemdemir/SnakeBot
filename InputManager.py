@@ -212,9 +212,6 @@ class ReShapeManager:
     def toTransactionResultsNumpy(self, index):
         return self.transactionHelperList[index].toTransactionResultsNumpy()
 
-    def toTransactionPeakResultsNumpy(self, index):
-        return self.transactionHelperList[index].toTransactionPeakResultsNumpy()
-
     def __getFactor(self, val, curIndex ):
         ngramFactor = lambda x :  0.8 + 0.15*x + 0.05*x*x
         if val < 4.0:
