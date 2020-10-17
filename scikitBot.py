@@ -120,6 +120,8 @@ for fileName in onlyfiles:
 
 
 print("All added now scores")
+sys.stdout.flush()
+
 #trainingReshaper.transactionHelper.Print()
 a = datetime.datetime.now()
 trainingReshaper.assignScores()
