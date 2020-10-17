@@ -170,7 +170,7 @@ class TransactionPeakHelper:
                 return
 
         if self.__GetCategory(curIndex) == 0 :
-            self.mustBuyList.append(pattern)
+            #self.mustBuyList.append(pattern)
             self.patternList.append(pattern)
         elif self.__GetCategory(curIndex) == 1 :
             self.patternList.append(pattern)
