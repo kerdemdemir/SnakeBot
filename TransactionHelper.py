@@ -20,8 +20,8 @@ class TransactionData:
         self.lastPrice = 0.0
 
     def __repr__(self):
-        return "TotalBuy:%f,TotalSell:%f,TransactionCount:%f,Score:%f" % (self.totalBuy, self.totalSell,
-                                                                          self.transactionBuyCount, self.score)
+        return "TotalBuy:%f,TotalSell:%f,TransactionCount:%f,Score:%f,LastPrice:%f,Time:%d" % (self.totalBuy, self.totalSell,
+                                                                          self.transactionBuyCount, self.score, self.lastPrice, self.timeInSecs)
 
 
 
@@ -106,6 +106,7 @@ class TransactionPeakHelper:
         self.mseconds = mseconds
         totalSize = len(jsonIn)
         self.patternList = []
+        self.mustBuyList = []
         self.badPatternList = []
         self.dataList = []
         self.isBottom = isBottom
@@ -160,28 +161,36 @@ class TransactionPeakHelper:
 
         pattern = TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
+        if pattern.totalTransactionCount < self.lowestAcceptedTotalTransactionCount:
+            if pattern.totalBuy+pattern.totalSell < 0.75:
+                return
 
-        if self.__IsGood(curIndex):
+        if self.__GetCategory(curIndex) == 0 :
+            self.mustBuyList.append(pattern)
+            self.patternList.append(pattern)
+        elif self.__GetCategory(curIndex) == 1 :
             self.patternList.append(pattern)
         else:
             self.badPatternList.append(pattern)
 
-    def __IsGood( self, curIndex ):
+    def __GetCategory( self, curIndex ):
         price = self.dataList[curIndex].lastPrice
         time = self.dataList[curIndex].timeInSecs
 
         if self.isBottom:
-            if price > self.peakVal * (1.00 + self.percent*2 ):
-                return False
-            elif price > self.peakVal * (1.00 + self.percent ) and time > self.peakTimeSeconds:
-                return False
+            if price < self.peakVal * 1.005:
+                return 0 # Must buy
+            elif price < self.peakVal * 1.01:
+                return 1 # Good
+            elif price < self.peakVal * 1.02 and time < self.peakTimeSeconds:
+                return 1 # Good
             else:
-                return True
+                return 2 # Avarage case
         else:
-            if price < self.peakVal * (1.00 - self.percent*4 ) and time < self.peakTimeSeconds:
-                return True
+            if price < self.peakVal * (1.00 - self.percent*5 ) and time < self.peakTimeSeconds:
+                return 0 # Must buy
             else:
-                return False
+                return 2 # Avarage or bad case
 
     def SetMarketState(self, marketStates):
         self.marketStates = marketStates
@@ -204,7 +213,8 @@ class TransactionPeakHelper:
                 lastEndTime = curMiliSecs + self.mseconds
 
             if curMiliSecs > lastEndTime:
-                self.dataList.append(copy.deepcopy(transactionData))
+                copyData = copy.deepcopy(transactionData)
+                self.dataList.append(copyData)
                 transactionData.Reset()
                 transactionData.AddData(curElement)
                 transactionData.SetTime(curMiliSecs // 1000)
@@ -212,7 +222,10 @@ class TransactionPeakHelper:
                 while True:
                     if curMiliSecs > lastEndTime and lastEndTime < stopMiliSecs:
                         lastEndTime += self.mseconds
-                        self.dataList.append(TransactionData())
+                        emptyData = TransactionData()
+                        emptyData.SetTime(lastEndTime // 1000)
+                        emptyData.lastPrice = copyData.lastPrice
+                        self.dataList.append(emptyData)
                     else:
                         break
             else:
@@ -220,13 +233,14 @@ class TransactionPeakHelper:
         self.dataList.append(copy.deepcopy(transactionData))
 
 class TransactionAnalyzer :
-    TransactionCountPerSecBase = 20
-    TransactionCountPerSecIncrease = 1
+    TransactionCountPerSecBase = 10
+    TransactionCountPerSecIncrease = 0.5
     TransactionLimitPerSecBase = 2.5
     TransactionLimitPerSecBaseIncrease = 0.1
 
     def __init__(self ):
         self.featureArr = []
+        self.mustBuyList = []
         self.patternList = []
         self.badPatternList = []
         self.peakHelperList = []
