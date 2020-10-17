@@ -10,14 +10,21 @@ import sys
 smallestTime = 250
 totalTransactions = 100
 startTime = 0
+listCount = 4
 
 def MergeTransactions ( transactionList, msec, transactionBinCount ):
     index = (msec - startTime) // smallestTime
-    totalElement = index * transactionBinCount
-    arrayList = np.array_split(transactionList[-totalElement:], transactionBinCount)
-    mergeArray = list(map(lambda x: x.sum(), arrayList))
-    summedArray = list(map(lambda x: transHelper.NormalizeTransactionCount(x), mergeArray))
-    return summedArray
+    totalElement = index * transactionBinCount * listCount
+    arrayList = transactionList[-totalElement:]
+    mergeArray = []
+    for i in range(transactionBinCount):
+        curStartIndex = i * listCount * index
+        for j in range(listCount):
+            mergeArray.append(0)
+            for k in range(index):
+                mergeArray[-1] += arrayList[curStartIndex + j + k * listCount]
+
+    return mergeArray
 
 
 def PredictionPrice( acceptanceLevel, predict_test, y_test ):
