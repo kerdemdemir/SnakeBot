@@ -101,7 +101,9 @@ class ReShapeManager:
     def assignScores(self):
         counter = 0
         self.marketState.sort()
-
+        for input in self.inputs:
+            del input.inputTime
+            
         for transHelper in self.transactionHelperList:
             for peakHelper in transHelper.peakHelperList:
                 peakHelper.SetMarketState( self.marketState.getState(peakHelper.peakTimeSeconds) )
