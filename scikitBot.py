@@ -84,12 +84,10 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     resultStr = ""
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
-        extraStuff = resultsTransactionFloat[-transHelper.ExtraFeatureCount:]
-        justTransactions = resultsTransactionFloat[:-transHelper.ExtraFeatureCount]
-        currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
+        currentTransactionList = DynamicTuner.MergeTransactions(resultsTransactionFloat, transParam.msec, transParam.gramCount)
         scores = trainingReshaper.getScoreList(resultsChangeFloat)
-        marketState = trainingReshaper.marketState.curUpDowns;
-        totalFeatures = currentTransactionList + extraStuff + resultsTimeFloat[-3:] + scores + marketState
+        marketState = trainingReshaper.marketState.curUpDowns
+        totalFeatures = currentTransactionList + resultsTimeFloat[-3:] + scores + marketState
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)
@@ -103,6 +101,29 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     print("Results are: ", resultStr)
     return resultStr
 
+def Learn(transParamList, trainingReshaper, mlpTransactionList, mlpTransactionScalerList):
+    for transactionIndex in range(len(transParamList)):
+        transParam = transParamList[transactionIndex]
+        numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(10, 10, 10), activation='relu',
+                                       solver='adam', max_iter=750)
+        mlpTransactionList.append(mlpTransaction)
+        transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
+        mlpTransactionScalerList.append(transactionScaler)
+        X = transactionScaler.transform(numpyArr)
+        y = trainingReshaper.toTransactionResultsNumpy(transactionIndex)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
+
+        mlpTransaction.fit(X_train, y_train)
+
+        predict_test = mlpTransaction.predict_proba(X_test)
+        finalResult = predict_test[:, 1] >= acceptedProbibilty
+        predict_test = np.delete(predict_test, 0, 1)
+
+        print(" Transactions time: ", transParam.msec, " Transaction Index ", transParam.gramCount, "Index ",
+              transactionIndex)
+        print(confusion_matrix(y_test, finalResult))
 
 
 folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
@@ -132,27 +153,7 @@ sys.stdout.flush()
 
 mlpTransactionList = []
 mlpTransactionScalerList = []
-for transactionIndex in range(len(transParamList)):
-    transParam = transParamList[transactionIndex]
-    numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
-    mlpTransaction = MLPClassifier(hidden_layer_sizes=(10, 10, 10), activation='relu',
-                                                  solver='adam', max_iter=750)
-    mlpTransactionList.append(mlpTransaction)
-    transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
-    mlpTransactionScalerList.append(transactionScaler)
-    X = transactionScaler.transform(numpyArr)
-    y = trainingReshaper.toTransactionResultsNumpy(transactionIndex)
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
-
-    mlpTransaction.fit(X_train, y_train)
-
-    predict_test = mlpTransaction.predict_proba(X_test)
-    finalResult = predict_test[:,1] >= acceptedProbibilty
-    predict_test = np.delete(predict_test, 0 , 1 )
-
-    print(" Transactions time: ", transParam.msec, " Transaction Index ", transParam.gramCount, "Index ", transactionIndex)
-    print(confusion_matrix(y_test, finalResult))
+Learn(transParamList, trainingReshaper, mlpTransactionList, mlpTransactionScalerList)
 
 trainingReshaper.ClearMemory()
 print("Memory cleaned")
