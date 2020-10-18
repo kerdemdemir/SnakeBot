@@ -282,43 +282,17 @@ class TransactionAnalyzer :
     def Finalize(self):
         for peak in self.peakHelperList:
             self.__MergeInTransactions(peak)
+            del peak
 
     def toTransactionNumpy(self, ngrams ):
+        badCount = len(self.badPatternList)
+        goodCount = len(self.patternList)
+        if badCount / goodCount > 3 :
+            self.badPatternList = self.badPatternList [ -(goodCount*3): ]
         allData = self.patternList + self.badPatternList
-        print(len(allData))
+        print(goodCount, " ", badCount)
         self.featureArr = np.array(allData)
         self.featureArr.reshape(-1, ngrams*4+ExtraFeatureCount+TransactionPeakHelper.PeakFeatureCount)
-        return self.featureArr
-
-    def toTransactionNumpyWithScore(self, ngrams, score):
-        # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
-        self.patternList.clear()
-        self.badPatternList.clear()
-        for peak in self.peakHelperList:
-            if peak.score > score:
-                self.__MergeInTransactions(peak)
-
-        for peak in self.peakHelperList:
-            if peak.score > score:
-                self.__MergeInTransactions(peak)
-        return self.toTransactionNumpy(ngrams)
-
-
-    def toTransactionCurves(self):
-        returnVal = []
-        for peakHelper in self.peakHelperList:
-                returnVal.append( peakHelper.inputRise )
-
-        return returnVal
-
-
-    def toTransactionCurvesToNumpy(self, ngrams):
-        returnVal = []
-        for peakHelper in self.peakHelperList:
-            returnVal.append(peakHelper.inputRise[-ngrams:] + peakHelper.inputTime[-ngrams:])
-
-        self.featureArr = np.array(returnVal)
-        self.featureArr.reshape(-1, ngrams*2)
         return self.featureArr
 
     def toTransactionResultsNumpy(self):
