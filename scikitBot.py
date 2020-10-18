@@ -155,6 +155,7 @@ for transactionIndex in range(len(transParamList)):
     print(confusion_matrix(y_test, finalResult))
 
 trainingReshaper.ClearMemory()
+print("Memory cleaned")
 sys.stdout.flush()
 
 context = zmq.Context()
