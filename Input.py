@@ -40,7 +40,6 @@ class ReShapedInput:
         newList = list(map(lambda x: riseList[x:x+self.featureCount],
                                   range( len( riseList ) + 1 - self.featureCount)))
 
-
         timeList = list(map( lambda x: float(x.time), riseAndTimeList ))
         newTimeList = list(map(lambda x: timeList[x:x+self.featureCount],
                                   range( len( timeList ) + 1 - self.featureCount)))
@@ -51,5 +50,5 @@ class ReShapedInput:
     def getSorter(self):
         if ( len(self.inputSorter.sortedPriceKeys) == 0 ):
             self.inputSorter.add(self.inputRise)
-            del self.inputRise
+            self.inputRise.clear()
         return self.inputSorter

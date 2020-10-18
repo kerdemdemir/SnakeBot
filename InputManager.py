@@ -102,7 +102,7 @@ class ReShapeManager:
         counter = 0
         self.marketState.sort()
         for input in self.inputs:
-            del input.inputTime
+            input.inputTime.clear()
             
         for transHelper in self.transactionHelperList:
             for peakHelper in transHelper.peakHelperList:
