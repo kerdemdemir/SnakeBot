@@ -31,7 +31,7 @@ isConcanateCsv = False
 acceptedProbibilty = 0.9
 testRatio = 4
 transParamList = [inputManager.TransactionParam(250,  10),
-                  inputManager.TransactionParam(750,  10),
+                  inputManager.TransactionParam(1000,  10),
                   inputManager.TransactionParam(2500,  10)]
 
 currentProbs = []
@@ -101,7 +101,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     print("Results are: ", resultStr)
     return resultStr
 
-def Learn(transParamList, trainingReshaper, mlpTransactionList, mlpTransactionScalerList):
+def Learn():
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
@@ -124,6 +124,7 @@ def Learn(transParamList, trainingReshaper, mlpTransactionList, mlpTransactionSc
         print(" Transactions time: ", transParam.msec, " Transaction Index ", transParam.gramCount, "Index ",
               transactionIndex)
         print(confusion_matrix(y_test, finalResult))
+        sys.stdout.flush()
 
 
 folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
@@ -153,7 +154,7 @@ sys.stdout.flush()
 
 mlpTransactionList = []
 mlpTransactionScalerList = []
-Learn(transParamList, trainingReshaper, mlpTransactionList, mlpTransactionScalerList)
+Learn()
 
 trainingReshaper.ClearMemory()
 print("Memory cleaned")
