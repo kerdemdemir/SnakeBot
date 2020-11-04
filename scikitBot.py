@@ -105,8 +105,8 @@ def Learn():
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
-        mlpTransaction = MLPClassifier(hidden_layer_sizes=(10, 10, 10), activation='relu',
-                                       solver='adam', max_iter=750)
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(32, 32, 32), activation='relu',
+                                       solver='adam', max_iter=500)
         mlpTransactionList.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
         mlpTransactionScalerList.append(transactionScaler)
