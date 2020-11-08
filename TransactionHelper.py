@@ -104,6 +104,7 @@ class TransactionPeakHelper:
     stopTime = 25
     PeakFeatureCount = 13
     LowestTransactionCount = 1
+    AvarageCaseCounter = 0
 
     def __init__(self, jsonIn, lowestAcceptedTotalTransactionCount, acceptedTotalTransactionLimit,
                  mseconds, isBottom, curveVal, curveTime, riseList, timeList ):
@@ -170,8 +171,8 @@ class TransactionPeakHelper:
                 return
 
         if self.__GetCategory(curIndex) == 0 :
-            #self.mustBuyList.append(pattern)
-            self.patternList.append(pattern)
+            self.mustBuyList.append(pattern)
+            #self.patternList.append(pattern)
         elif self.__GetCategory(curIndex) == 1 :
             self.patternList.append(pattern)
         else:
@@ -179,6 +180,7 @@ class TransactionPeakHelper:
 
     def __GetCategory( self, curIndex ):
         price = self.dataList[curIndex].lastPrice
+        firstPrice = self.dataList[curIndex].firstPrice
         time = self.dataList[curIndex].timeInSecs
 
         if self.isBottom:
@@ -188,10 +190,17 @@ class TransactionPeakHelper:
                 return 1 # Good
             elif price < self.peakVal * 1.02 and time < self.peakTimeSeconds:
                 return 1 # Good
-            else:
+            elif price < self.peakVal * 1.04:
                 return 2 # Avarage case
+            elif price < self.peakVal * 1.03 and time > self.peakTimeSeconds:
+                return 2 # Avarage case
+            elif abs(firstPrice/price-1.0) > 0.01:
+                self.AvarageCaseCounter+=1
+                if self.AvarageCaseCounter%4 == 0:
+                    return 2
+
         else:
-            if price < self.peakVal * (1.00 - self.percent*5 ) and time < self.peakTimeSeconds:
+            if price < self.peakVal * 0.95 and time < self.peakTimeSeconds:
                 return 0 # Must buy
             else:
                 return 2 # Avarage or bad case
@@ -238,9 +247,9 @@ class TransactionPeakHelper:
 
 class TransactionAnalyzer :
     TransactionCountPerSecBase = 20
-    TransactionCountPerSecIncrease = 0.5
-    TransactionLimitPerSecBase = 2.5
-    TransactionLimitPerSecBaseIncrease = 0.1
+    TransactionCountPerSecIncrease = 0.0
+    TransactionLimitPerSecBase = 0.5
+    TransactionLimitPerSecBaseIncrease = 0.01
 
     def __init__(self ):
         self.featureArr = []
@@ -287,19 +296,25 @@ class TransactionAnalyzer :
     def toTransactionNumpy(self, ngrams ):
         badCount = len(self.badPatternList)
         goodCount = len(self.patternList)
-        if badCount / goodCount > 3 :
-            self.badPatternList = self.badPatternList [ -(goodCount*3): ]
-        allData = self.patternList + self.badPatternList
-        print(goodCount, " ", badCount)
+        mustBuyCount = len(self.mustBuyList)
+        totalGoodCount = goodCount+mustBuyCount
+        if badCount / totalGoodCount > 3 :
+            self.badPatternList = self.badPatternList [ -(totalGoodCount*3): ]
+        allData = self.patternList + self.mustBuyList + self.badPatternList
+        print("Good count: ", goodCount, " Bad Count: ", badCount, " Must buy: ", mustBuyCount)
         self.featureArr = np.array(allData)
         self.featureArr.reshape(-1, ngrams*4+ExtraFeatureCount+TransactionPeakHelper.PeakFeatureCount)
         return self.featureArr
 
     def toTransactionResultsNumpy(self):
-        print(len(self.patternList), " ", len(self.badPatternList))
-        goodResult = [1]*len(self.patternList)
+        badCount = len(self.badPatternList)
+        goodCount = len(self.patternList)
+        mustBuyCount = len(self.mustBuyList)
+        print("Good count: ", goodCount, " Bad Count: ", badCount, " Must buy: ", mustBuyCount)
+        mustBuyResult = [2] * mustBuyCount
+        goodResult = [1]*goodCount
         badResult  = [0]*len(self.badPatternList)
-        returnPatternList = goodResult + badResult
+        returnPatternList = goodResult + mustBuyResult + badResult
         return np.array(returnPatternList)
 
     def Print( self ):
@@ -314,6 +329,9 @@ class TransactionAnalyzer :
         # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
         for pattern in transactionPeakHelper.patternList:
             self.patternList.append(pattern.GetFeatures() + transactionPeakHelper.GetPeakFeatures())
+
+        for pattern in transactionPeakHelper.mustBuyList:
+            self.mustBuyList.append(pattern.GetFeatures() + transactionPeakHelper.GetPeakFeatures())
 
         for pattern in transactionPeakHelper.badPatternList:
             self.badPatternList.append(pattern.GetFeatures() + transactionPeakHelper.GetPeakFeatures())

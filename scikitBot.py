@@ -13,6 +13,7 @@ from os import listdir
 from os.path import isfile, join
 import datetime
 
+from sklearn.decomposition import PCA
 from sklearn.neural_network import MLPClassifier
 from sklearn import preprocessing
 # Import necessary modules
@@ -28,7 +29,7 @@ totalTimeCount = 6
 isTrainCurves = True
 totalUsedCurveCount = 4
 isConcanateCsv = False
-acceptedProbibilty = 0.9
+acceptedProbibilty = 0.5
 testRatio = 4
 transParamList = [inputManager.TransactionParam(250,  10),
                   inputManager.TransactionParam(1000,  10),
@@ -105,6 +106,7 @@ def Learn():
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
+
         mlpTransaction = MLPClassifier(hidden_layer_sizes=(32, 32, 32), activation='relu',
                                        solver='adam', max_iter=500)
         mlpTransactionList.append(mlpTransaction)
@@ -112,18 +114,17 @@ def Learn():
         mlpTransactionScalerList.append(transactionScaler)
         X = transactionScaler.transform(numpyArr)
         y = trainingReshaper.toTransactionResultsNumpy(transactionIndex)
-
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
 
         mlpTransaction.fit(X_train, y_train)
 
-        predict_test = mlpTransaction.predict_proba(X_test)
-        finalResult = predict_test[:, 1] >= acceptedProbibilty
-        predict_test = np.delete(predict_test, 0, 1)
+        predict_test = mlpTransaction.predict(X_test)
+        #finalResult = predict_test[:, 1] >= acceptedProbibilty
+        #predict_test = np.delete(predict_test, 0, 1)
 
         print(" Transactions time: ", transParam.msec, " Transaction Index ", transParam.gramCount, "Index ",
               transactionIndex)
-        print(confusion_matrix(y_test, finalResult))
+        print(confusion_matrix(y_test, predict_test))
         sys.stdout.flush()
 
 
