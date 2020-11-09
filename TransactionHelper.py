@@ -166,7 +166,7 @@ class TransactionPeakHelper:
         pattern = TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
         if pattern.totalTransactionCount < self.lowestAcceptedTotalTransactionCount:
-            if pattern.totalBuy+pattern.totalSell < 0.75:
+            if pattern.totalBuy+pattern.totalSell < 0.5:
                 return
 
         if self.__GetCategory(curIndex) == 0 :
