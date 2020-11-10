@@ -166,7 +166,7 @@ class TransactionPeakHelper:
         pattern = TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
         if pattern.totalTransactionCount < self.lowestAcceptedTotalTransactionCount:
-            if pattern.totalBuy+pattern.totalSell < 0.5:
+            if pattern.totalBuy+pattern.totalSell < self.acceptedTotalTransactionLimit:
                 return
 
         if self.__GetCategory(curIndex) == 0:
@@ -257,10 +257,10 @@ class TransactionPeakHelper:
 
 
 class TransactionAnalyzer:
-    TransactionCountPerSecBase = 20
-    TransactionCountPerSecIncrease = 0.0
+    TransactionCountPerSecBase = 12
+    TransactionCountPerSecIncrease = 0.5
     TransactionLimitPerSecBase = 0.5
-    TransactionLimitPerSecBaseIncrease = 0.01
+    TransactionLimitPerSecBaseIncrease = 0.02
 
     def __init__(self):
         self.featureArr = []
@@ -288,7 +288,7 @@ class TransactionAnalyzer:
                 riseList = [0.0] * (maxGrams - len(riseList)) + riseList
                 timeList = [0.0] * (maxGrams - len(timeList)) + timeList
 
-            totalSec = msec * ngrams // 1000
+            totalSec = msec * ngrams / 1000
             lowestTransaction = TransactionAnalyzer.TransactionCountPerSecBase + TransactionAnalyzer.TransactionCountPerSecIncrease * totalSec
             acceptedTransLimit = TransactionAnalyzer.TransactionLimitPerSecBase + TransactionAnalyzer.TransactionLimitPerSecBaseIncrease * totalSec
 
