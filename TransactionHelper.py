@@ -5,7 +5,28 @@ import copy
 import numpy as np
 import MarketStateManager
 
-ExtraFeatureCount = 0
+ExtraFeatureCount = 1
+ExtraLongPriceStateCount = 12
+
+def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
+    totalTime = 0
+    ratioToCurVal = 1.0
+    maxRatio = 0.0
+    minRatio = 100.0
+    count = 0
+    for index in range(curIndex, 0, -1):
+        time = float(riseMinuteList[index].time)
+        rise = float(riseMinuteList[index].rise)
+        totalTime += time
+        if totalTime > targetTime:
+            return [minRatio, maxRatio, count]
+        count += 1
+        ratioToCurVal -= rise / 100.0
+        #print(totalTime, " ", rise, " ", ratioToCurVal)
+
+        maxRatio = max(ratioToCurVal, maxRatio)
+        minRatio = min(ratioToCurVal, minRatio)
+    return [minRatio, maxRatio, count]
 
 
 class TransactionData:
@@ -68,7 +89,7 @@ class TransactionPattern:
 
     def Append(self, dataList, peakTime):
         if len(dataList) > 0 and dataList[0].firstPrice != 0.0:
-            self.priceRatio = 1.0 - dataList[-1].lastPrice / dataList[0].firstPrice
+            self.priceRatio = dataList[-1].lastPrice / dataList[0].firstPrice
 
         for elem in dataList:
             self.transactionBuyList.append(elem.transactionBuyCount)
@@ -88,7 +109,7 @@ class TransactionPattern:
             returnList.append(self.transactionSellList[i])
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
-        #returnList.append(self.priceRatio)
+        returnList.append(self.priceRatio)
         return returnList
 
     def __repr__(self):
@@ -101,12 +122,12 @@ class TransactionPattern:
 class TransactionPeakHelper:
     percent = 0.01
     stopTime = 25
-    PeakFeatureCount = 13
+    PeakFeatureCount = 25
     LowestTransactionCount = 1
     AvarageCaseCounter = 0
 
     def __init__(self, jsonIn, lowestAcceptedTotalTransactionCount, acceptedTotalTransactionLimit,
-                 mseconds, isBottom, curveVal, curveTime, riseList, timeList):
+                 mseconds, isBottom, curveVal, curveTime, riseList, timeList, maxMinList):
         self.mseconds = mseconds
         totalSize = len(jsonIn)
         self.patternList = []
@@ -119,6 +140,7 @@ class TransactionPeakHelper:
         self.inputRise = riseList
         self.inputTime = [float(x) for x in timeList]
         self.scoreList = []
+        self.maxMinList = maxMinList
         self.marketStates = []
         self.marketState = 1
 
@@ -138,7 +160,7 @@ class TransactionPeakHelper:
         self.__DivideDataInSeconds(jsonIn)
 
     def GetPeakFeatures(self):
-        return self.inputTime[-3:] + self.scoreList + self.marketStates
+        return self.maxMinList + self.inputTime[-3:] + self.scoreList + self.marketStates
 
     def GetTransactionPatterns(self):
         transactionPatterns = self.patternList
@@ -207,11 +229,11 @@ class TransactionPeakHelper:
                 return 0  # Must buy
             elif price < self.peakVal * 0.97:
                 self.AvarageCaseCounter += 1
-                if self.AvarageCaseCounter % 5 == 0:
+                if self.AvarageCaseCounter % 6 == 0:
                     return 2
             else:
                 self.AvarageCaseCounter += 1
-                if self.AvarageCaseCounter % 3 == 0:
+                if self.AvarageCaseCounter % 4 == 0:
                     return 2
         return -1
 
@@ -288,13 +310,17 @@ class TransactionAnalyzer:
                 riseList = [0.0] * (maxGrams - len(riseList)) + riseList
                 timeList = [0.0] * (maxGrams - len(timeList)) + timeList
 
+            #6 + 7 + 9 + 13 + 21 + 37 + 69
+            maxMinList = GetMaxMinWithTime(riseMinuteList, index, 7*60) + GetMaxMinWithTime(riseMinuteList, index, 21*60) + \
+                              GetMaxMinWithTime(riseMinuteList, index, 37*60)+ GetMaxMinWithTime(riseMinuteList, index, 69 * 60)
+            #print(maxMinList)
             totalSec = msec * ngrams / 1000
             lowestTransaction = TransactionAnalyzer.TransactionCountPerSecBase + TransactionAnalyzer.TransactionCountPerSecIncrease * totalSec
             acceptedTransLimit = TransactionAnalyzer.TransactionLimitPerSecBase + TransactionAnalyzer.TransactionLimitPerSecBaseIncrease * totalSec
 
             peakHelper = TransactionPeakHelper(jsonIn[index], lowestTransaction, acceptedTransLimit, msec, isBottom,
                                                riseMinuteList[index].rise, riseMinuteList[index].time, riseList,
-                                               timeList)
+                                               timeList,maxMinList)
             peakHelper.AssignScores(ngrams)
             if marketState is not None:
                 marketState.add(peakHelper)

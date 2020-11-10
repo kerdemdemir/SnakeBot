@@ -85,10 +85,13 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     resultStr = ""
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
-        currentTransactionList = DynamicTuner.MergeTransactions(resultsTransactionFloat, transParam.msec, transParam.gramCount)
+        extraCount = transHelper.ExtraFeatureCount+transHelper.ExtraLongPriceStateCount
+        extraStuff = resultsTransactionFloat[-extraCount:]
+        justTransactions = resultsTransactionFloat[:-extraCount]
+        currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
         scores = trainingReshaper.getScoreList(resultsChangeFloat)
         marketState = trainingReshaper.marketState.curUpDowns
-        totalFeatures = currentTransactionList + resultsTimeFloat[-3:] + scores + marketState
+        totalFeatures = currentTransactionList + extraStuff + resultsTimeFloat[-3:] + scores + marketState
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)
