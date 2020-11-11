@@ -114,7 +114,7 @@ class ReShapeManager:
                 peakHelper.scoreList = scoreList
             print("Finalizing index", counter, " Not missed " , self.notMissCount, " missed ", self.missCount)
             counter += 1
-            transHelper.Finalize()
+            transHelper.Finalize(counter)
 
     def getScore(self, list ):
         for curBinCount in range(self.maxFeatureCount-2, self.minFeatureCount-1, -1):
