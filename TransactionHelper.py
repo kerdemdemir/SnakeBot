@@ -19,14 +19,20 @@ def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
         rise = float(riseMinuteList[index].rise)
         totalTime += time
         if totalTime > targetTime:
-            return [minRatio, maxRatio, count]
+            if count == 0:
+                return [1.0, 1.0, count]
+            else:
+                return [min(1.0,minRatio), max(1.0,maxRatio), count]
         count += 1
         ratioToCurVal -= rise / 100.0
         #print(totalTime, " ", rise, " ", ratioToCurVal)
 
         maxRatio = max(ratioToCurVal, maxRatio)
         minRatio = min(ratioToCurVal, minRatio)
-    return [minRatio, maxRatio, count]
+    if count == 0:
+        return [1.0, 1.0, count]
+    else:
+        return [min(1.0,minRatio), max(1.0,maxRatio), count]
 
 
 class TransactionData:
@@ -311,8 +317,8 @@ class TransactionAnalyzer:
                 timeList = [0.0] * (maxGrams - len(timeList)) + timeList
 
             #6 + 7 + 9 + 13 + 21 + 37 + 69
-            maxMinList = GetMaxMinWithTime(riseMinuteList, index, 7*60) + GetMaxMinWithTime(riseMinuteList, index, 21*60) + \
-                              GetMaxMinWithTime(riseMinuteList, index, 37*60)+ GetMaxMinWithTime(riseMinuteList, index, 69 * 60)
+            maxMinList = GetMaxMinWithTime(riseMinuteList, index, 6*60) + GetMaxMinWithTime(riseMinuteList, index, 24*60) + \
+                              GetMaxMinWithTime(riseMinuteList, index, 48*60)+ GetMaxMinWithTime(riseMinuteList, index, 72 * 60)
             #print(maxMinList)
             totalSec = msec * ngrams / 1000
             lowestTransaction = TransactionAnalyzer.TransactionCountPerSecBase + TransactionAnalyzer.TransactionCountPerSecIncrease * totalSec
