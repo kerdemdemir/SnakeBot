@@ -4,6 +4,7 @@ from fileinput import input
 import Input as input
 import InputManager as inputManager
 import ExtraDataManager as extraDataMan
+import MarketStateManager as marketState
 import zmq
 import numpy as np
 import sys
@@ -90,7 +91,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         justTransactions = resultsTransactionFloat[:-extraCount]
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
         scores = trainingReshaper.getScoreList(resultsChangeFloat)
-        marketState = trainingReshaper.marketState.curUpDowns
+        marketState = dynamicMarketState.curUpDowns
         totalFeatures = currentTransactionList + extraStuff + resultsTimeFloat[-3:] + scores + marketState
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
@@ -163,7 +164,7 @@ Learn()
 trainingReshaper.ClearMemory()
 print("Memory cleaned")
 sys.stdout.flush()
-
+dynamicMarketState = marketState.MarketStateManager();
 context = zmq.Context()
 socket = context.socket(zmq.REP)
 socket.bind("ipc:///tmp/peakLearner")
@@ -190,6 +191,6 @@ while True:
     elif command == "Peak":
         print( " New peak will be added ")
         isBottom = messageChangeTimeTransactionStrList[1] == "Bottom"
-        trainingReshaper.marketState.addRecent(isBottom)
+        dynamicMarketState.addRecent(isBottom)
         socket.send_string("Done", encoding='ascii')
 
