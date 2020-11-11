@@ -13,7 +13,6 @@ import functools
 from os import listdir
 from os.path import isfile, join
 import datetime
-
 from sklearn.decomposition import PCA
 from sklearn.neural_network import MLPClassifier
 from sklearn import preprocessing
@@ -91,8 +90,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         justTransactions = resultsTransactionFloat[:-extraCount]
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
         scores = trainingReshaper.getScoreList(resultsChangeFloat)
-        marketState = dynamicMarketState.curUpDowns
-        totalFeatures = currentTransactionList + extraStuff + resultsTimeFloat[-3:] + scores + marketState
+        totalFeatures = currentTransactionList + extraStuff + resultsTimeFloat[-3:] + scores
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)

@@ -3,10 +3,15 @@ import datetime
 import bisect
 import copy
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+import matplotlib.image as mpimg
 import MarketStateManager
 
 ExtraFeatureCount = 1
 ExtraLongPriceStateCount = 12
+ExtraMarketStateCount = 6
 
 def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
     totalTime = 0
@@ -166,7 +171,7 @@ class TransactionPeakHelper:
         self.__DivideDataInSeconds(jsonIn)
 
     def GetPeakFeatures(self):
-        return self.maxMinList + self.inputTime[-3:] + self.scoreList + self.marketStates
+        return self.maxMinList + self.marketStates + self.inputTime[-3:] + self.scoreList
 
     def GetTransactionPatterns(self):
         transactionPatterns = self.patternList
@@ -219,28 +224,14 @@ class TransactionPeakHelper:
             elif price < self.peakVal * 1.02 and time < self.peakTimeSeconds:
                 return 1  # Good
             elif price > self.peakVal * 1.04:
-                self.AvarageCaseCounter += 1
-                if self.AvarageCaseCounter % 4 == 0:
-                    return 2
+                return 2
             elif price > self.peakVal * 1.03 and time > self.peakTimeSeconds:
-                self.AvarageCaseCounter += 1
-                if self.AvarageCaseCounter % 4 == 0:
-                    return 2
-            else:
-                self.AvarageCaseCounter += 1
-                if self.AvarageCaseCounter % 5 == 0:
-                    return 2
+                return 2
         else:
             if price < self.peakVal * 0.95 and time < self.peakTimeSeconds:
                 return 0  # Must buy
-            elif price < self.peakVal * 0.97:
-                self.AvarageCaseCounter += 1
-                if self.AvarageCaseCounter % 6 == 0:
-                    return 2
-            else:
-                self.AvarageCaseCounter += 1
-                if self.AvarageCaseCounter % 4 == 0:
-                    return 2
+            elif price > self.peakVal * 0.98:
+                return 2
         return -1
 
     def SetMarketState(self, marketStates):
@@ -285,10 +276,10 @@ class TransactionPeakHelper:
 
 
 class TransactionAnalyzer:
-    TransactionCountPerSecBase = 12
-    TransactionCountPerSecIncrease = 0.5
-    TransactionLimitPerSecBase = 0.5
-    TransactionLimitPerSecBaseIncrease = 0.02
+    TransactionCountPerSecBase = 20
+    TransactionCountPerSecIncrease = 1
+    TransactionLimitPerSecBase = 1.25
+    TransactionLimitPerSecBaseIncrease = 0.05
 
     def __init__(self):
         self.featureArr = []
@@ -332,10 +323,11 @@ class TransactionAnalyzer:
                 marketState.add(peakHelper)
             self.peakHelperList.append(peakHelper)
 
-    def Finalize(self):
+    def Finalize(self, index):
         for peak in self.peakHelperList:
             self.__MergeInTransactions(peak)
             del peak
+        self.Print(index)
 
     def toTransactionNumpy(self, ngrams):
         badCount = len(self.badPatternList)
@@ -361,13 +353,22 @@ class TransactionAnalyzer:
         returnPatternList = goodResult + mustBuyResult + badResult
         return np.array(returnPatternList)
 
-    def Print(self):
-        peakPatternValues = list(self.patternList)
-        peakPatternValues.sort()
-        m = sum(peakPatternValues) / len(peakPatternValues)
-        var_res = sum((xi - m) ** 2 for xi in peakPatternValues) / len(peakPatternValues)
-        print(" len: ", len(peakPatternValues), " small: ", peakPatternValues[0],
-              " last: ", peakPatternValues[-1], " mean ", m, " var ", var_res)
+    def Print(self, index):
+
+        columnNames = "PriceDiff, 6HMin,6HMax,6HPeakCount,24HMin,24HMax,24HPeakCount,48HMin,48HMax,48HPeakCount,72HMin,72HMax,72HPeakCount," \
+                      "5MinsDowns,5MinsUp,30MinsDown,30MinsUp,60MinsDown,60MinsUp,Time1,Time2,Time3," \
+                      "Score1,Score2,Score3,Score4"
+        colNameList = columnNames.split(",")
+        for i in range(TransactionPeakHelper.PeakFeatureCount):
+            df = pd.DataFrame(
+                {'Must': self.mustBuyList[-(i+1)], 'Good': self.patternList[-(i+1)], 'Bad': self.badPatternList[-(i+1)]})
+            df.plot.hist(bins=100)
+            plt.savefig('Plots/' + str(index) + "_" + str(i) + "_" + colNameList[-(i+1)] + '_histogram.pdf')
+            plt.cla()
+
+    def __PrintImpl(self, inList, extraMessage):
+        peakPatternValues = np.array(inList);
+        print(extraMessage," len: ", len(peakPatternValues), " mean ", np.mean(peakPatternValues, axis=0))
 
     def __MergeInTransactions(self, transactionPeakHelper):
         # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
