@@ -20,7 +20,7 @@ class MarketStateManager:
 
         self.curStateList = deque([])
         self.curUpDowns = [0, 0, 0, 0 , 0, 0]
-        self.durationList = [300, 1800, 21600]
+        self.durationList = [60, 300, 21600]
 
     def add(self, transactionPeakHelper):
         self.stateList.append(PeakStateAndTime( transactionPeakHelper.peakTimeSeconds, transactionPeakHelper.isBottom))

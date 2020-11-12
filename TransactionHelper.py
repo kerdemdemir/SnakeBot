@@ -10,7 +10,7 @@ import matplotlib.image as mpimg
 import MarketStateManager
 
 ExtraFeatureCount = 1
-ExtraLongPriceStateCount = 12
+ExtraLongPriceStateCount = 8
 ExtraMarketStateCount = 6
 
 def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
@@ -27,7 +27,7 @@ def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
             if count == 0:
                 return [1.0, 1.0, count]
             else:
-                return [min(1.0,minRatio), max(1.0,maxRatio), count]
+                return [min(1.0,minRatio), max(1.0,maxRatio)]
         count += 1
         ratioToCurVal -= rise / 100.0
         #print(totalTime, " ", rise, " ", ratioToCurVal)
@@ -37,7 +37,7 @@ def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
     if count == 0:
         return [1.0, 1.0, count]
     else:
-        return [min(1.0,minRatio), max(1.0,maxRatio), count]
+        return [min(1.0,minRatio), max(1.0,maxRatio)]
 
 
 class TransactionData:
@@ -133,7 +133,7 @@ class TransactionPattern:
 class TransactionPeakHelper:
     percent = 0.01
     stopTime = 25
-    PeakFeatureCount = 25
+    PeakFeatureCount = 21
     LowestTransactionCount = 1
     AvarageCaseCounter = 0
 
@@ -355,16 +355,24 @@ class TransactionAnalyzer:
 
     def Print(self, index):
 
-        columnNames = "PriceDiff, 6HMin,6HMax,6HPeakCount,24HMin,24HMax,24HPeakCount,48HMin,48HMax,48HPeakCount,72HMin,72HMax,72HPeakCount," \
-                      "5MinsDowns,5MinsUp,30MinsDown,30MinsUp,60MinsDown,60MinsUp,Time1,Time2,Time3," \
+        mustBuyList = np.array(self.mustBuyList)
+        buyList = np.array(self.patternList)
+        badList = np.array(self.badPatternList)
+
+        columnNames = "PriceDiff, 6HMin,6HMax,24HMin,24HMax,48HMin,48HMax,72HMin,72HMax," \
+                      "1MinsDowns,1MinsUp,5MinsDown,5MinsUp,360MinsDown,360MinsUp,Time1,Time2,Time3," \
                       "Score1,Score2,Score3,Score4"
         colNameList = columnNames.split(",")
-        for i in range(TransactionPeakHelper.PeakFeatureCount):
-            df = pd.DataFrame(
-                {'Must': self.mustBuyList[-(i+1)], 'Good': self.patternList[-(i+1)], 'Bad': self.badPatternList[-(i+1)]})
-            df.plot.hist(bins=100)
-            plt.savefig('Plots/' + str(index) + "_" + str(i) + "_" + colNameList[-(i+1)] + '_histogram.pdf')
+        for i in range(TransactionPeakHelper.PeakFeatureCount+1):
+            a = {'Must': mustBuyList[:, -(i + 1)], 'Good': buyList[:, -(i + 1)], 'Bad': badList[:, -(i + 1)]}
+            df = pd.DataFrame.from_dict( a, orient='index')
+            df = df.transpose()
+
+            df.plot.box()
+            plt.savefig('Plots/' + str(index) + "_" + str(i) + "_" + colNameList[-(i+1)] + '_box.pdf')
             plt.cla()
+            plt.clf()
+        plt.close()
 
     def __PrintImpl(self, inList, extraMessage):
         peakPatternValues = np.array(inList);
