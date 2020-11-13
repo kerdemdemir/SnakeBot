@@ -216,20 +216,20 @@ class TransactionPeakHelper:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isBottom:
-            if price < self.peakVal * 1.005:
+            if price < self.peakVal * 1.002:
                 return 0  # Must buy
             elif price < self.peakVal * 1.01:
                 return 1  # Good
             elif price < self.peakVal * 1.02 and time < self.peakTimeSeconds:
                 return 1  # Good
-            elif price > self.peakVal * 1.04:
+            elif price > self.peakVal * 1.03:
                 return 2
-            elif price > self.peakVal * 1.03 and time > self.peakTimeSeconds:
+            elif price > self.peakVal * 1.025 and time > self.peakTimeSeconds:
                 return 2
         else:
             if price < self.peakVal * 0.95 and time < self.peakTimeSeconds:
                 return 0  # Must buy
-            elif price > self.peakVal * 0.98:
+            elif price > self.peakVal * 0.97:
                 return 2
         return -1
 
@@ -276,9 +276,9 @@ class TransactionPeakHelper:
 
 class TransactionAnalyzer:
     TransactionCountPerSecBase = 20
-    TransactionCountPerSecIncrease = 1
-    TransactionLimitPerSecBase = 1.25
-    TransactionLimitPerSecBaseIncrease = 0.05
+    TransactionCountPerSecIncrease = 0.5
+    TransactionLimitPerSecBase = 1.0
+    TransactionLimitPerSecBaseIncrease = 0.02
 
     def __init__(self, ngrams):
         self.mustBuyList = []
