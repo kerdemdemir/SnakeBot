@@ -83,6 +83,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
     resultStr = ""
+    scores = trainingReshaper.getScoreList(resultsChangeFloat)
     #totalPerExtra = transHelper.ExtraPerDataInfo * len(transParamList)
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
@@ -90,7 +91,6 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         extraStuff = resultsTransactionFloat[-extraCount:]
         justTransactions = resultsTransactionFloat[:-extraCount]
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
-        scores = trainingReshaper.getScoreList(resultsChangeFloat)
 
         perExtraStartIndex = -extraCount + transactionIndex * transHelper.ExtraPerDataInfo
         curExtra = resultsTransactionFloat[ perExtraStartIndex : perExtraStartIndex + transHelper.ExtraPerDataInfo]
@@ -187,9 +187,9 @@ while True:
     elif command == "GetScore":
         priceStrList = messageChangeTimeTransactionStrList[1].split(",")
         resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
-        score = trainingReshaper.getScore(resultsChangeFloat)
-        print( " Score for list: ", priceStrList, " is ", score)
-        socket.send_string(str(score), encoding='ascii')
+        scoreList = trainingReshaper.getScoreList(resultsChangeFloat)
+        print( " Score for list: ", priceStrList, " is ", scoreList)
+        socket.send_string(str(scoreList), encoding='ascii')
     elif command == "Peak":
         print( " New peak will be added ")
         isBottom = messageChangeTimeTransactionStrList[1] == "Bottom"
