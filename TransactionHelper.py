@@ -216,7 +216,7 @@ class TransactionPeakHelper:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isBottom:
-            if price < self.peakVal * 1.002:
+            if price < self.peakVal * 1.004:
                 return 0  # Must buy
             elif price < self.peakVal * 1.01:
                 return 1  # Good
