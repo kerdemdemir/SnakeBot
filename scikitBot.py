@@ -94,7 +94,8 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
 
         perExtraStartIndex = -extraCount + transactionIndex * transHelper.ExtraPerDataInfo
         curExtra = resultsTransactionFloat[ perExtraStartIndex : perExtraStartIndex + transHelper.ExtraPerDataInfo]
-        totalFeatures = currentTransactionList + curExtra + extraStuff + resultsTimeFloat[-3:] + scores
+        marketState = dynamicMarketState.curUpDowns
+        totalFeatures = currentTransactionList + curExtra + extraStuff + marketState + resultsTimeFloat[-3:] + scores
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)
