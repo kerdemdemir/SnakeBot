@@ -182,7 +182,7 @@ class ReShapeManager:
         return np.array(output)
 
     def toTransactionFeaturesNumpy(self, index ):
-        return self.transactionHelperList[index].toTransactionNumpy(self.transactionParams[index].gramCount)
+        return self.transactionHelperList[index].toTransactionNumpy()
 
     def toTransactionResultsNumpy(self, index):
         return self.transactionHelperList[index].toTransactionResultsNumpy()
