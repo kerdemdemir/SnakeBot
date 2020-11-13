@@ -35,8 +35,8 @@ class ReShapeManager:
         self.notMissCount = 0
         self.missCount = 0
         self.marketState = MarketStateManager.MarketStateManager()
-        for _ in range(len(transactionParams)):
-            self.transactionHelperList.append(TransactionHelper.TransactionAnalyzer())
+        for i in range(len(transactionParams)):
+            self.transactionHelperList.append(TransactionHelper.TransactionAnalyzer(transactionParams[i].gramCount))
 
     def ClearMemory(self):
         print("Releasing memory")

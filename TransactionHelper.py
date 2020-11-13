@@ -2,16 +2,17 @@ import json
 import datetime
 import bisect
 import copy
+
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
 import matplotlib.image as mpimg
 import MarketStateManager
 
-ExtraFeatureCount = 1
+ExtraFeatureCount = 0
+ExtraPerDataInfo = 2 #MaxPriceMinPriceRatio
 ExtraLongPriceStateCount = 8
-ExtraMarketStateCount = 6
+ExtraMarketStateCount = 4
 
 def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
     totalTime = 0
@@ -25,7 +26,7 @@ def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
         totalTime += time
         if totalTime > targetTime:
             if count == 0:
-                return [1.0, 1.0, count]
+                return [1.0, 1.0]
             else:
                 return [min(1.0,minRatio), max(1.0,maxRatio)]
         count += 1
@@ -35,7 +36,7 @@ def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
         maxRatio = max(ratioToCurVal, maxRatio)
         minRatio = min(ratioToCurVal, minRatio)
     if count == 0:
-        return [1.0, 1.0, count]
+        return [1.0, 1.0]
     else:
         return [min(1.0,minRatio), max(1.0,maxRatio)]
 
@@ -96,11 +97,15 @@ class TransactionPattern:
         self.score = 0.0
         self.totalTransactionCount = 0
         self.timeDiffInSeconds = 0
-        self.priceRatio = 1.0
+        self.priceMaxRatio = 1.0
+        self.priceMinRatio = 1.0
 
     def Append(self, dataList, peakTime):
-        if len(dataList) > 0 and dataList[0].firstPrice != 0.0:
-            self.priceRatio = dataList[-1].lastPrice / dataList[0].firstPrice
+
+        if len(dataList) > 0:
+            priceList = list(map(lambda x: x.lastPrice, dataList))
+            self.priceMaxRatio = dataList[-1].lastPrice / max(priceList)
+            self.priceMinRatio = dataList[-1].lastPrice / min(priceList)
 
         for elem in dataList:
             self.transactionBuyList.append(elem.transactionBuyCount)
@@ -120,7 +125,8 @@ class TransactionPattern:
             returnList.append(self.transactionSellList[i])
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
-        returnList.append(self.priceRatio)
+        returnList.append(self.priceMinRatio)
+        returnList.append(self.priceMaxRatio)
         return returnList
 
     def __repr__(self):
@@ -172,13 +178,6 @@ class TransactionPeakHelper:
 
     def GetPeakFeatures(self):
         return self.maxMinList + self.marketStates + self.inputTime[-3:] + self.scoreList
-
-    def GetTransactionPatterns(self):
-        transactionPatterns = self.patternList
-        returnVal = []
-        for transactionPattern in transactionPatterns:
-            returnVal.append(transactionPattern.GetFeatures())
-        return returnVal
 
     # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
     def AssignScores(self, ngramCount):
@@ -281,12 +280,12 @@ class TransactionAnalyzer:
     TransactionLimitPerSecBase = 1.25
     TransactionLimitPerSecBaseIncrease = 0.05
 
-    def __init__(self):
-        self.featureArr = []
+    def __init__(self, ngrams):
         self.mustBuyList = []
         self.patternList = []
         self.badPatternList = []
         self.peakHelperList = []
+        self.ngrams = ngrams
 
     def GetStartIndex(self, jsonIn):
         for index in range(len(jsonIn)):
@@ -327,20 +326,21 @@ class TransactionAnalyzer:
         for peak in self.peakHelperList:
             self.__MergeInTransactions(peak)
             del peak
-        self.Print(index)
+        self.badPatternList = self.__trimExtremes(self.badPatternList)
+        self.patternList = self.__trimExtremes(self.patternList)
+        self.mustBuyList = self.__trimExtremes(self.mustBuyList)
+        #self.Print(index)
 
-    def toTransactionNumpy(self, ngrams):
+    def toTransactionNumpy(self):
         badCount = len(self.badPatternList)
         goodCount = len(self.patternList)
         mustBuyCount = len(self.mustBuyList)
         totalGoodCount = goodCount + mustBuyCount
         if badCount / totalGoodCount > 3:
             self.badPatternList = self.badPatternList[-(totalGoodCount * 3):]
-        allData = self.patternList + self.mustBuyList + self.badPatternList
+        allData = np.concatenate( (self.patternList, self.mustBuyList, self.badPatternList), axis=0)
         print("Good count: ", goodCount, " Bad Count: ", badCount, " Must buy: ", mustBuyCount)
-        self.featureArr = np.array(allData)
-        self.featureArr.reshape(-1, ngrams * 4 + ExtraFeatureCount + TransactionPeakHelper.PeakFeatureCount)
-        return self.featureArr
+        return allData
 
     def toTransactionResultsNumpy(self):
         badCount = len(self.badPatternList)
@@ -351,7 +351,7 @@ class TransactionAnalyzer:
         goodResult = [1] * goodCount
         badResult = [0] * len(self.badPatternList)
         returnPatternList = goodResult + mustBuyResult + badResult
-        return np.array(returnPatternList)
+        return returnPatternList
 
     def Print(self, index):
 
@@ -359,23 +359,37 @@ class TransactionAnalyzer:
         buyList = np.array(self.patternList)
         badList = np.array(self.badPatternList)
 
-        columnNames = "PriceDiff, 6HMin,6HMax,24HMin,24HMax,48HMin,48HMax,72HMin,72HMax," \
-                      "1MinsDowns,1MinsUp,5MinsDown,5MinsUp,360MinsDown,360MinsUp,Time1,Time2,Time3," \
+        columnNames = "PriceDiffMin,PriceDiffMax,6HMin,6HMax,24HMin,24HMax,48HMin,48HMax,72HMin,72HMax," \
+                      "1MinsDowns,1MinsUp,5MinsDown,5MinsUp,Time1,Time2,Time3," \
                       "Score1,Score2,Score3,Score4"
+        print("Printing index: ", index )
         colNameList = columnNames.split(",")
-        for i in range(TransactionPeakHelper.PeakFeatureCount+1):
-            a = {'Must': mustBuyList[:, -(i + 1)], 'Good': buyList[:, -(i + 1)], 'Bad': badList[:, -(i + 1)]}
+        for i in range(TransactionPeakHelper.PeakFeatureCount):
+            a = {'Must': mustBuyList[:, -(i + 1)],
+                 'Good': buyList[:, -(i + 1)],
+                 'Bad': badList[:, -(i + 1)]}
             df = pd.DataFrame.from_dict( a, orient='index')
             df = df.transpose()
-
             df.plot.box()
+            mustBuyLegend = str(np.quantile(mustBuyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.9))
+            buyLegend = str(np.quantile(buyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.9))
+            badLegend = str(np.quantile(badList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.9))
+            print(str(index) ,"_" , str(i) , "_" , colNameList[-(i+1)] , "_" , mustBuyLegend , "_" , buyLegend , " ", badLegend)
             plt.savefig('Plots/' + str(index) + "_" + str(i) + "_" + colNameList[-(i+1)] + '_box.pdf')
             plt.cla()
             plt.clf()
         plt.close()
 
+    def __trimExtremes(self, listIn):
+        # Score4 = -40, Score3 = -15 Score2 = -8 Score1 = -7 72 H = 0.4 48 H = 0.45 24 H = 0.55 6 H = 0.75
+        data = np.array(listIn)
+        data.reshape(-1, self.ngrams * 4 + ExtraFeatureCount + TransactionPeakHelper.PeakFeatureCount)
+        tobeFilteredData = data[:, [-19, -17, -15, -13, -4, -3, -2, -1]]
+        indexes = np.where((tobeFilteredData < [0.75, 0.55, 0.45, 0.4, -7.0, -8.0, -15.0, -40]).any(axis=1))
+        return np.delete(listIn, indexes, 0)
+
     def __PrintImpl(self, inList, extraMessage):
-        peakPatternValues = np.array(inList);
+        peakPatternValues = np.array(inList)
         print(extraMessage," len: ", len(peakPatternValues), " mean ", np.mean(peakPatternValues, axis=0))
 
     def __MergeInTransactions(self, transactionPeakHelper):

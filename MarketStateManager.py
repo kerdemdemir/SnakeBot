@@ -19,8 +19,8 @@ class MarketStateManager:
         self.stateList = []
 
         self.curStateList = deque([])
-        self.curUpDowns = [0, 0, 0, 0 , 0, 0]
-        self.durationList = [60, 300, 21600]
+        self.curUpDowns = [0, 0, 0, 0]
+        self.durationList = [60, 300]
 
     def add(self, transactionPeakHelper):
         self.stateList.append(PeakStateAndTime( transactionPeakHelper.peakTimeSeconds, transactionPeakHelper.isBottom))
@@ -31,7 +31,7 @@ class MarketStateManager:
         self.curStateList.append(newStateAndTime)
         popCount = 0
         for elem in self.curStateList:
-            if curSeconds - elem.time > 21600:
+            if curSeconds - elem.time > 1000:
                 popCount += 1
             else :
                 break
