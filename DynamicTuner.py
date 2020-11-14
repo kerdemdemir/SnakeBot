@@ -7,8 +7,8 @@ from sklearn.metrics import classification_report,confusion_matrix
 from scipy import stats
 import sys
 
-smallestTime = 250
-totalTransactions = 100
+smallestTime = 1000
+totalTransactions = 30
 startTime = 0
 listCount = 4
 

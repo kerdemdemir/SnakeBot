@@ -32,8 +32,8 @@ isConcanateCsv = False
 acceptedProbibilty = 0.5
 testRatio = 4
 transParamList = [inputManager.TransactionParam(1000,  5),
-                  inputManager.TransactionParam(2500,  5),
-                  inputManager.TransactionParam(5000,  5)]
+                  inputManager.TransactionParam(3000,  5),
+                  inputManager.TransactionParam(6000,  5)]
 
 currentProbs = []
 
