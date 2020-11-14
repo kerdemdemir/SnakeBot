@@ -31,9 +31,9 @@ totalUsedCurveCount = 4
 isConcanateCsv = False
 acceptedProbibilty = 0.5
 testRatio = 4
-transParamList = [inputManager.TransactionParam(250,  10),
-                  inputManager.TransactionParam(1000,  10),
-                  inputManager.TransactionParam(2500,  10)]
+transParamList = [inputManager.TransactionParam(1000,  5),
+                  inputManager.TransactionParam(2500,  5),
+                  inputManager.TransactionParam(5000,  5)]
 
 currentProbs = []
 
@@ -114,7 +114,7 @@ def Learn():
         transParam = transParamList[transactionIndex]
         numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
 
-        mlpTransaction = MLPClassifier(hidden_layer_sizes=(36, 36, 36), activation='relu',
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(32, 32, 32), activation='relu',
                                        solver='adam', max_iter=500)
         mlpTransactionList.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)

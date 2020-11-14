@@ -109,9 +109,9 @@ class TransactionPattern:
 
         for elem in dataList:
             self.transactionBuyList.append(elem.transactionBuyCount)
-            self.transactionSellList.append(self.totalTransactionCount - elem.transactionBuyCount)
-            self.transactionBuyPowerList.append(self.totalBuy)
-            self.transactionSellPowerList.append(self.totalSell)
+            self.transactionSellList.append(elem.totalTransactionCount - elem.transactionBuyCount)
+            self.transactionBuyPowerList.append(elem.totalBuy)
+            self.transactionSellPowerList.append(elem.totalSell)
             self.totalBuy += elem.totalBuy
             self.totalSell += elem.totalSell
             self.transactionCount += elem.transactionBuyCount
@@ -220,16 +220,18 @@ class TransactionPeakHelper:
                 return 0  # Must buy
             elif price < self.peakVal * 1.01:
                 return 1  # Good
-            elif price < self.peakVal * 1.02 and time < self.peakTimeSeconds:
+            elif price < self.peakVal * 1.015 and time < self.peakTimeSeconds:
                 return 1  # Good
-            elif price > self.peakVal * 1.03:
+            elif price > self.peakVal * 1.025:
                 return 2
-            elif price > self.peakVal * 1.025 and time > self.peakTimeSeconds:
+            elif price > self.peakVal * 1.02 and time > self.peakTimeSeconds:
                 return 2
         else:
             if price < self.peakVal * 0.95 and time < self.peakTimeSeconds:
                 return 0  # Must buy
             elif price > self.peakVal * 0.97:
+                return 2
+            elif time > self.peakTimeSeconds:
                 return 2
         return -1
 
@@ -376,6 +378,20 @@ class TransactionAnalyzer:
             badLegend = str(np.quantile(badList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.9))
             print(str(index) ,"_" , str(i) , "_" , colNameList[-(i+1)] , "_" , mustBuyLegend , "_" , buyLegend , " ", badLegend)
             plt.savefig('Plots/' + str(index) + "_" + str(i) + "_" + colNameList[-(i+1)] + '_box.pdf')
+            plt.cla()
+            plt.clf()
+        for i in range(self.ngrams*4):
+            a = {'Must': mustBuyList[:, i],
+                 'Good': buyList[:, i],
+                 'Bad': badList[:, i ]}
+            df = pd.DataFrame.from_dict( a, orient='index')
+            df = df.transpose()
+            df.plot.box()
+            mustBuyLegend = str(np.quantile(mustBuyList[:, i ], 0.1)) + "," + str(np.quantile(mustBuyList[:, i ], 0.5)) + "," + str(np.quantile(mustBuyList[:, i ], 0.9))
+            buyLegend = str(np.quantile(buyList[:, i], 0.1)) + "," + str(np.quantile(buyList[:, i], 0.5)) + "," + str(np.quantile(buyList[:, i], 0.9))
+            badLegend = str(np.quantile(badList[:, i], 0.1)) + "," + str(np.quantile(badList[:, i], 0.5)) + "," + str(np.quantile(badList[:, i ], 0.9))
+            print(str(index) ,"_" , str(i) , "_transac_" , mustBuyLegend , "_" , buyLegend , " ", badLegend)
+            plt.savefig('Plots/' + str(index) + "_" + str(i) + "_transactions_box.pdf")
             plt.cla()
             plt.clf()
         plt.close()
