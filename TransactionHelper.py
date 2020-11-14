@@ -216,22 +216,12 @@ class TransactionPeakHelper:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isBottom:
-            if price < self.peakVal * 1.004:
-                return 0  # Must buy
-            elif price < self.peakVal * 1.01:
+            if price < self.peakVal * 1.006:
                 return 1  # Good
-            elif price < self.peakVal * 1.015 and time < self.peakTimeSeconds:
+            elif price < self.peakVal * 1.01 and time < self.peakTimeSeconds:
                 return 1  # Good
-            elif price > self.peakVal * 1.025:
-                return 2
-            elif price > self.peakVal * 1.02 and time > self.peakTimeSeconds:
-                return 2
         else:
-            if price < self.peakVal * 0.95 and time < self.peakTimeSeconds:
-                return 0  # Must buy
-            elif price > self.peakVal * 0.97:
-                return 2
-            elif time > self.peakTimeSeconds:
+            if price > self.peakVal * 0.97:
                 return 2
         return -1
 
@@ -330,34 +320,34 @@ class TransactionAnalyzer:
             del peak
         self.badPatternList = self.__trimExtremes(self.badPatternList)
         self.patternList = self.__trimExtremes(self.patternList)
-        self.mustBuyList = self.__trimExtremes(self.mustBuyList)
-        #self.Print(index)
+        #self.mustBuyList = self.__trimExtremes(self.mustBuyList)
+        self.Print(index)
 
     def toTransactionNumpy(self):
         badCount = len(self.badPatternList)
         goodCount = len(self.patternList)
-        mustBuyCount = len(self.mustBuyList)
-        totalGoodCount = goodCount + mustBuyCount
+        #mustBuyCount = len(self.mustBuyList)
+        totalGoodCount = goodCount #+ mustBuyCount
         if badCount / totalGoodCount > 3:
             self.badPatternList = self.badPatternList[-(totalGoodCount * 3):]
-        allData = np.concatenate( (self.patternList, self.mustBuyList, self.badPatternList), axis=0)
-        print("Good count: ", goodCount, " Bad Count: ", badCount, " Must buy: ", mustBuyCount)
+        allData = np.concatenate( (self.patternList, self.badPatternList), axis=0)
+        print("Good count: ", goodCount, " Bad Count: ", badCount)
         return allData
 
     def toTransactionResultsNumpy(self):
         badCount = len(self.badPatternList)
         goodCount = len(self.patternList)
-        mustBuyCount = len(self.mustBuyList)
-        print("Good count: ", goodCount, " Bad Count: ", badCount, " Must buy: ", mustBuyCount)
-        mustBuyResult = [2] * mustBuyCount
+        #mustBuyCount = len(self.mustBuyList)
+        print("Good count: ", goodCount, " Bad Count: ", badCount)
+        #mustBuyResult = [2] * mustBuyCount
         goodResult = [1] * goodCount
         badResult = [0] * len(self.badPatternList)
-        returnPatternList = goodResult + mustBuyResult + badResult
+        returnPatternList = goodResult + badResult
         return returnPatternList
 
     def Print(self, index):
 
-        mustBuyList = np.array(self.mustBuyList)
+        #mustBuyList = np.array(self.mustBuyList)
         buyList = np.array(self.patternList)
         badList = np.array(self.badPatternList)
 
@@ -367,30 +357,28 @@ class TransactionAnalyzer:
         print("Printing index: ", index )
         colNameList = columnNames.split(",")
         for i in range(TransactionPeakHelper.PeakFeatureCount):
-            a = {'Must': mustBuyList[:, -(i + 1)],
-                 'Good': buyList[:, -(i + 1)],
+            a = {'Good': buyList[:, -(i + 1)],
                  'Bad': badList[:, -(i + 1)]}
             df = pd.DataFrame.from_dict( a, orient='index')
             df = df.transpose()
             df.plot.box()
-            mustBuyLegend = str(np.quantile(mustBuyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.9))
+            #mustBuyLegend = str(np.quantile(mustBuyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.9))
             buyLegend = str(np.quantile(buyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.9))
             badLegend = str(np.quantile(badList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.9))
-            print(str(index) ,"_" , str(i) , "_" , colNameList[-(i+1)] , "_" , mustBuyLegend , "_" , buyLegend , " ", badLegend)
+            print(str(index) ,"_" , str(i) , "_" , colNameList[-(i+1)], "_" , buyLegend , " ", badLegend)
             plt.savefig('Plots/' + str(index) + "_" + str(i) + "_" + colNameList[-(i+1)] + '_box.pdf')
             plt.cla()
             plt.clf()
         for i in range(self.ngrams*4):
-            a = {'Must': mustBuyList[:, i],
-                 'Good': buyList[:, i],
+            a = {'Good': buyList[:, i],
                  'Bad': badList[:, i ]}
             df = pd.DataFrame.from_dict( a, orient='index')
             df = df.transpose()
             df.plot.box()
-            mustBuyLegend = str(np.quantile(mustBuyList[:, i ], 0.1)) + "," + str(np.quantile(mustBuyList[:, i ], 0.5)) + "," + str(np.quantile(mustBuyList[:, i ], 0.9))
+            #mustBuyLegend = str(np.quantile(mustBuyList[:, i ], 0.1)) + "," + str(np.quantile(mustBuyList[:, i ], 0.5)) + "," + str(np.quantile(mustBuyList[:, i ], 0.9))
             buyLegend = str(np.quantile(buyList[:, i], 0.1)) + "," + str(np.quantile(buyList[:, i], 0.5)) + "," + str(np.quantile(buyList[:, i], 0.9))
             badLegend = str(np.quantile(badList[:, i], 0.1)) + "," + str(np.quantile(badList[:, i], 0.5)) + "," + str(np.quantile(badList[:, i ], 0.9))
-            print(str(index) ,"_" , str(i) , "_transac_" , mustBuyLegend , "_" , buyLegend , " ", badLegend)
+            print(str(index) ,"_" , str(i) , "_transac_", buyLegend , " ", badLegend)
             plt.savefig('Plots/' + str(index) + "_" + str(i) + "_transactions_box.pdf")
             plt.cla()
             plt.clf()
