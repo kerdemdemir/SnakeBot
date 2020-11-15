@@ -89,10 +89,11 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         transParam = transParamList[transactionIndex]
         extraCount = transHelper.ExtraFeatureCount+transHelper.ExtraLongPriceStateCount
         extraStuff = resultsTransactionFloat[-extraCount:]
+        extraCount += transactionIndex * transHelper.ExtraPerDataInfo
         justTransactions = resultsTransactionFloat[:-extraCount]
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
 
-        perExtraStartIndex = -extraCount + transactionIndex * transHelper.ExtraPerDataInfo
+        perExtraStartIndex = -extraCount
         curExtra = resultsTransactionFloat[ perExtraStartIndex : perExtraStartIndex + transHelper.ExtraPerDataInfo]
         marketState = dynamicMarketState.curUpDowns
         totalFeatures = currentTransactionList + curExtra + extraStuff + marketState + resultsTimeFloat[-3:] + scores
@@ -114,7 +115,7 @@ def Learn():
         transParam = transParamList[transactionIndex]
         numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
 
-        mlpTransaction = MLPClassifier(hidden_layer_sizes=(32, 32, 32), activation='relu',
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24), activation='relu',
                                        solver='adam', max_iter=500)
         mlpTransactionList.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
