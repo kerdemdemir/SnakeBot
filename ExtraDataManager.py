@@ -1,34 +1,31 @@
 import numpy as np
+import TransactionHelper as transHelper
+import DynamicTuner
+import MarketStateManager as marketState
+from datetime import datetime
 
 
 from os import listdir
 from os.path import isfile, join
 
 class ExtraDataManager:
-    def __init__( self, minBin, maxBin, transCount, readFolderPath ):
-        self.maxFeatureCount = maxBin
-        self.minFeatureCount = minBin
-        self.transCount = transCount
-        self.scoreList = []
-        self.featureArr  = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
-        self.featureArrNumpy = [[] for _ in range(self.maxFeatureCount - self.minFeatureCount)]
-        self.transactionFeaturesList = []
-        self.transactionFeaturesListNumpy = []
+    def __init__( self, readFolderPath, transParamListIn, marketState ):
+        self.transParamList = transParamListIn
+        self.marketState = marketState
+        self.totalFeaturesList = []
+        for i in range(len(transParamListIn)):
+            self.totalFeaturesList.append([])
+        self.totalLen = 0
         self.ReadFiles( readFolderPath )
 
-    def ConcanateFeature( self, currentNumpyArray, binCount ):
-        binIndex = binCount-self.minFeatureCount
-        self.featureArrNumpy[binIndex] = np.array(self.featureArr[binIndex])
-        self.featureArrNumpy[binIndex].reshape(-1, binCount*2)
-        return np.concatenate((currentNumpyArray, self.featureArrNumpy[binIndex]))
 
-    def ConcanateResults ( self, currentNumpyArray ):
-        return np.concatenate((currentNumpyArray, np.array(self.scoreList)))
+    def concanate(self, dataIn, index ):
+        data = np.array(self.totalFeaturesList[index])
+        data.reshape(-1, self.totalLen)
+        return np.concatenate((dataIn, data), axis=0)
 
-    def ConcanateTransactions ( self, currentNumpyArray, transactionCount ):
-        self.transactionFeaturesListNumpy = np.array(self.transactionFeaturesList)
-        self.transactionFeaturesListNumpy.reshape(-1, transactionCount)
-        return np.concatenate((currentNumpyArray, self.transactionFeaturesListNumpy))
+    def getResult(self,index):
+        return [0] * len(self.totalFeaturesList[index])
 
     def ReadFiles(self, folderPath ):
         onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
@@ -41,27 +38,46 @@ class ExtraDataManager:
             line = fp.readline()
             while line:
                 lineSplitList = line.strip().split(",")
-                print( "line: ", lineSplitList[0], "score:  ", lineSplitList[8])
-
+                #print( "line: ", lineSplitList[0], "scoreList:  ", lineSplitList[1], "bid:  ", lineSplitList[11], "time:  ", lineSplitList[14])
+                line = fp.readline()
+                if float(lineSplitList[11]) > 1.005 :
+                    continue
                 messageChangeTimeTransactionStrList = lineSplitList[0].split(";")
-                lenFeature = (len(messageChangeTimeTransactionStrList) - self.transCount) // 2
-                priceStrList = messageChangeTimeTransactionStrList[:lenFeature]
-                timeStrList = messageChangeTimeTransactionStrList[lenFeature:2*lenFeature]
-                transactionStrList = messageChangeTimeTransactionStrList[-self.transCount:]
+                priceStrList = messageChangeTimeTransactionStrList[1:9]
+                timeStrList = messageChangeTimeTransactionStrList[9:17]
+                transactionStrList = messageChangeTimeTransactionStrList[17:]
 
                 resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
                 resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
                 resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
-                score = float(lineSplitList[8])
-                line = fp.readline()
-                if score < 0.5:
-                    continue
 
-                for binCount in range( self.maxFeatureCount - self.minFeatureCount - 1):
-                    curCount = binCount + self.minFeatureCount
-                    totalCurves = resultsChangeFloat[-curCount:] + resultsTimeFloat[-curCount:]
-                    self.featureArr[binCount].append(totalCurves)
-                newTransaction  = resultsTransactionFloat + [resultsChangeFloat[-1], resultsTimeFloat[-1]]
-                print(newTransaction)
-                self.transactionFeaturesList.append( newTransaction )
-                self.scoreList.append( 1 if score > 1.0 else 0 )
+                resultStr = ""
+                scores = list(map(lambda x: float(x), lineSplitList[1][1:-1].split(";")))
+                #print("scores ", scores )
+                # totalPerExtra = transHelper.ExtraPerDataInfo * len(transParamList)
+                for transactionIndex in range(len(self.transParamList)):
+                    transParam = self.transParamList[transactionIndex]
+                    extraCount = transHelper.ExtraFeatureCount + transHelper.ExtraLongPriceStateCount
+                    extraStuff = resultsTransactionFloat[-extraCount:]
+                    extraCount += len(self.transParamList) * transHelper.ExtraPerDataInfo
+                    justTransactions = resultsTransactionFloat[:-extraCount]
+                    #print( len(justTransactions), " ", justTransactions)
+                    currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec,
+                                                                            transParam.gramCount)
+                    perExtraStartIndex = -extraCount + transactionIndex * transHelper.ExtraPerDataInfo
+                    curExtra = resultsTransactionFloat[
+                               perExtraStartIndex: perExtraStartIndex + transHelper.ExtraPerDataInfo]
+
+                    datetime_object = datetime.strptime("2020-Nov-14 22:29:15", '%Y-%b-%d %H:%M:%S')
+                    epoch = datetime.utcfromtimestamp(0)
+                    curSeconds = (datetime_object - epoch).total_seconds()
+
+                    marketState = self.marketState.getState(curSeconds)
+                    totalFeatures = currentTransactionList + curExtra + extraStuff + marketState + resultsTimeFloat[
+                                                                                                   -3:] + scores
+                    #totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
+                    self.totalLen = len(totalFeatures)
+                    self.totalFeaturesList[transactionIndex].append(totalFeatures)
+                    print(totalFeatures)
+                    #print(len(totalFeatures), " ", totalFeatures)
+

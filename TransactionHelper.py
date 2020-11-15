@@ -321,7 +321,7 @@ class TransactionAnalyzer:
         self.badPatternList = self.__trimExtremes(self.badPatternList)
         self.patternList = self.__trimExtremes(self.patternList)
         #self.mustBuyList = self.__trimExtremes(self.mustBuyList)
-        self.Print(index)
+        #self.Print(index)
 
     def toTransactionNumpy(self):
         badCount = len(self.badPatternList)

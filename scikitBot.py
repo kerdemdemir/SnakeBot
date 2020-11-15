@@ -89,11 +89,11 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         transParam = transParamList[transactionIndex]
         extraCount = transHelper.ExtraFeatureCount+transHelper.ExtraLongPriceStateCount
         extraStuff = resultsTransactionFloat[-extraCount:]
-        extraCount += transactionIndex * transHelper.ExtraPerDataInfo
+        extraCount += len(transParamList) * transHelper.ExtraPerDataInfo
         justTransactions = resultsTransactionFloat[:-extraCount]
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
 
-        perExtraStartIndex = -extraCount
+        perExtraStartIndex = -extraCount + transactionIndex * transHelper.ExtraPerDataInfo
         curExtra = resultsTransactionFloat[ perExtraStartIndex : perExtraStartIndex + transHelper.ExtraPerDataInfo]
         marketState = dynamicMarketState.curUpDowns
         totalFeatures = currentTransactionList + curExtra + extraStuff + marketState + resultsTimeFloat[-3:] + scores
@@ -114,6 +114,8 @@ def Learn():
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
+        #numpyArr = extraDataManager.concanate(numpyArrFirst,transactionIndex)
+
 
         mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24), activation='relu',
                                        solver='adam', max_iter=500)
@@ -121,7 +123,7 @@ def Learn():
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
         mlpTransactionScalerList.append(transactionScaler)
         X = transactionScaler.transform(numpyArr)
-        y = trainingReshaper.toTransactionResultsNumpy(transactionIndex)
+        y = trainingReshaper.toTransactionResultsNumpy(transactionIndex) #+ extraDataManager.getResult(transactionIndex)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
 
         mlpTransaction.fit(X_train, y_train)
@@ -135,6 +137,7 @@ def Learn():
         print(confusion_matrix(y_test, predict_test))
         sys.stdout.flush()
 
+extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
 
 folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
 onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
@@ -149,6 +152,7 @@ for fileName in onlyfiles:
         continue
     AddExtraToShaper(fileName, trainingReshaper)
 
+#extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList, trainingReshaper.marketState)
 
 print("All added now scores")
 sys.stdout.flush()
@@ -160,6 +164,7 @@ b = datetime.datetime.now()
 elapsedTime = b - a
 print("Assigned scores ", elapsedTime.seconds)
 sys.stdout.flush()
+
 
 mlpTransactionList = []
 mlpTransactionScalerList = []
