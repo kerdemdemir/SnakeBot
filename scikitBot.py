@@ -29,7 +29,7 @@ totalTimeCount = 6
 isTrainCurves = True
 totalUsedCurveCount = 4
 isConcanateCsv = False
-acceptedProbibilty = 0.5
+acceptedProbibilty = 0.7
 testRatio = 4
 transParamList = [inputManager.TransactionParam(1000,  5),
                   inputManager.TransactionParam(3000,  5),
@@ -125,18 +125,30 @@ def Learn():
         X = transactionScaler.transform(numpyArr)
         y = trainingReshaper.toTransactionResultsNumpy(transactionIndex) #+ extraDataManager.getResult(transactionIndex)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
-        #X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
-        #y_test = extraDataManager.getResult(transactionIndex)
+        X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
+        y_test = extraDataManager.getConcanatedResult(transactionIndex)
 
         mlpTransaction.fit(X_train, y_train)
 
-        predict_test = mlpTransaction.predict(X_test)
-        #finalResult = predict_test[:, 1] >= acceptedProbibilty
-        #predict_test = np.delete(predict_test, 0, 1)
+        predict_test = mlpTransaction.predict_proba(X_test)
+        #print(predict_test)
+        finalResult = predict_test[:, 1] >= 0.5
+        print("50 ", confusion_matrix(y_test, finalResult))
+
+        finalResult = predict_test[:, 1] >= 0.6
+        print("60 ",confusion_matrix(y_test, finalResult))
+
+        finalResult = predict_test[:, 1] >= 0.7
+        print("70 ",confusion_matrix(y_test, finalResult))
+
+        finalResult = predict_test[:, 1] >= 0.8
+        print("80 ",confusion_matrix(y_test, finalResult))
+        #print(finalResult)
+        #predict_test = np.delete(finalResult, 0, 1)
 
         print(" Transactions time: ", transParam.msec, " Transaction Index ", transParam.gramCount, "Index ",
               transactionIndex)
-        print(confusion_matrix(y_test, predict_test))
+
         sys.stdout.flush()
 
 extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"

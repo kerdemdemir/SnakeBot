@@ -13,11 +13,17 @@ class ExtraDataManager:
         self.transParamList = transParamListIn
         self.marketState = marketState
         self.totalFeaturesList = []
+        self.totalGoodFeaturesList = []
         for i in range(len(transParamListIn)):
             self.totalFeaturesList.append([])
+            self.totalGoodFeaturesList.append([])
         self.totalLen = 0
         self.ReadFiles( readFolderPath )
 
+    def getNumpy(self,index):
+        data = np.array(self.totalFeaturesList[index]+self.totalGoodFeaturesList[index])
+        data.reshape(-1, self.totalLen)
+        return data
 
     def concanate(self, dataIn, index ):
         data = np.array(self.totalFeaturesList[index])
@@ -26,6 +32,9 @@ class ExtraDataManager:
 
     def getResult(self,index):
         return [0] * len(self.totalFeaturesList[index])
+
+    def getConcanatedResult(self,index):
+        return [0] * len(self.totalFeaturesList[index]) + [1] * len(self.totalGoodFeaturesList[index])
 
     def ReadFiles(self, folderPath ):
         onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
@@ -40,8 +49,6 @@ class ExtraDataManager:
                 lineSplitList = line.strip().split(",")
                 #print( "line: ", lineSplitList[0], "scoreList:  ", lineSplitList[1], "bid:  ", lineSplitList[11], "time:  ", lineSplitList[14])
                 line = fp.readline()
-                if float(lineSplitList[11]) > 1.005 :
-                    continue
                 messageChangeTimeTransactionStrList = lineSplitList[0].split(";")
                 priceStrList = messageChangeTimeTransactionStrList[1:9]
                 timeStrList = messageChangeTimeTransactionStrList[9:17]
@@ -61,23 +68,28 @@ class ExtraDataManager:
                     extraStuff = resultsTransactionFloat[-extraCount:]
                     extraCount += len(self.transParamList) * transHelper.ExtraPerDataInfo
                     justTransactions = resultsTransactionFloat[:-extraCount]
-                    #print( len(justTransactions), " ", justTransactions)
+                    if len(justTransactions) != 80:
+                        continue
+                    print( len(justTransactions), " ", justTransactions)
                     currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec,
                                                                             transParam.gramCount)
                     perExtraStartIndex = -extraCount + transactionIndex * transHelper.ExtraPerDataInfo
                     curExtra = resultsTransactionFloat[
                                perExtraStartIndex: perExtraStartIndex + transHelper.ExtraPerDataInfo]
 
-                    datetime_object = datetime.strptime("2020-Nov-14 22:29:15", '%Y-%b-%d %H:%M:%S')
+                    datetime_object = datetime.strptime(lineSplitList[14], '%Y-%b-%d %H:%M:%S')
                     epoch = datetime.utcfromtimestamp(0)
                     curSeconds = (datetime_object - epoch).total_seconds()
 
                     marketState = self.marketState.getState(curSeconds)
-                    totalFeatures = currentTransactionList + curExtra + extraStuff + marketState + resultsTimeFloat[
-                                                                                                   -3:] + scores
+                    totalFeatures = currentTransactionList + extraStuff + marketState + resultsTimeFloat[-3:]
+                                    #extraStuff #+ marketState + resultsTimeFloat[-3:] + scores
                     #totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
                     self.totalLen = len(totalFeatures)
-                    self.totalFeaturesList[transactionIndex].append(totalFeatures)
+                    if float(lineSplitList[11]) < 1.005:
+                        self.totalFeaturesList[transactionIndex].append(totalFeatures)
+                    else:
+                        self.totalGoodFeaturesList[transactionIndex].append(totalFeatures)
                     print(totalFeatures)
                     #print(len(totalFeatures), " ", totalFeatures)
 
