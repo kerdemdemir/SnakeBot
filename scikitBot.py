@@ -125,6 +125,8 @@ def Learn():
         X = transactionScaler.transform(numpyArr)
         y = trainingReshaper.toTransactionResultsNumpy(transactionIndex) #+ extraDataManager.getResult(transactionIndex)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
+        #X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
+        #y_test = extraDataManager.getResult(transactionIndex)
 
         mlpTransaction.fit(X_train, y_train)
 
@@ -152,7 +154,6 @@ for fileName in onlyfiles:
         continue
     AddExtraToShaper(fileName, trainingReshaper)
 
-#extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList, trainingReshaper.marketState)
 
 print("All added now scores")
 sys.stdout.flush()
@@ -164,6 +165,7 @@ b = datetime.datetime.now()
 elapsedTime = b - a
 print("Assigned scores ", elapsedTime.seconds)
 sys.stdout.flush()
+extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList, trainingReshaper.marketState)
 
 
 mlpTransactionList = []

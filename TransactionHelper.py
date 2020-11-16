@@ -28,7 +28,7 @@ def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
             if count == 0:
                 return [1.0, 1.0]
             else:
-                return [min(1.0,minRatio), max(1.0,maxRatio)]
+                return [max(1.0,minRatio), min(1.0,maxRatio)]
         count += 1
         ratioToCurVal -= rise / 100.0
         #print(totalTime, " ", rise, " ", ratioToCurVal)
@@ -38,7 +38,7 @@ def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
     if count == 0:
         return [1.0, 1.0]
     else:
-        return [min(1.0,minRatio), max(1.0,maxRatio)]
+        return [max(1.0,minRatio), min(1.0,maxRatio)]
 
 
 class TransactionData:
