@@ -114,7 +114,7 @@ def Learn():
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
-        #numpyArr = extraDataManager.concanate(numpyArrFirst,transactionIndex)
+        numpyArr = extraDataManager.concanate(numpyArr,transactionIndex)
 
 
         mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24), activation='relu',
@@ -123,26 +123,18 @@ def Learn():
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
         mlpTransactionScalerList.append(transactionScaler)
         X = transactionScaler.transform(numpyArr)
-        y = trainingReshaper.toTransactionResultsNumpy(transactionIndex) #+ extraDataManager.getResult(transactionIndex)
+        y = trainingReshaper.toTransactionResultsNumpy(transactionIndex) + extraDataManager.getResult(transactionIndex)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
-        X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
-        y_test = extraDataManager.getConcanatedResult(transactionIndex)
+        #X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
+        #y_test = extraDataManager.getConcanatedResult(transactionIndex)
 
         mlpTransaction.fit(X_train, y_train)
 
         predict_test = mlpTransaction.predict_proba(X_test)
         #print(predict_test)
-        finalResult = predict_test[:, 1] >= 0.5
-        print("50 ", confusion_matrix(y_test, finalResult))
-
+        
         finalResult = predict_test[:, 1] >= 0.6
         print("60 ",confusion_matrix(y_test, finalResult))
-
-        finalResult = predict_test[:, 1] >= 0.7
-        print("70 ",confusion_matrix(y_test, finalResult))
-
-        finalResult = predict_test[:, 1] >= 0.8
-        print("80 ",confusion_matrix(y_test, finalResult))
         #print(finalResult)
         #predict_test = np.delete(finalResult, 0, 1)
 
