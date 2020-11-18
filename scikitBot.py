@@ -84,7 +84,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
     resultStr = ""
-    scores = trainingReshaper.getScoreList(resultsChangeFloat)
+    #scores = trainingReshaper.getScoreList(resultsChangeFloat)
 
     minMaxPriceRatio = transHelper.GetPeaksRatio(resultsChangeFloat, 7)
     #print(resultsChangeFloat, " ", resultsChangeFloat[7], " ", minMaxPriceRatio)
