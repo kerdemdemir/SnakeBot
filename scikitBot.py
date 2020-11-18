@@ -85,6 +85,13 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
 
     resultStr = ""
     scores = trainingReshaper.getScoreList(resultsChangeFloat)
+
+    minMaxPriceRatio = transHelper.GetPeaksRatio(resultsChangeFloat, 7)
+    #print(resultsChangeFloat, " ", resultsChangeFloat[7], " ", minMaxPriceRatio)
+    if transHelper.ExtraPeakRatioCount != 0 and len(minMaxPriceRatio) != transHelper.ExtraPeakRatioCount:
+        print("Bad extra data ", len(minMaxPriceRatio), " ", transHelper.ExtraPeakRatioCount)
+        minMaxPriceRatio = minMaxPriceRatio[:transHelper.ExtraPeakRatioCount]
+
     #totalPerExtra = transHelper.ExtraPerDataInfo * len(transParamList)
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
@@ -97,7 +104,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         perExtraStartIndex = -extraCount + transactionIndex * transHelper.ExtraPerDataInfo
         curExtra = resultsTransactionFloat[ perExtraStartIndex : perExtraStartIndex + transHelper.ExtraPerDataInfo]
         marketState = dynamicMarketState.curUpDowns
-        totalFeatures = currentTransactionList + extraStuff + marketState + resultsTimeFloat[-3:]
+        totalFeatures = currentTransactionList + extraStuff + marketState + resultsTimeFloat[-3:] + minMaxPriceRatio
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)

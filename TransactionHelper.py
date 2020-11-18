@@ -13,7 +13,7 @@ ExtraFeatureCount = 0
 ExtraPerDataInfo = 2 #MaxPriceMinPriceRatio
 ExtraLongPriceStateCount = 8
 ExtraMarketStateCount = 4
-ExtraPeakRatioCount = 0
+ExtraPeakRatioCount = 2
 
 def GetPeaksRatio(riseList, curIndex):
     cummulaviteRatio = 1.0
