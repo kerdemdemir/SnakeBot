@@ -44,7 +44,7 @@ def ReadFileAndCreateReshaper( fileName ):
     jsonDictionary = json.load(file)
 
     reshaper = inputManager.ReShapeManager(transParamList)
-    reshaper.addNewFileData(jsonDictionary)
+    reshaper.addNewFileData(jsonDictionary, True)
 
     file.close()
     return  reshaper
@@ -67,9 +67,10 @@ def AddExtraToShaper ( fileName, shaper):
     print("Reading ", fileName, " ")
     file = open(fileName, "r")
     jsonDictionary = {}
+
     try:
         jsonDictionary = json.load(file)
-        shaper.addNewFileData(jsonDictionary)
+        shaper.addNewFileData(jsonDictionary, True)
     except:
         print("There was a exception in ", fileName)
     file.close()

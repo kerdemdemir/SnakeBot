@@ -45,11 +45,11 @@ class ReShapeManager:
             del input.inputRise
             del input.inputTime
 
-    def addNewFileData( self, jsonDictionary ):
+    def addNewFileData( self, jsonDictionary, isFinalize ):
         for jsonElem in jsonDictionary:
-            self.addANewCurrency(jsonElem)
+            self.addANewCurrency(jsonElem, isFinalize)
 
-    def addANewCurrency( self, jsonIn):
+    def addANewCurrency( self, jsonIn, isFinalize ):
         peakData = jsonIn["peak"]
         riseAndTimeStrList = peakData.split(",")
         if len(riseAndTimeStrList) < 2:
@@ -87,7 +87,7 @@ class ReShapeManager:
         for i in range(len(self.transactionParams)):
             transParam = self.transactionParams[i]
             self.transactionHelperList[i].AddCurrency( transactionData, riseAndTimeList,transParam.msec,
-                                                       transParam.gramCount,self.maxFeatureCount, self.marketState if i == 0 else None )
+                                                       transParam.gramCount,self.maxFeatureCount, self.marketState if i == 0 else None, isFinalize )
 
 
 
@@ -109,10 +109,10 @@ class ReShapeManager:
                 peakHelper.SetMarketState( self.marketState.getState(peakHelper.peakTimeSeconds) )
 
         for transHelper in self.transactionHelperList:
-            for peakHelper in transHelper.peakHelperList:
-                scoreList = self.getScoreList(peakHelper.inputRise)
-                peakHelper.scoreList = scoreList
-            print("Finalizing index", counter, " Not missed " , self.notMissCount, " missed ", self.missCount)
+        #    for peakHelper in transHelper.peakHelperList:
+        #        scoreList = self.getScoreList(peakHelper.inputRise)
+        #        peakHelper.scoreList = scoreList
+        #   print("Finalizing index", counter, " Not missed " , self.notMissCount, " missed ", self.missCount)
             counter += 1
             transHelper.Finalize(counter)
 

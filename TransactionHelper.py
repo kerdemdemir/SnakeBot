@@ -13,6 +13,46 @@ ExtraFeatureCount = 0
 ExtraPerDataInfo = 2 #MaxPriceMinPriceRatio
 ExtraLongPriceStateCount = 8
 ExtraMarketStateCount = 4
+ExtraPeakRatioCount = 0
+
+def GetPeaksRatio(riseList, curIndex):
+    cummulaviteRatio = 1.0
+    startVal = riseList[curIndex]
+    isBottom = startVal < 0.0
+    minRatios = []
+    maxRatios = []
+    for index in range(curIndex, curIndex-(1+ExtraPeakRatioCount), -1):
+        rise = float(riseList[index])
+        curRatio = rise / 100.0
+        cummulaviteRatio -= curRatio
+        #print("Alert ", riseList[index], " ", minRatios, " ", maxRatios, " ", cummulaviteRatio)
+        if curIndex == index:
+            continue
+
+        if isBottom and curRatio > 0.0:
+            minRatios.append(cummulaviteRatio)
+        elif not isBottom and curRatio < 0.0:
+            maxRatios.append(cummulaviteRatio)
+
+
+    isBottom = not isBottom
+    cummulaviteRatio = 1.0
+    for index in range(curIndex - 1, curIndex - (2+ExtraPeakRatioCount), -1):
+        rise = float(riseList[index])
+        curRatio = rise / 100.0
+        cummulaviteRatio -= curRatio
+        #print("Alert2 ", riseMinuteList[index].rise, " ", minRatios, " ", maxRatios, " ", cummulaviteRatio)
+
+        if curIndex == index:
+            continue
+        if isBottom and curRatio > 0.0:
+            minRatios.append(cummulaviteRatio)
+        elif not isBottom and curRatio < 0.0:
+            maxRatios.append(cummulaviteRatio)
+    #print(minRatios + maxRatios)
+    return minRatios + maxRatios
+
+
 
 def GetMaxMinWithTime(riseMinuteList, curIndex, targetTime):
     totalTime = 0
@@ -126,8 +166,10 @@ class TransactionPattern:
             returnList.append(self.transactionSellList[i])
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
-        #returnList.append(self.priceMinRatio)
-        #returnList.append(self.priceMaxRatio)
+        #buyCount = sum(self.transactionBuyList)
+        #sellCount = sum(self.transactionSellList)
+        #returnList.append(buyCount)
+        #returnList.append(sellCount)
         return returnList
 
     def __repr__(self):
@@ -140,12 +182,12 @@ class TransactionPattern:
 class TransactionPeakHelper:
     percent = 0.01
     stopTime = 25
-    PeakFeatureCount = 15
+    PeakFeatureCount = ExtraFeatureCount + 11 + ExtraMarketStateCount + ExtraPeakRatioCount
     LowestTransactionCount = 1
     AvarageCaseCounter = 0
 
     def __init__(self, jsonIn, lowestAcceptedTotalTransactionCount, acceptedTotalTransactionLimit,
-                 mseconds, isBottom, curveVal, curveTime, riseList, timeList, maxMinList):
+                 mseconds, isBottom, curveVal, curveTime, riseList, timeList, maxMinList, peakRatios):
         self.mseconds = mseconds
         totalSize = len(jsonIn)
         self.patternList = []
@@ -160,8 +202,9 @@ class TransactionPeakHelper:
         self.scoreList = []
         self.maxMinList = maxMinList
         self.marketStates = []
+        self.peakRatios = peakRatios
         self.marketState = 1
-
+        self.isFinalize = True
         self.lowestAcceptedTotalTransactionCount = lowestAcceptedTotalTransactionCount
         self.acceptedTotalTransactionLimit = acceptedTotalTransactionLimit
         prices = list(map(lambda x: float(x["p"]), jsonIn))
@@ -178,8 +221,8 @@ class TransactionPeakHelper:
         self.__DivideDataInSeconds(jsonIn)
 
     def GetPeakFeatures(self):
-        return self.maxMinList + self.marketStates + self.inputTime[-3:]
-            #self.maxMinList #+ self.marketStates + self.inputTime[-3:] + self.scoreList
+        return self.maxMinList + self.marketStates + self.inputTime[-3:] + self.peakRatios
+            #self.maxMinList #+ self.marketStates + self.inputTime[-3:] + self.scoreList + self.peakRatios
 
     # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
     def AssignScores(self, ngramCount):
@@ -288,11 +331,17 @@ class TransactionAnalyzer:
             return index
         return -1
 
-    def AddCurrency(self, jsonIn, riseMinuteList, msec, ngrams, maxGrams, marketState):
+    def AddCurrency(self, jsonIn, riseMinuteList, msec, ngrams, maxGrams, marketState, isFinalize):
+        if len(jsonIn) < 8:
+            return
+
         for index in range(len(jsonIn)):
             isBottom = riseMinuteList[index].rise < 0.0
             if len(jsonIn[index]) == 0:
                 continue
+            if index < 8:
+                continue
+
             indexPlusOne = index + 1
             riseList = list(map(lambda x: x.rise, riseMinuteList[index - maxGrams:indexPlusOne]))
             timeList = list(map(lambda x: x.time, riseMinuteList[index - maxGrams:indexPlusOne]))
@@ -306,15 +355,20 @@ class TransactionAnalyzer:
             if maxMinList[0] < 0.75 or maxMinList[1] < 0.55 or maxMinList[2] < 0.45 or maxMinList[3] < 0.4:
                 continue
 
+
+
             #print(maxMinList)
             totalSec = msec * ngrams / 1000
             lowestTransaction = TransactionAnalyzer.TransactionCountPerSecBase + TransactionAnalyzer.TransactionCountPerSecIncrease * totalSec
             acceptedTransLimit = TransactionAnalyzer.TransactionLimitPerSecBase + TransactionAnalyzer.TransactionLimitPerSecBaseIncrease * totalSec
 
+            riseCompleteList = list(map( lambda x: x.rise, riseMinuteList))
+            peakRatios = GetPeaksRatio(riseCompleteList, index)
+
             peakHelper = TransactionPeakHelper(jsonIn[index], lowestTransaction, acceptedTransLimit, msec, isBottom,
                                                riseMinuteList[index].rise, riseMinuteList[index].time, riseList,
-                                               timeList,maxMinList)
-
+                                               timeList,maxMinList,peakRatios)
+            peakHelper.isFinalize = isFinalize
 
             peakHelper.AssignScores(ngrams)
 
@@ -396,9 +450,10 @@ class TransactionAnalyzer:
     def __MergeInTransactions(self, transactionPeakHelper):
         # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
 
-        if transactionPeakHelper.scoreList[0] > -10 or transactionPeakHelper.scoreList[1] < -25 or transactionPeakHelper.scoreList[2] < -50 or transactionPeakHelper.scoreList[3] < -75:
+        #if transactionPeakHelper.scoreList[0] > -10 or transactionPeakHelper.scoreList[1] < -25 or transactionPeakHelper.scoreList[2] < -50 or transactionPeakHelper.scoreList[3] < -75:
+         #   return
+        if transactionPeakHelper.isFinalize == False:
             return
-
         for pattern in transactionPeakHelper.patternList:
             self.patternList.append(pattern.GetFeatures() + transactionPeakHelper.GetPeakFeatures())
 

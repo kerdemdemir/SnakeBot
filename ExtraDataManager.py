@@ -44,6 +44,10 @@ class ExtraDataManager:
     def __ReadFile(self, fileName):
         with open(fileName) as fp:
             line = fp.readline()
+            extraLineCount = 0
+            if line.strip().split(",")[2] == "MarketState":
+                extraLineCount = 1
+                print("ExtraLine")
             line = fp.readline()
             while line:
                 lineSplitList = line.strip().split(",")
@@ -62,34 +66,45 @@ class ExtraDataManager:
                 scores = list(map(lambda x: float(x), lineSplitList[1][1:-1].split(";")))
                 #print("scores ", scores )
                 # totalPerExtra = transHelper.ExtraPerDataInfo * len(transParamList)
+                minMaxPriceRatio = transHelper.GetPeaksRatio(resultsChangeFloat, 7)
+                print(resultsChangeFloat, " ", resultsChangeFloat[7], " ", minMaxPriceRatio)
+                if transHelper.ExtraPeakRatioCount != 0 and len(minMaxPriceRatio) != transHelper.ExtraPeakRatioCount:
+                    print("Bad extra data ", len(minMaxPriceRatio),  " ", transHelper.ExtraPeakRatioCount)
+                    continue
                 for transactionIndex in range(len(self.transParamList)):
                     transParam = self.transParamList[transactionIndex]
-                    extraCount = transHelper.ExtraFeatureCount + transHelper.ExtraLongPriceStateCount
+                    extraCount = transHelper.ExtraLongPriceStateCount
                     extraStuff = resultsTransactionFloat[-extraCount:]
                     extraCount += len(self.transParamList) * transHelper.ExtraPerDataInfo
                     justTransactions = resultsTransactionFloat[:-extraCount]
                     if len(justTransactions) != 80:
+                        print("Bad extra trans data ", len(justTransactions), " ", 80+transHelper.ExtraFeatureCount)
                         continue
-                    print( len(justTransactions), " ", justTransactions)
+                    #print( len(justTransactions), " ", justTransactions)
                     currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec,
                                                                             transParam.gramCount)
                     perExtraStartIndex = -extraCount + transactionIndex * transHelper.ExtraPerDataInfo
                     curExtra = resultsTransactionFloat[
                                perExtraStartIndex: perExtraStartIndex + transHelper.ExtraPerDataInfo]
 
-                    datetime_object = datetime.strptime(lineSplitList[14], '%Y-%b-%d %H:%M:%S')
+                    datetime_object = datetime.strptime(lineSplitList[14+extraLineCount], '%Y-%b-%d %H:%M:%S')
                     epoch = datetime.utcfromtimestamp(0)
                     curSeconds = (datetime_object - epoch).total_seconds()
 
                     marketState = self.marketState.getState(curSeconds)
-                    totalFeatures = currentTransactionList + extraStuff + marketState + resultsTimeFloat[-3:]
-                                    #extraStuff #+ marketState + resultsTimeFloat[-3:] + scores
+                    #buyCount = sum(currentTransactionList[0::4])
+                    #sellCount = sum(currentTransactionList[1::4])
+                    #currentTransactionList.append(buyCount)
+                    #currentTransactionList.append(sellCount)
+                    totalFeatures = currentTransactionList + extraStuff + marketState + resultsTimeFloat[-3:] + minMaxPriceRatio
+                                    #extraStuff #+ marketState + resultsTimeFloat[-3:] + scores + minMaxPriceRatio
                     #totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
+
                     self.totalLen = len(totalFeatures)
-                    if float(lineSplitList[11]) < 1.005:
+                    if float(lineSplitList[11+extraLineCount]) < 1.005:
                         self.totalFeaturesList[transactionIndex].append(totalFeatures)
                     else:
                         self.totalGoodFeaturesList[transactionIndex].append(totalFeatures)
-                    print(totalFeatures)
+                    #print(totalFeatures)
                     #print(len(totalFeatures), " ", totalFeatures)
 
