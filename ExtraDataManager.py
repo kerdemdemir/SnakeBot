@@ -63,7 +63,7 @@ class ExtraDataManager:
                 resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
                 resultStr = ""
-                scores = list(map(lambda x: float(x), lineSplitList[1][1:-1].split(";")))
+                #scores = list(map(lambda x: float(x), lineSplitList[1][1:-1].split(";")))
                 #print("scores ", scores )
                 # totalPerExtra = transHelper.ExtraPerDataInfo * len(transParamList)
                 minMaxPriceRatio = transHelper.GetPeaksRatio(resultsChangeFloat, 7)
