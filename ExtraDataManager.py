@@ -1,4 +1,6 @@
 import numpy as np
+
+import TransactionHelper
 import TransactionHelper as transHelper
 import DynamicTuner
 import MarketStateManager as marketState
@@ -73,7 +75,7 @@ class ExtraDataManager:
                     continue
                 for transactionIndex in range(len(self.transParamList)):
                     transParam = self.transParamList[transactionIndex]
-                    extraCount = transHelper.ExtraLongPriceStateCount
+                    extraCount = 8
                     extraStuff = resultsTransactionFloat[-extraCount:]
                     extraCount += len(self.transParamList) * transHelper.ExtraPerDataInfo
                     justTransactions = resultsTransactionFloat[:-extraCount]
@@ -96,7 +98,8 @@ class ExtraDataManager:
                     #sellCount = sum(currentTransactionList[1::4])
                     #currentTransactionList.append(buyCount)
                     #currentTransactionList.append(sellCount)
-                    totalFeatures = currentTransactionList + extraStuff + marketState + resultsTimeFloat[-3:] + minMaxPriceRatio
+                    totalFeatures = currentTransactionList + resultsTimeFloat + resultsChangeFloat + extraStuff[:TransactionHelper.ExtraLongPriceStateCount] + \
+                                    marketState
                                     #extraStuff #+ marketState + resultsTimeFloat[-3:] + scores + minMaxPriceRatio
                     #totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
 

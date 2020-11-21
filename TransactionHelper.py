@@ -12,7 +12,7 @@ import MarketStateManager
 ExtraFeatureCount = 0
 ExtraPerDataInfo = 2 #MaxPriceMinPriceRatio
 ExtraLongPriceStateCount = 8
-ExtraMarketStateCount = 4
+ExtraMarketStateCount = 6
 ExtraPeakRatioCount = 2
 
 def GetPeaksRatio(riseList, curIndex):
@@ -182,7 +182,7 @@ class TransactionPattern:
 class TransactionPeakHelper:
     percent = 0.01
     stopTime = 25
-    PeakFeatureCount = ExtraFeatureCount + 11 + ExtraMarketStateCount + ExtraPeakRatioCount
+    PeakFeatureCount = ExtraFeatureCount + 3 + ExtraLongPriceStateCount + ExtraMarketStateCount + ExtraPeakRatioCount
     LowestTransactionCount = 1
     AvarageCaseCounter = 0
 
@@ -207,8 +207,10 @@ class TransactionPeakHelper:
         self.isFinalize = True
         self.lowestAcceptedTotalTransactionCount = lowestAcceptedTotalTransactionCount
         self.acceptedTotalTransactionLimit = acceptedTotalTransactionLimit
+        self.isJumpInWindow = False
         prices = list(map(lambda x: float(x["p"]), jsonIn))
-        if len(prices) == 0:
+        priceLen = len(prices)
+        if priceLen == 0:
             return
 
         if isBottom:
@@ -216,8 +218,22 @@ class TransactionPeakHelper:
         else:
             self.peakIndex = prices.index(max(prices))
 
+
+
         self.peakVal = float(jsonIn[self.peakIndex]["p"])
         self.peakTimeSeconds = int(jsonIn[self.peakIndex]["T"]) // 1000
+
+        self.jumpIndex = len(prices) - 1
+        for index in range(len(prices[self.peakIndex:])):
+            curPrice = prices[self.peakIndex + index]
+            if isBottom and curPrice/self.peakVal > 1.015:
+                self.jumpIndex = self.peakIndex + index
+                self.isJumpInWindow = True
+            if not isBottom and self.peakVal/curPrice < 1.015:
+                self.jumpIndex = self.peakIndex + index
+                self.isJumpInWindow = True
+
+        self.jumpTimeSecond = int(jsonIn[self.peakIndex]["T"]) // 1000
         self.__DivideDataInSeconds(jsonIn)
 
     def GetPeakFeatures(self):
@@ -256,6 +272,8 @@ class TransactionPeakHelper:
 
 
     def __GetCategory(self, curIndex):
+        if not self.isJumpInWindow:
+            return -1
         price = self.dataList[curIndex].lastPrice
         firstPrice = self.dataList[curIndex].firstPrice
         time = self.dataList[curIndex].timeInSecs
@@ -266,7 +284,9 @@ class TransactionPeakHelper:
             elif price < self.peakVal * 1.015 and time < self.peakTimeSeconds:
                 return 1  # Good
         else:
-            if price > self.peakVal * 0.97:
+            if price > self.peakVal * 0.98:
+                return 2
+            if price > self.peakVal * 0.97 and time > self.peakTimeSeconds:
                 return 2
         return -1
 
@@ -350,9 +370,12 @@ class TransactionAnalyzer:
                 timeList = [0.0] * (maxGrams - len(timeList)) + timeList
 
             #6 + 7 + 9 + 13 + 21 + 37 + 69
-            maxMinList = GetMaxMinWithTime(riseMinuteList, index, 6*60) + GetMaxMinWithTime(riseMinuteList, index, 24*60) + \
-                              GetMaxMinWithTime(riseMinuteList, index, 48*60)+ GetMaxMinWithTime(riseMinuteList, index, 72 * 60)
-            if maxMinList[0] < 0.75 or maxMinList[1] < 0.55 or maxMinList[2] < 0.45 or maxMinList[3] < 0.4:
+            maxMinList = GetMaxMinWithTime(riseMinuteList, index, 6*60) + GetMaxMinWithTime(riseMinuteList, index, 24*60)
+            if ExtraLongPriceStateCount >= 6:
+                maxMinList += GetMaxMinWithTime(riseMinuteList, index, 48*60)
+            if ExtraLongPriceStateCount == 8:
+                maxMinList += GetMaxMinWithTime(riseMinuteList, index, 72*60)
+            if maxMinList[0] < 0.75 or maxMinList[2] < 0.55 or maxMinList[4] < 0.45: #or maxMinList[6] < 0.4:
                 continue
 
 
@@ -387,8 +410,8 @@ class TransactionAnalyzer:
         goodCount = len(self.patternList)
         #mustBuyCount = len(self.mustBuyList)
         totalGoodCount = goodCount #+ mustBuyCount
-        if badCount / totalGoodCount > 3:
-            self.badPatternList = self.badPatternList[-(totalGoodCount * 3):]
+        #if badCount / totalGoodCount > 3:
+        #    self.badPatternList = self.badPatternList[-(totalGoodCount * 3):]
         allData = np.concatenate( (self.patternList, self.badPatternList), axis=0)
         print("Good count: ", goodCount, " Bad Count: ", badCount)
         return allData
