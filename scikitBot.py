@@ -172,7 +172,7 @@ sys.stdout.flush()
 
 #trainingReshaper.transactionHelper.Print()
 a = datetime.datetime.now()
-trainingReshaper.assignScores()
+trainingReshaper.finalize()
 b = datetime.datetime.now()
 elapsedTime = b - a
 print("Assigned scores ", elapsedTime.seconds)
