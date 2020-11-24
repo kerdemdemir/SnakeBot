@@ -160,3 +160,35 @@
         if list[0] < 0.0:
           key *= -1
         return key
+
+
+scikit.py:
+
+extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
+
+folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
+def compareInt(x,y):
+    return int(x.split("_")[1]) - int(y.split("_")[1])
+
+onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
+onlyfiles = list(sorted( onlyfiles, key=functools.cmp_to_key(compareInt) ))
+onlyfiles = list(map( lambda x:  folderPath+x, onlyfiles))
+trainingReshaper = ReadFileAndCreateReshaper(onlyfiles[0])
+for fileName in onlyfiles:
+    if fileName == onlyfiles[0]:
+        continue
+    AddExtraToShaper(fileName, trainingReshaper)
+
+
+print("All added now scores")
+sys.stdout.flush()
+
+#trainingReshaper.transactionHelper.Print()
+a = datetime.datetime.now()
+trainingReshaper.finalize()
+b = datetime.datetime.now()
+elapsedTime = b - a
+print("Assigned scores ", elapsedTime.seconds)
+sys.stdout.flush()
+extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList, trainingReshaper.marketState)
+

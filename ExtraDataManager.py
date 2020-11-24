@@ -93,13 +93,14 @@ class ExtraDataManager:
                     epoch = datetime.utcfromtimestamp(0)
                     curSeconds = (datetime_object - epoch).total_seconds()
 
-                    marketState = self.marketState.getState(curSeconds)
+                    #marketState = self.marketState.getState(curSeconds)
                     #buyCount = sum(currentTransactionList[0::4])
                     #sellCount = sum(currentTransactionList[1::4])
                     #currentTransactionList.append(buyCount)
                     #currentTransactionList.append(sellCount)
-                    totalFeatures = currentTransactionList + resultsTimeFloat + resultsChangeFloat + extraStuff[:TransactionHelper.ExtraLongPriceStateCount] + \
-                                    marketState
+                    totalFeatures = currentTransactionList + resultsTimeFloat[-5:] + priceStrList[-5:]
+                                    #+ resultsTimeFloat + resultsChangeFloat + extraStuff[:TransactionHelper.ExtraLongPriceStateCount] + \
+                                    #marketState
                                     #extraStuff #+ marketState + resultsTimeFloat[-3:] + scores + minMaxPriceRatio
                     #totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
 

@@ -22,7 +22,8 @@ from sklearn.metrics import classification_report,confusion_matrix
 
 import TransactionHelper as transHelper
 import DynamicTuner
-
+import SuddenChangeTransactions
+import TransactionBasics
 
 transactionBinCountList = [6,8]
 totalTimeCount = 6
@@ -31,9 +32,9 @@ totalUsedCurveCount = 4
 isConcanateCsv = False
 acceptedProbibilty = 0.7
 testRatio = 4
-transParamList = [inputManager.TransactionParam(1000,  5),
-                  inputManager.TransactionParam(3000,  5),
-                  inputManager.TransactionParam(4000,  5)]
+transParamList = [TransactionBasics.TransactionParam(1000,  5),
+                  TransactionBasics.TransactionParam(3000,  5),
+                  TransactionBasics.TransactionParam(4000,  5)]
 
 currentProbs = []
 
@@ -121,8 +122,8 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
 def Learn():
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
-        numpyArr = trainingReshaper.toTransactionFeaturesNumpy(transactionIndex)
-        numpyArr = extraDataManager.concanate(numpyArr,transactionIndex)
+        numpyArr = suddenChangeManager.toTransactionFeaturesNumpy(transactionIndex)
+        #numpyArr = extraDataManager.concanate(numpyArr,transactionIndex)
 
 
         mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24), activation='relu',
@@ -131,10 +132,10 @@ def Learn():
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
         mlpTransactionScalerList.append(transactionScaler)
         X = transactionScaler.transform(numpyArr)
-        y = trainingReshaper.toTransactionResultsNumpy(transactionIndex) + extraDataManager.getResult(transactionIndex)
+        y = suddenChangeManager.toTransactionResultsNumpy(transactionIndex) #+ extraDataManager.getResult(transactionIndex)
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
-        #X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
-        #y_test = extraDataManager.getConcanatedResult(transactionIndex)
+        X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
+        y_test = extraDataManager.getConcanatedResult(transactionIndex)
 
         mlpTransaction.fit(X_train, y_train)
 
@@ -151,43 +152,19 @@ def Learn():
 
         sys.stdout.flush()
 
+dynamicMarketState = marketState.MarketStateManager()
 extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
-
-folderPath = os.path.abspath(os.getcwd()) + "/Data/CompleteData/"
-onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
-def compareInt(x,y):
-    return int(x.split("_")[1]) - int(y.split("_")[1])
-
-onlyfiles = list(sorted( onlyfiles, key=functools.cmp_to_key(compareInt) ))
-onlyfiles = list(map( lambda x:  folderPath+x, onlyfiles))
-trainingReshaper = ReadFileAndCreateReshaper(onlyfiles[0])
-for fileName in onlyfiles:
-    if fileName == onlyfiles[0]:
-        continue
-    AddExtraToShaper(fileName, trainingReshaper)
+extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,dynamicMarketState)
 
 
-print("All added now scores")
-sys.stdout.flush()
-
-#trainingReshaper.transactionHelper.Print()
-a = datetime.datetime.now()
-trainingReshaper.finalize()
-b = datetime.datetime.now()
-elapsedTime = b - a
-print("Assigned scores ", elapsedTime.seconds)
-sys.stdout.flush()
-extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList, trainingReshaper.marketState)
-
+suddenChangeManager = SuddenChangeTransactions.SuddenChangeManager(transParamList)
 
 mlpTransactionList = []
 mlpTransactionScalerList = []
 Learn()
 
-trainingReshaper.ClearMemory()
 print("Memory cleaned")
 sys.stdout.flush()
-dynamicMarketState = marketState.MarketStateManager();
 context = zmq.Context()
 socket = context.socket(zmq.REP)
 socket.bind("ipc:///tmp/peakLearner")
