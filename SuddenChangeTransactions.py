@@ -60,9 +60,9 @@ def GetPeaksRatio(riseList, curIndex):
 class SuddenChangeHandler:
     percent = 0.01
 
-    TransactionCountPerSecBase = 20
+    TransactionCountPerSecBase = 70
     TransactionCountPerSecIncrease = 0.1
-    TransactionLimitPerSecBase = 1.0
+    TransactionLimitPerSecBase = 1.5
     TransactionLimitPerSecBaseIncrease = 0.01
 
     def __init__(self, jsonIn, transactionParam,marketState):

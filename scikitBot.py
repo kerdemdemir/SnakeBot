@@ -1,5 +1,4 @@
-import json
-from fileinput import input
+
 
 import ExtraDataManager as extraDataMan
 import MarketStateManager as marketState
@@ -7,11 +6,7 @@ import zmq
 import numpy as np
 import sys
 import os
-import functools
-from os import listdir
-from os.path import isfile, join
-import datetime
-from sklearn.decomposition import PCA
+
 from sklearn.neural_network import MLPClassifier
 from sklearn import preprocessing
 # Import necessary modules
@@ -31,13 +26,14 @@ acceptedProbibilty = 0.7
 testRatio = 4
 transParamList = [TransactionBasics.TransactionParam(1000,  5),
                   TransactionBasics.TransactionParam(2000,  5),
-                  TransactionBasics.TransactionParam(4000,  5)]
+                  TransactionBasics.TransactionParam(4000,  5),
+                  TransactionBasics.TransactionParam(10000,  10)]
 
 currentProbs = []
 
 
 
-def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList, trainingReshaper):
+def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList):
     priceStrList = messageChangeTimeTransactionStrList[0].split(",")
     timeStrList = messageChangeTimeTransactionStrList[1].split(",")
     transactionStrList = messageChangeTimeTransactionStrList[2].split(",")
@@ -45,28 +41,15 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
+    marketStateList = dynamicMarketState.curUpDowns
     resultStr = ""
-    #scores = trainingReshaper.getScoreList(resultsChangeFloat)
 
-    minMaxPriceRatio = transHelper.GetPeaksRatio(resultsChangeFloat, 7)
-    #print(resultsChangeFloat, " ", resultsChangeFloat[7], " ", minMaxPriceRatio)
-    if transHelper.ExtraPeakRatioCount != 0 and len(minMaxPriceRatio) != transHelper.ExtraPeakRatioCount:
-        print("Bad extra data ", len(minMaxPriceRatio), " ", transHelper.ExtraPeakRatioCount)
-        minMaxPriceRatio = minMaxPriceRatio[:transHelper.ExtraPeakRatioCount]
-
-    #totalPerExtra = transHelper.ExtraPerDataInfo * len(transParamList)
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
-        extraCount = transHelper.ExtraFeatureCount+transHelper.ExtraLongPriceStateCount
-        extraStuff = resultsTransactionFloat[-extraCount:]
-        extraCount += len(transParamList) * transHelper.ExtraPerDataInfo
-        justTransactions = resultsTransactionFloat[:-extraCount]
+        justTransactions = resultsTransactionFloat
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
 
-        perExtraStartIndex = -extraCount + transactionIndex * transHelper.ExtraPerDataInfo
-        curExtra = resultsTransactionFloat[ perExtraStartIndex : perExtraStartIndex + transHelper.ExtraPerDataInfo]
-        marketState = dynamicMarketState.curUpDowns
-        totalFeatures = currentTransactionList + extraStuff + marketState + resultsTimeFloat[-3:] + minMaxPriceRatio
+        totalFeatures = currentTransactionList + marketStateList + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)
@@ -138,20 +121,14 @@ while True:
 
     if command == "Predict":
         messageChangeTimeTransactionStrList = messageChangeTimeTransactionStrList[1:]
-        resultStr = Predict(messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList, trainingReshaper)
+        resultStr = Predict(messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList)
         print("Results are: ", resultStr)
         #  Send reply back to client
         socket.send_string(resultStr, encoding='ascii')
         sys.stdout.flush()
-    elif command == "GetScore":
-        priceStrList = messageChangeTimeTransactionStrList[1].split(",")
-        resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
-        scoreList = trainingReshaper.getScoreList(resultsChangeFloat)
-        print( " Score for list: ", priceStrList, " is ", scoreList)
-        socket.send_string(str(scoreList), encoding='ascii')
     elif command == "Peak":
         print( " New peak will be added ")
-        isBottom = messageChangeTimeTransactionStrList[1] == "Bottom"
-        dynamicMarketState.addRecent(isBottom)
+        isRising = messageChangeTimeTransactionStrList[1] == "Increase"
+        dynamicMarketState.addRecent(isRising)
         socket.send_string("Done", encoding='ascii')
 
