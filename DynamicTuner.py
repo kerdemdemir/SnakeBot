@@ -1,7 +1,6 @@
 import numpy as np
 from sklearn.neural_network import MLPClassifier
-import InputManager
-import TransactionHelper as transHelper
+
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 from scipy import stats

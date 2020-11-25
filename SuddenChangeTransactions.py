@@ -1,4 +1,5 @@
 import json
+from builtins import list
 from datetime import datetime
 import bisect
 import copy
@@ -12,22 +13,60 @@ from os.path import isfile, join
 import MarketStateManager
 import TransactionBasics
 
+PeakFeatureCount = TransactionBasics.PeakFeatureCount
+MaxMinDataLen = 8
+UpSideDataLen = 6
+TotalExtraFeatureCount = PeakFeatureCount + MaxMinDataLen + UpSideDataLen
+
+
+def GetPeaksRatio(riseList, curIndex):
+    cummulaviteRatio = 1.0
+    startVal = riseList[curIndex]
+    isBottom = startVal < 0.0
+    minRatios = []
+    maxRatios = []
+    for index in range(curIndex, curIndex-(1+MaxMinDataLen), -1):
+        rise = float(riseList[index])
+        curRatio = rise / 100.0
+        cummulaviteRatio -= curRatio
+        #print("Alert ", riseList[index], " ", minRatios, " ", maxRatios, " ", cummulaviteRatio)
+        if curIndex == index:
+            continue
+
+        if isBottom and curRatio > 0.0:
+            minRatios.append(cummulaviteRatio)
+        elif not isBottom and curRatio < 0.0:
+            maxRatios.append(cummulaviteRatio)
+
+
+    isBottom = not isBottom
+    cummulaviteRatio = 1.0
+    for index in range(curIndex - 1, curIndex - (2+MaxMinDataLen), -1):
+        rise = float(riseList[index])
+        curRatio = rise / 100.0
+        cummulaviteRatio -= curRatio
+        #print("Alert2 ", riseMinuteList[index].rise, " ", minRatios, " ", maxRatios, " ", cummulaviteRatio)
+
+        if curIndex == index:
+            continue
+        if isBottom and curRatio > 0.0:
+            minRatios.append(cummulaviteRatio)
+        elif not isBottom and curRatio < 0.0:
+            maxRatios.append(cummulaviteRatio)
+    #print(minRatios + maxRatios)
+    return minRatios + maxRatios
 
 
 class SuddenChangeHandler:
     percent = 0.01
-
-    PeakFeatureCount = 5
-    MaxMinDataLen = 8
-    UpSideDataLen = 6
-    TotalExtraFeatureCount = PeakFeatureCount + MaxMinDataLen + UpSideDataLen
 
     TransactionCountPerSecBase = 20
     TransactionCountPerSecIncrease = 0.1
     TransactionLimitPerSecBase = 1.0
     TransactionLimitPerSecBaseIncrease = 0.01
 
-    def __init__(self, jsonIn, transactionParam):
+    def __init__(self, jsonIn, transactionParam,marketState):
+        self.marketState = marketState
         self.jumpTimeInSeconds = 0
         self.reportTimeInSeconds = 0
         self.reportPrice = 0.0
@@ -43,6 +82,7 @@ class SuddenChangeHandler:
         self.patternList = []
         self.mustBuyList = []
         self.badPatternList = []
+        self.jumpState = []
         self.__Parse(jsonIn)
 
         totalSec = transactionParam.msec * transactionParam.gramCount / 1000
@@ -55,7 +95,7 @@ class SuddenChangeHandler:
         self.__AppendToPatternList() # deletes dataList and populates mustBuyList, patternList badPatternList
 
     def GetFeatures(self):
-        return self.timeList[-SuddenChangeHandler.PeakFeatureCount:] + self.riseList[-SuddenChangeHandler.PeakFeatureCount:]
+        return []#self.timeList[-PeakFeatureCount:] + self.riseList[-PeakFeatureCount:]
         #return self.maxMinList  + self.timeList[-SuddenChangeHandler.PeakFeatureCount:] + self.riseList[-SuddenChangeHandler.PeakFeatureCount:]
 
     def __Parse(self, jsonIn):
@@ -122,10 +162,12 @@ class SuddenChangeHandler:
             return
 
         pattern = TransactionBasics.TransactionPattern()
-        pattern.Append(self.dataList[startBin:endBin], self.jumpTimeInSeconds)
+        pattern.Append(self.dataList[startBin:endBin], self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
+        pattern.SetPeaks( self.riseList, self.timeList )
         if pattern.totalTransactionCount < self.lowestTransaction:
             if pattern.totalBuy+pattern.totalSell < self.acceptedTransLimit:
                 return
+
 
         if self.__GetCategory(curIndex) == 0:
             self.mustBuyList.append(pattern)
@@ -142,9 +184,9 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.jumpPrice * 1.01:
+            if price < self.jumpPrice * 1.006:
                 return 1  # Good
-            elif price < self.jumpPrice * 1.015 and time < self.jumpTimeInSeconds:
+            elif price < self.jumpPrice * 1.01 and time < self.jumpTimeInSeconds:
                 return 1  # Good
         else:
             if price > self.jumpPrice * 0.98:
@@ -155,19 +197,20 @@ class SuddenChangeHandler:
 
 class SuddenChangeMerger:
 
-    def __init__(self, transactionParam):
+    def __init__(self, transactionParam, marketState):
         self.mustBuyList = []
         self.patternList = []
         self.badPatternList = []
         self.handlerList = []
         self.transactionParam = transactionParam
+        self.marketState = marketState
 
     def AddFile(self, jsonIn):
         for index in range(len(jsonIn)):
             if not jsonIn[index]:
                 continue
 
-            handler = SuddenChangeHandler(jsonIn[index],self.transactionParam)
+            handler = SuddenChangeHandler(jsonIn[index],self.transactionParam,self.marketState)
             self.handlerList.append(handler)
 
     def Finalize(self):
@@ -208,12 +251,34 @@ class SuddenChangeMerger:
 class SuddenChangeManager:
 
     def __init__(self, transactionParamList):
+        self.marketState = MarketStateManager.MarketStateManager()
+        self.FeedMarketState()
+
         self.transParamList = transactionParamList
         self.suddenChangeMergerList = []
         self.CreateSuddenChangeMergers()
         print(self.suddenChangeMergerList)
         self.FeedChangeMergers()
         self.FinalizeMergers()
+
+    def FeedMarketState(self):
+        jumpDataFolderPath = os.path.abspath(os.getcwd()) + "/Data/JumpData/"
+        onlyJumpFiles = [f for f in listdir(jumpDataFolderPath) if isfile(join(jumpDataFolderPath, f))]
+        for fileName in onlyJumpFiles:
+            print("Reading Jump", jumpDataFolderPath + fileName, " ")
+            file = open(jumpDataFolderPath + fileName, "r")
+            epoch = datetime.utcfromtimestamp(0)
+            try:
+                jsonDictionary = json.load(file)
+                for jsonIn in jsonDictionary:
+                    if not jsonIn:
+                        continue
+                datetime_object = datetime.strptime(jsonIn["reportTime"].split(".")[0], '%Y-%b-%d %H:%M:%S')
+                totalSecs = (datetime_object - epoch).total_seconds()
+                isRise = bool(jsonIn["isRise"])
+                self.marketState.add(isRise, totalSecs)
+            except:
+                print("There was a exception in ", fileName)
 
     def FeedChangeMergers(self):
         jumpDataFolderPath = os.path.abspath(os.getcwd()) + "/Data/JumpData/"
@@ -240,5 +305,5 @@ class SuddenChangeManager:
 
     def CreateSuddenChangeMergers(self):
         for transactionIndex in range(len(self.transParamList)):
-            newMerger = SuddenChangeMerger(self.transParamList[transactionIndex])
+            newMerger = SuddenChangeMerger(self.transParamList[transactionIndex], self.marketState)
             self.suddenChangeMergerList.append(newMerger)

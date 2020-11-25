@@ -1,8 +1,6 @@
 import json
 from fileinput import input
 
-import Input as input
-import InputManager as inputManager
 import ExtraDataManager as extraDataMan
 import MarketStateManager as marketState
 import zmq
@@ -20,7 +18,6 @@ from sklearn import preprocessing
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
 
-import TransactionHelper as transHelper
 import DynamicTuner
 import SuddenChangeTransactions
 import TransactionBasics
@@ -33,48 +30,12 @@ isConcanateCsv = False
 acceptedProbibilty = 0.7
 testRatio = 4
 transParamList = [TransactionBasics.TransactionParam(1000,  5),
-                  TransactionBasics.TransactionParam(3000,  5),
+                  TransactionBasics.TransactionParam(2000,  5),
                   TransactionBasics.TransactionParam(4000,  5)]
 
 currentProbs = []
 
 
-def ReadFileAndCreateReshaper( fileName ):
-    print("Reading ", fileName )
-    file = open(fileName, "r")
-    jsonDictionary = json.load(file)
-
-    reshaper = inputManager.ReShapeManager(transParamList)
-    reshaper.addNewFileData(jsonDictionary, True)
-
-    file.close()
-    return  reshaper
-
-def AddExtraToTuneShaper ( fileName, shaper):
-    jsonDictionary = {}
-    try:
-        jsonDictionary = json.load(open(os.path.abspath(os.getcwd()) + "/Data/TuneData/" + fileName, "r"))
-        shaper.addNewFileData(jsonDictionary)
-    except:
-        print("There was a exception in ", fileName)
-
-def ReadFilesInTuneFolder( folderPath, reshaperTuner ):
-    onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
-    for fileName in onlyfiles:
-        print(" Reading for tuner: ", fileName)
-        AddExtraToTuneShaper(fileName, reshaperTuner)
-
-def AddExtraToShaper ( fileName, shaper):
-    print("Reading ", fileName, " ")
-    file = open(fileName, "r")
-    jsonDictionary = {}
-
-    try:
-        jsonDictionary = json.load(file)
-        shaper.addNewFileData(jsonDictionary, True)
-    except:
-        print("There was a exception in ", fileName)
-    file.close()
 
 def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList, trainingReshaper):
     priceStrList = messageChangeTimeTransactionStrList[0].split(",")
@@ -133,9 +94,9 @@ def Learn():
         mlpTransactionScalerList.append(transactionScaler)
         X = transactionScaler.transform(numpyArr)
         y = suddenChangeManager.toTransactionResultsNumpy(transactionIndex) #+ extraDataManager.getResult(transactionIndex)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
-        X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
-        y_test = extraDataManager.getConcanatedResult(transactionIndex)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=40)
+        #X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
+        #y_test = extraDataManager.getConcanatedResult(transactionIndex)
 
         mlpTransaction.fit(X_train, y_train)
 
@@ -144,7 +105,7 @@ def Learn():
         
         finalResult = predict_test[:, 1] >= 0.6
         print("60 ",confusion_matrix(y_test, finalResult))
-        #print(finalResult)
+        #print(predict_test)
         #predict_test = np.delete(finalResult, 0, 1)
 
         print(" Transactions time: ", transParam.msec, " Transaction Index ", transParam.gramCount, "Index ",

@@ -1,5 +1,4 @@
 import bisect
-import TransactionHelper
 import time
 from collections import deque
 
@@ -17,17 +16,16 @@ class PeakStateAndTime:
 class MarketStateManager:
     def __init__(self):
         self.stateList = []
-
         self.curStateList = deque([])
         self.curUpDowns = [0, 0, 0, 0]
-        self.durationList = [10, 420]
+        self.durationList = [30, 420]
 
-    def add(self, transactionPeakHelper):
-        self.stateList.append(PeakStateAndTime( transactionPeakHelper.peakTimeSeconds, transactionPeakHelper.isBottom))
+    def add(self, isRise, timeInSec):
+        self.stateList.append(PeakStateAndTime( timeInSec, isRise))
 
-    def addRecent(self, isBottom):
+    def addRecent(self, isRise):
         curSeconds = int(time.time())
-        newStateAndTime = PeakStateAndTime(curSeconds, isBottom)
+        newStateAndTime = PeakStateAndTime(curSeconds, isRise)
         self.curStateList.append(newStateAndTime)
         popCount = 0
         for elem in self.curStateList:
@@ -46,8 +44,8 @@ class MarketStateManager:
         print("New ups and downs " , self.curUpDowns)
 
 
-    def getCount(self, isBottom, duration, curTime ):
-        filteredList = filter(lambda x: curTime - x.time < duration and x.isBottom == isBottom, self.curStateList)
+    def getCount(self, isRise, duration, curTime ):
+        filteredList = filter(lambda x: curTime - x.time < duration and x.isBottom == isRise, self.curStateList)
         return len(list(filteredList))
 
 

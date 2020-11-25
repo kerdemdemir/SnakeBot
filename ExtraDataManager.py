@@ -1,7 +1,6 @@
 import numpy as np
 
-import TransactionHelper
-import TransactionHelper as transHelper
+import SuddenChangeTransactions
 import DynamicTuner
 import MarketStateManager as marketState
 from datetime import datetime
@@ -68,41 +67,27 @@ class ExtraDataManager:
                 #scores = list(map(lambda x: float(x), lineSplitList[1][1:-1].split(";")))
                 #print("scores ", scores )
                 # totalPerExtra = transHelper.ExtraPerDataInfo * len(transParamList)
-                minMaxPriceRatio = transHelper.GetPeaksRatio(resultsChangeFloat, 7)
+                minMaxPriceRatio = SuddenChangeTransactions.GetPeaksRatio(resultsChangeFloat, 7)
                 print(resultsChangeFloat, " ", resultsChangeFloat[7], " ", minMaxPriceRatio)
-                if transHelper.ExtraPeakRatioCount != 0 and len(minMaxPriceRatio) != transHelper.ExtraPeakRatioCount:
-                    print("Bad extra data ", len(minMaxPriceRatio),  " ", transHelper.ExtraPeakRatioCount)
-                    continue
+
                 for transactionIndex in range(len(self.transParamList)):
                     transParam = self.transParamList[transactionIndex]
                     extraCount = 8
-                    extraStuff = resultsTransactionFloat[-extraCount:]
-                    extraCount += len(self.transParamList) * transHelper.ExtraPerDataInfo
+                    extraCount += len(self.transParamList) * 2
                     justTransactions = resultsTransactionFloat[:-extraCount]
                     if len(justTransactions) != 80:
-                        print("Bad extra trans data ", len(justTransactions), " ", 80+transHelper.ExtraFeatureCount)
+                        print("Bad extra trans data ", len(justTransactions))
                         continue
                     #print( len(justTransactions), " ", justTransactions)
                     currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec,
                                                                             transParam.gramCount)
-                    perExtraStartIndex = -extraCount + transactionIndex * transHelper.ExtraPerDataInfo
-                    curExtra = resultsTransactionFloat[
-                               perExtraStartIndex: perExtraStartIndex + transHelper.ExtraPerDataInfo]
 
                     datetime_object = datetime.strptime(lineSplitList[14+extraLineCount], '%Y-%b-%d %H:%M:%S')
                     epoch = datetime.utcfromtimestamp(0)
                     curSeconds = (datetime_object - epoch).total_seconds()
 
-                    #marketState = self.marketState.getState(curSeconds)
-                    #buyCount = sum(currentTransactionList[0::4])
-                    #sellCount = sum(currentTransactionList[1::4])
-                    #currentTransactionList.append(buyCount)
-                    #currentTransactionList.append(sellCount)
-                    totalFeatures = currentTransactionList + resultsTimeFloat[-5:] + priceStrList[-5:]
-                                    #+ resultsTimeFloat + resultsChangeFloat + extraStuff[:TransactionHelper.ExtraLongPriceStateCount] + \
-                                    #marketState
-                                    #extraStuff #+ marketState + resultsTimeFloat[-3:] + scores + minMaxPriceRatio
-                    #totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
+                    totalFeatures = currentTransactionList + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:] + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:]
+
 
                     self.totalLen = len(totalFeatures)
                     if float(lineSplitList[11+extraLineCount]) < 1.005:

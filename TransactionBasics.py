@@ -1,3 +1,8 @@
+import copy
+
+PeakFeatureCount = 8
+
+
 class TransactionParam:
     def __init__ ( self, msec, gramCount ):
         self.msec = msec
@@ -63,15 +68,28 @@ class TransactionPattern:
         self.totalTransactionCount = 0
         self.timeDiffInSeconds = 0
         self.priceMaxRatio = 1.0
+        self.priceDiff = 1.0
         self.priceMinRatio = 1.0
+        self.marketStateList = []
+        self.peaks = []
+        self.timeList = []
 
-    def Append(self, dataList, peakTime):
+    def SetPeaks(self, peakList, timeList):
+        self.peaks = copy.deepcopy(peakList)
+        self.timeList = copy.deepcopy(timeList)
+        self.peaks[-1] += (self.priceDiff - 1.0)
+        self.timeList[-1] += (self.timeDiffInSeconds//60)
+
+
+
+    def Append(self, dataList, peakTime, jumpPrice, marketState):
 
         if len(dataList) > 0:
             priceList = list(map(lambda x: x.lastPrice, dataList))
             self.priceMaxRatio = dataList[-1].lastPrice / max(priceList)
             self.priceMinRatio = dataList[-1].lastPrice / min(priceList)
-
+        lastTime = dataList[-1].timeInSecs
+        self.marketStateList = marketState.getState(lastTime)
         for elem in dataList:
             self.transactionBuyList.append(elem.transactionBuyCount)
             self.transactionSellList.append(elem.totalTransactionCount - elem.transactionBuyCount)
@@ -81,7 +99,9 @@ class TransactionPattern:
             self.totalSell += elem.totalSell
             self.transactionCount += elem.transactionBuyCount
             self.totalTransactionCount += elem.totalTransactionCount
-        self.timeDiffInSeconds = dataList[-1].timeInSecs - peakTime
+        self.timeDiffInSeconds = lastTime - peakTime
+        self.priceDiff = dataList[-1].lastPrice/jumpPrice
+
 
     def GetFeatures(self):
         returnList = []
@@ -90,6 +110,10 @@ class TransactionPattern:
             returnList.append(self.transactionSellList[i])
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
+        returnList.extend(self.marketStateList)
+        returnList.extend(self.peaks[-PeakFeatureCount:])
+        returnList.extend(self.timeList[-PeakFeatureCount:])
+
         return returnList
 
     def __repr__(self):
@@ -97,3 +121,4 @@ class TransactionPattern:
             str(self.transactionBuyList), self.timeDiffInSeconds,
             self.totalBuy, self.totalSell,
             self.transactionCount, self.score)
+
