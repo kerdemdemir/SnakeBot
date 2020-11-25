@@ -77,7 +77,7 @@ def Learn():
         mlpTransactionScalerList.append(transactionScaler)
         X = transactionScaler.transform(numpyArr)
         y = suddenChangeManager.toTransactionResultsNumpy(transactionIndex) #+ extraDataManager.getResult(transactionIndex)
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=40)
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=40)
         #X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
         #y_test = extraDataManager.getConcanatedResult(transactionIndex)
 
