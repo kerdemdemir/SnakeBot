@@ -24,10 +24,9 @@ totalUsedCurveCount = 4
 isConcanateCsv = False
 acceptedProbibilty = 0.7
 testRatio = 4
-transParamList = [TransactionBasics.TransactionParam(1000,  5),
-                  TransactionBasics.TransactionParam(2000,  5),
-                  TransactionBasics.TransactionParam(4000,  5),
-                  TransactionBasics.TransactionParam(10000,  10)]
+transParamList = [TransactionBasics.TransactionParam(1000,  6),
+                  TransactionBasics.TransactionParam(2000,  6),
+                  TransactionBasics.TransactionParam(4000,  6)]
 
 currentProbs = []
 
@@ -98,7 +97,7 @@ def Learn():
 
 dynamicMarketState = marketState.MarketStateManager()
 extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
-extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,dynamicMarketState)
+#extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,dynamicMarketState)
 
 
 suddenChangeManager = SuddenChangeTransactions.SuddenChangeManager(transParamList)
