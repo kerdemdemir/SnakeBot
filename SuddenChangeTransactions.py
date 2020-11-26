@@ -60,10 +60,11 @@ def GetPeaksRatio(riseList, curIndex):
 class SuddenChangeHandler:
     percent = 0.01
 
-    TransactionCountPerSecBase = 70
-    TransactionCountPerSecIncrease = 0.1
-    TransactionLimitPerSecBase = 1.5
-    TransactionLimitPerSecBaseIncrease = 0.01
+    TransactionCountPerSecBase = 6
+    TransactionCountPerSecIncrease = 0.25
+    TransactionLimitPerSecBase = 0.6
+    TransactionLimitPerSecBaseIncrease = 0.025
+    TransactionBuyLimit = 3.0
 
     def __init__(self, jsonIn, transactionParam,marketState):
         self.marketState = marketState
@@ -88,7 +89,7 @@ class SuddenChangeHandler:
         totalSec = transactionParam.msec * transactionParam.gramCount / 1000
         self.lowestTransaction = SuddenChangeHandler.TransactionCountPerSecBase + SuddenChangeHandler.TransactionCountPerSecIncrease * totalSec
         self.acceptedTransLimit = SuddenChangeHandler.TransactionLimitPerSecBase + SuddenChangeHandler.TransactionLimitPerSecBaseIncrease * totalSec
-
+        self.buyTransLimit = SuddenChangeHandler.TransactionBuyLimit + SuddenChangeHandler.TransactionLimitPerSecBaseIncrease * totalSec
         self.dataList = []
         tempTransaction = json.loads(jsonIn["transactions"])
         self.__DivideDataInSeconds(tempTransaction) #populates the dataList with TransactionData
@@ -164,8 +165,8 @@ class SuddenChangeHandler:
         pattern = TransactionBasics.TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
         pattern.SetPeaks( self.riseList, self.timeList )
-        if pattern.totalTransactionCount < self.lowestTransaction:
-            if pattern.totalBuy+pattern.totalSell < self.acceptedTransLimit:
+        if pattern.totalTransactionCount < self.lowestTransaction or pattern.totalBuy+pattern.totalSell < self.acceptedTransLimit:
+            if  pattern.totalBuy+pattern.totalSell < self.buyTransLimit:
                 return
 
 
@@ -184,7 +185,7 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.jumpPrice * 1.006:
+            if price < self.jumpPrice * 1.005:
                 return 1  # Good
             elif price < self.jumpPrice * 1.01 and time < self.jumpTimeInSeconds:
                 return 1  # Good
