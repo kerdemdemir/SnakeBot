@@ -19,11 +19,7 @@ UpSideDataLen = 6
 TotalExtraFeatureCount = PeakFeatureCount + MaxMinDataLen + UpSideDataLen
 percent = 0.01
 
-TransactionCountPerSecBase = 6
-TransactionCountPerSecIncrease = 0.25
-TransactionLimitPerSecBase = 0.6
-TransactionLimitPerSecBaseIncrease = 0.025
-TransactionBuyLimit = 3.0
+
 
 class TransactionPeakHelper:
     def __init__(self, jsonIn, transactionParam, riseList, timeList):
@@ -144,6 +140,12 @@ class TransactionPeakHelper:
 
 
 class SuddenChangeHandler:
+    TransactionCountPerSecBase = 6
+    TransactionCountPerSecIncrease = 0.25
+    TransactionLimitPerSecBase = 0.4
+    TransactionLimitPerSecBaseIncrease = 0.025
+    TransactionBuyLimit = 3.0
+
     def __init__(self, jsonIn, transactionParam,marketState):
         self.marketState = marketState
         self.jumpTimeInSeconds = 0
@@ -265,12 +267,12 @@ class SuddenChangeHandler:
         if self.isRise:
             if price < self.jumpPrice * 1.005:
                 return 1  # Good
-            elif price < self.jumpPrice * 1.01 and time < self.jumpTimeInSeconds:
-                return 1  # Good
+            #elif price < self.jumpPrice * 1.01 and time < self.jumpTimeInSeconds:
+                #return 1  # Good
         else:
-            if price > self.jumpPrice * 0.98:
+            if price > self.jumpPrice * 0.99:
                 return 2
-            if price > self.jumpPrice * 0.97 and time > self.jumpTimeInSeconds:
+            if price > self.jumpPrice * 0.98 and time > self.jumpTimeInSeconds:
                 return 2
         return -1
 
