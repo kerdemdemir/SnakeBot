@@ -40,15 +40,15 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
-    marketStateList = dynamicMarketState.curUpDowns
+    #marketStateList = dynamicMarketState.curUpDowns
     resultStr = ""
 
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         justTransactions = resultsTransactionFloat
         currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
-
-        totalFeatures = currentTransactionList + marketStateList + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
+        # + marketStateList market state is cancelled for now
+        totalFeatures = currentTransactionList  + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)

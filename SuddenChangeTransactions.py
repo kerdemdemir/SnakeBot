@@ -21,129 +21,12 @@ percent = 0.01
 
 
 
-class TransactionPeakHelper:
-    def __init__(self, jsonIn, transactionParam, riseList, timeList):
-        self.patternList = []
-        self.mustBuyList = []
-        self.badPatternList = []
-        self.dataList = []
-        self.inputRise = riseList
-        self.inputTime = [float(x) for x in timeList]
-        self.marketStates = []
-        self.isFinalize = True
-
-        totalSec = transactionParam.msec * transactionParam.gramCount / 1000
-        self.lowestTransaction = SuddenChangeHandler.TransactionCountPerSecBase + SuddenChangeHandler.TransactionCountPerSecIncrease * totalSec
-        self.acceptedTransLimit = SuddenChangeHandler.TransactionLimitPerSecBase + SuddenChangeHandler.TransactionLimitPerSecBaseIncrease * totalSec
-        self.buyTransLimit = SuddenChangeHandler.TransactionBuyLimit + SuddenChangeHandler.TransactionLimitPerSecBaseIncrease * totalSec
-
-        self.isJumpInWindow = False
-        prices = list(map(lambda x: float(x["p"]), jsonIn))
-        priceLen = len(prices)
-        if priceLen == 0:
-            return
-
-        self.isBottom = True if riseList[-1] < 0.0 else False
-
-        if self.isBottom:
-            self.peakIndex = prices.index(min(prices))
-        else:
-            self.peakIndex = prices.index(max(prices))
-
-        self.peakVal = float(jsonIn[self.peakIndex]["p"])
-        self.peakTimeSeconds = int(jsonIn[self.peakIndex]["T"]) // 1000
-        self.__DivideDataInSeconds(jsonIn)
-        self.__AssignScores()
-
-    def GetPeakFeatures(self):
-        return []
-
-    # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
-    def __AssignScores(self):
-        lenArray = len(self.dataList)
-        if lenArray == 0:
-            return
-        # print(lenArray, self.dataList)
-        for x in range(0, lenArray):
-            self.__AppendToPatternList(self.transactionParam.gramCount, x, lenArray)
-        del self.dataList
-
-    def __AppendToPatternList(self, ngramCount, curIndex, lenArray):
-        startBin = curIndex + 1 - ngramCount
-        endBin = curIndex + 1
-        if startBin < 0 or endBin > lenArray:
-            return
-
-        pattern = TransactionBasics.TransactionPattern()
-        pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds)
-        if pattern.totalTransactionCount < self.lowestAcceptedTotalTransactionCount:
-            if pattern.totalBuy+pattern.totalSell < self.acceptedTotalTransactionLimit:
-                return
-
-        if self.__GetCategory(curIndex) == 0:
-            self.mustBuyList.append(pattern)
-            # self.patternList.append(pattern)
-        elif self.__GetCategory(curIndex) == 1:
-            self.patternList.append(pattern)
-        elif self.__GetCategory(curIndex) == 2:
-            self.badPatternList.append(pattern)
-
-
-    def __GetCategory(self, curIndex):
-        if not self.isJumpInWindow:
-            return -1
-        price = self.dataList[curIndex].lastPrice
-        time = self.dataList[curIndex].timeInSecs
-
-        if self.isBottom:
-            if price < self.peakVal * 1.002:
-                return 1  # Good
-            elif price < self.peakVal * 1.015 and time < self.peakTimeSeconds:
-                return 1  # Good
-        else:
-            if price > self.peakVal * 0.98:
-                return 2
-            if price > self.peakVal * 0.97 and time > self.peakTimeSeconds:
-                return 2
-        return -1
-
-    def __DivideDataInSeconds(self, jsonIn):
-        transactionData = TransactionBasics.TransactionData()
-        lastEndTime = 0
-        stopMiliSecs = int(jsonIn[-1]["T"])
-        for x in range(len(jsonIn)):
-            curElement = jsonIn[x]
-            curMiliSecs = int(curElement["T"])
-            if x == 0:
-                lastEndTime = curMiliSecs + self.mseconds
-
-            if curMiliSecs > lastEndTime:
-                copyData = copy.deepcopy(transactionData)
-                self.dataList.append(copyData)
-                transactionData.Reset()
-                transactionData.AddData(curElement)
-                transactionData.SetTime(curMiliSecs // 1000)
-                lastEndTime += self.mseconds
-                while True:
-                    if curMiliSecs > lastEndTime and lastEndTime < stopMiliSecs:
-                        lastEndTime += self.mseconds
-                        emptyData = TransactionBasics.TransactionData()
-                        emptyData.SetTime(lastEndTime // 1000)
-                        emptyData.lastPrice = copyData.lastPrice
-                        self.dataList.append(emptyData)
-                    else:
-                        break
-            else:
-                transactionData.AddData(curElement)
-        self.dataList.append(copy.deepcopy(transactionData))
-
-
 
 class SuddenChangeHandler:
-    TransactionCountPerSecBase = 6
-    TransactionCountPerSecIncrease = 0.25
-    TransactionLimitPerSecBase = 0.4
-    TransactionLimitPerSecBaseIncrease = 0.025
+    TransactionCountPerSecBase = 8
+    TransactionCountPerSecIncrease = 0.1
+    TransactionLimitPerSecBase = 0.5
+    TransactionLimitPerSecBaseIncrease = 0.01
     TransactionBuyLimit = 3.0
 
     def __init__(self, jsonIn, transactionParam,marketState):
@@ -246,10 +129,9 @@ class SuddenChangeHandler:
         pattern.Append(self.dataList[startBin:endBin], self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
         pattern.SetPeaks( self.riseList, self.timeList )
         if pattern.totalTransactionCount < self.lowestTransaction or pattern.totalBuy+pattern.totalSell < self.acceptedTransLimit:
-            if  pattern.totalBuy+pattern.totalSell < self.buyTransLimit:
+            if pattern.totalBuy+pattern.totalSell < self.buyTransLimit:
                 return
-
-
+        #print(pattern.marketStateList)
         if self.__GetCategory(curIndex) == 0:
             self.mustBuyList.append(pattern)
             # self.patternList.append(pattern)
@@ -265,7 +147,7 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.jumpPrice * 1.005:
+            if price < self.jumpPrice * 1.006:
                 return 1  # Good
             #elif price < self.jumpPrice * 1.01 and time < self.jumpTimeInSeconds:
                 #return 1  # Good
@@ -283,6 +165,7 @@ class SuddenChangeMerger:
         self.patternList = []
         self.badPatternList = []
         self.handlerList = []
+        self.peakHelperList = []
         self.transactionParam = transactionParam
         self.marketState = marketState
 
@@ -290,6 +173,17 @@ class SuddenChangeMerger:
         for index in range(len(jsonIn)):
             if not jsonIn[index]:
                 continue
+
+            handler = SuddenChangeHandler(jsonIn[index],self.transactionParam,self.marketState)
+            self.handlerList.append(handler)
+
+    def AddPeakFile(self, jsonIn):
+        for index in range(len(jsonIn)):
+            if not jsonIn[index]:
+                continue
+
+            jsonPeakTrans = jsonIn[index]
+
 
             handler = SuddenChangeHandler(jsonIn[index],self.transactionParam,self.marketState)
             self.handlerList.append(handler)
@@ -333,7 +227,7 @@ class SuddenChangeManager:
 
     def __init__(self, transactionParamList):
         self.marketState = MarketStateManager.MarketStateManager()
-        self.FeedMarketState()
+        #self.FeedMarketState()
 
         self.transParamList = transactionParamList
         self.suddenChangeMergerList = []
@@ -354,12 +248,13 @@ class SuddenChangeManager:
                 for jsonIn in jsonDictionary:
                     if not jsonIn:
                         continue
-                datetime_object = datetime.strptime(jsonIn["reportTime"].split(".")[0], '%Y-%b-%d %H:%M:%S')
-                totalSecs = (datetime_object - epoch).total_seconds()
-                isRise = bool(jsonIn["isRise"])
-                self.marketState.add(isRise, totalSecs)
+                    datetime_object = datetime.strptime(jsonIn["reportTime"].split(".")[0], '%Y-%b-%d %H:%M:%S')
+                    totalSecs = (datetime_object - epoch).total_seconds()
+                    isRise = bool(jsonIn["isRise"])
+                    self.marketState.add(isRise, totalSecs)
             except:
                 print("There was a exception in ", fileName)
+        self.marketState.sort()
 
     def FeedChangeMergers(self):
         jumpDataFolderPath = os.path.abspath(os.getcwd()) + "/Data/JumpData/"

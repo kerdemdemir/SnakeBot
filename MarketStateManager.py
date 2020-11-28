@@ -18,7 +18,7 @@ class MarketStateManager:
         self.stateList = []
         self.curStateList = deque([])
         self.curUpDowns = [0, 0, 0, 0]
-        self.durationList = [30, 420]
+        self.durationList = [120, 300]
 
     def add(self, isRise, timeInSec):
         self.stateList.append(PeakStateAndTime( timeInSec, isRise))
@@ -57,6 +57,7 @@ class MarketStateManager:
         curTime = PeakStateAndTime(timeInSecs, False)
 
         stopIndex = bisect.bisect_left(self.stateList, curTime)
+        #print(stopIndex, " ", curTime)
         for duration in self.durationList:
             newTime = PeakStateAndTime(timeInSecs - duration, False)
             startIndex = bisect.bisect_left(self.stateList, newTime )

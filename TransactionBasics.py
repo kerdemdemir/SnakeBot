@@ -110,7 +110,7 @@ class TransactionPattern:
             returnList.append(self.transactionSellList[i])
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
-        returnList.extend(self.marketStateList)
+        #returnList.extend(self.marketStateList)
         returnList.extend(self.peaks[-PeakFeatureCount:])
         returnList.extend(self.timeList[-PeakFeatureCount:])
 
