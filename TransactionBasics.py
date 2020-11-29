@@ -1,8 +1,8 @@
 import copy
 
 PeakFeatureCount = 8
-TransactionCountPerSecBase = 8
-TransactionCountPerSecIncrease = 0.1
+TransactionCountPerSecBase = 25
+TransactionCountPerSecIncrease = 0.5
 TransactionLimitPerSecBase = 0.5
 TransactionLimitPerSecBaseIncrease = 0.01
 TransactionBuyLimit = 3.0

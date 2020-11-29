@@ -103,12 +103,13 @@ def Learn():
         sys.stdout.flush()
 
 dynamicMarketState = marketState.MarketStateManager()
+suddenChangeManager = SuddenChangeTransactions.SuddenChangeManager(transParamList)
+
 if isUseExtraData:
     extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
-    extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,dynamicMarketState)
+    extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,suddenChangeManager.marketState)
 if isUsePeaks:
     peakManager = PeakTransactions.PeakManager(transParamList)
-suddenChangeManager = SuddenChangeTransactions.SuddenChangeManager(transParamList)
 
 
 mlpTransactionList = []

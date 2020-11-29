@@ -10,9 +10,9 @@ from os import listdir
 from os.path import isfile, join
 
 class ExtraDataManager:
-    def __init__( self, readFolderPath, transParamListIn, marketState ):
+    def __init__( self, readFolderPath, transParamListIn, marketStateParam ):
         self.transParamList = transParamListIn
-        self.marketState = marketState
+        self.marketState = marketStateParam
         self.totalFeaturesList = []
         self.totalGoodFeaturesList = []
         for i in range(len(transParamListIn)):
@@ -72,12 +72,11 @@ class ExtraDataManager:
 
                 for transactionIndex in range(len(self.transParamList)):
                     transParam = self.transParamList[transactionIndex]
-                    extraCount = 8
-                    extraCount += 6
-                    justTransactions = resultsTransactionFloat[:-extraCount]
-                    if len(justTransactions) != 80:
-                        print("Bad extra trans data ", len(justTransactions))
-                        continue
+
+                    justTransactions = resultsTransactionFloat
+                    #if len(justTransactions) != 80:
+                        #print("Bad extra trans data ", len(justTransactions))
+                        #continue
                     #print( len(justTransactions), " ", justTransactions)
                     currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec,
                                                                             transParam.gramCount)
@@ -85,7 +84,8 @@ class ExtraDataManager:
                     datetime_object = datetime.strptime(lineSplitList[14+extraLineCount], '%Y-%b-%d %H:%M:%S')
                     epoch = datetime.utcfromtimestamp(0)
                     curSeconds = (datetime_object - epoch).total_seconds()
-
+                    #marketStateList = self.marketState.getState(curSeconds)
+                    #totalFeatures = currentTransactionList + marketStateList + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:] + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:]
                     totalFeatures = currentTransactionList + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:] + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:]
 
 

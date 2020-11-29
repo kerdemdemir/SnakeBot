@@ -141,7 +141,7 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.jumpPrice * 1.006:
+            if price < self.jumpPrice * 1.01:
                 return 1  # Good
             #elif price < self.jumpPrice * 1.01 and time < self.jumpTimeInSeconds:
                 #return 1  # Good
@@ -221,7 +221,7 @@ class SuddenChangeManager:
 
     def __init__(self, transactionParamList):
         self.marketState = MarketStateManager.MarketStateManager()
-        #self.FeedMarketState()
+        self.FeedMarketState()
 
         self.transParamList = transactionParamList
         self.suddenChangeMergerList = []

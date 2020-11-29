@@ -65,8 +65,17 @@ class PeakHandler:
             self.peakIndex = prices.index(min(prices))
         else:
             self.peakIndex = prices.index(max(prices))
-
         self.peakVal = float(jsonIn[self.peakIndex]["p"])
+
+        self.isJumpInWindow = False
+        for index in range(len(prices[self.peakIndex:])):
+            curPrice = prices[self.peakIndex + index]
+            if self.isBottom and curPrice/self.peakVal > 1.025:
+                self.isJumpInWindow = True
+            if not self.isBottom and self.peakVal/curPrice < 1.025:
+                self.isJumpInWindow = True
+
+
         self.peakTimeSeconds = int(jsonIn[self.peakIndex]["T"]) // 1000
         self.__DivideDataInSeconds(jsonIn)
         self.__AssignScores()
@@ -110,12 +119,14 @@ class PeakHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isBottom:
-            if price < self.peakVal * 1.004:
+            if price < self.peakVal * 1.005:
                 return 1  # Good
-            if price > self.peakVal * 0.96 and time < self.peakTimeSeconds:
+            if self.isJumpInWindow and price < self.peakVal * 1.01:
+                return 1
+            if price > self.peakVal * 0.97 and time < self.peakTimeSeconds:
                 return 2  # Bad
         else:
-            if price < self.peakVal * 0.96 and time < self.peakTimeSeconds:
+            if price < self.peakVal * 0.97 and time < self.peakTimeSeconds:
                 return 1  # Good
             if price > self.peakVal * 0.995:
                 return 2
