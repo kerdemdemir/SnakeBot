@@ -67,13 +67,13 @@ class ExtraDataManager:
                 #scores = list(map(lambda x: float(x), lineSplitList[1][1:-1].split(";")))
                 #print("scores ", scores )
                 # totalPerExtra = transHelper.ExtraPerDataInfo * len(transParamList)
-                minMaxPriceRatio = SuddenChangeTransactions.GetPeaksRatio(resultsChangeFloat, 7)
-                print(resultsChangeFloat, " ", resultsChangeFloat[7], " ", minMaxPriceRatio)
+                #minMaxPriceRatio = SuddenChangeTransactions.GetPeaksRatio(resultsChangeFloat, 7)
+                #print(resultsChangeFloat, " ", resultsChangeFloat[7], " ", minMaxPriceRatio)
 
                 for transactionIndex in range(len(self.transParamList)):
                     transParam = self.transParamList[transactionIndex]
                     extraCount = 8
-                    extraCount += len(self.transParamList) * 2
+                    extraCount += 6
                     justTransactions = resultsTransactionFloat[:-extraCount]
                     if len(justTransactions) != 80:
                         print("Bad extra trans data ", len(justTransactions))

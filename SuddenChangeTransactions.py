@@ -23,12 +23,6 @@ percent = 0.01
 
 
 class SuddenChangeHandler:
-    TransactionCountPerSecBase = 8
-    TransactionCountPerSecIncrease = 0.1
-    TransactionLimitPerSecBase = 0.5
-    TransactionLimitPerSecBaseIncrease = 0.01
-    TransactionBuyLimit = 3.0
-
     def __init__(self, jsonIn, transactionParam,marketState):
         self.marketState = marketState
         self.jumpTimeInSeconds = 0
@@ -50,9 +44,9 @@ class SuddenChangeHandler:
         self.__Parse(jsonIn)
 
         totalSec = transactionParam.msec * transactionParam.gramCount / 1000
-        self.lowestTransaction = SuddenChangeHandler.TransactionCountPerSecBase + SuddenChangeHandler.TransactionCountPerSecIncrease * totalSec
-        self.acceptedTransLimit = SuddenChangeHandler.TransactionLimitPerSecBase + SuddenChangeHandler.TransactionLimitPerSecBaseIncrease * totalSec
-        self.buyTransLimit = SuddenChangeHandler.TransactionBuyLimit + SuddenChangeHandler.TransactionLimitPerSecBaseIncrease * totalSec
+        self.lowestTransaction = TransactionBasics.TransactionCountPerSecBase + TransactionBasics.TransactionCountPerSecIncrease * totalSec
+        self.acceptedTransLimit = TransactionBasics.TransactionLimitPerSecBase + TransactionBasics.TransactionLimitPerSecBaseIncrease * totalSec
+        self.buyTransLimit = TransactionBasics.TransactionBuyLimit + TransactionBasics.TransactionLimitPerSecBaseIncrease * totalSec
         self.dataList = []
         tempTransaction = json.loads(jsonIn["transactions"])
         self.__DivideDataInSeconds(tempTransaction) #populates the dataList with TransactionData

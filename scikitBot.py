@@ -16,17 +16,18 @@ from sklearn.metrics import classification_report,confusion_matrix
 import DynamicTuner
 import SuddenChangeTransactions
 import TransactionBasics
+import PeakTransactions
 
 transactionBinCountList = [6,8]
 totalTimeCount = 6
-isTrainCurves = True
+isUsePeaks = True
 totalUsedCurveCount = 4
-isConcanateCsv = False
+isUseExtraData = False
 acceptedProbibilty = 0.7
 testRatio = 4
-transParamList = [TransactionBasics.TransactionParam(1000,  6),
-                  TransactionBasics.TransactionParam(2000,  6),
-                  TransactionBasics.TransactionParam(4000,  6)]
+transParamList = [TransactionBasics.TransactionParam(1000,  5),
+                  TransactionBasics.TransactionParam(2000,  5),
+                  TransactionBasics.TransactionParam(4000,  5)]
 
 currentProbs = []
 
@@ -66,7 +67,9 @@ def Learn():
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         numpyArr = suddenChangeManager.toTransactionFeaturesNumpy(transactionIndex)
-        #numpyArr = extraDataManager.concanate(numpyArr,transactionIndex)
+        if isUsePeaks:
+            numpyArrPeak = peakManager.toTransactionFeaturesNumpy(transactionIndex)
+            numpyArr = np.concatenate((numpyArr, numpyArrPeak), axis=0)
 
 
         mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24), activation='relu',
@@ -76,9 +79,13 @@ def Learn():
         mlpTransactionScalerList.append(transactionScaler)
         X = transactionScaler.transform(numpyArr)
         y = suddenChangeManager.toTransactionResultsNumpy(transactionIndex) #+ extraDataManager.getResult(transactionIndex)
+        if isUsePeaks:
+            yPeak = peakManager.toTransactionResultsNumpy(transactionIndex)
+            y += yPeak
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=40)
-        #X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
-        #y_test = extraDataManager.getConcanatedResult(transactionIndex)
+        if isUseExtraData:
+            X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
+            y_test = extraDataManager.getConcanatedResult(transactionIndex)
 
         mlpTransaction.fit(X_train, y_train)
 
@@ -96,11 +103,13 @@ def Learn():
         sys.stdout.flush()
 
 dynamicMarketState = marketState.MarketStateManager()
-extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
-#extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,dynamicMarketState)
-
-
+if isUseExtraData:
+    extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
+    extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,dynamicMarketState)
+if isUsePeaks:
+    peakManager = PeakTransactions.PeakManager(transParamList)
 suddenChangeManager = SuddenChangeTransactions.SuddenChangeManager(transParamList)
+
 
 mlpTransactionList = []
 mlpTransactionScalerList = []

@@ -1,6 +1,11 @@
 import copy
 
 PeakFeatureCount = 8
+TransactionCountPerSecBase = 8
+TransactionCountPerSecIncrease = 0.1
+TransactionLimitPerSecBase = 0.5
+TransactionLimitPerSecBaseIncrease = 0.01
+TransactionBuyLimit = 3.0
 
 
 class TransactionParam:
@@ -89,7 +94,11 @@ class TransactionPattern:
             self.priceMaxRatio = dataList[-1].lastPrice / max(priceList)
             self.priceMinRatio = dataList[-1].lastPrice / min(priceList)
         lastTime = dataList[-1].timeInSecs
-        self.marketStateList = marketState.getState(lastTime)
+        if marketState:
+            self.marketStateList = marketState.getState(lastTime)
+        else:
+            self.marketStateList = []
+
         for elem in dataList:
             self.transactionBuyList.append(elem.transactionBuyCount)
             self.transactionSellList.append(elem.totalTransactionCount - elem.transactionBuyCount)
