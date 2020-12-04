@@ -1,12 +1,31 @@
 import copy
 
-PeakFeatureCount = 8
-TransactionCountPerSecBase = 25
-TransactionCountPerSecIncrease = 0.5
-TransactionLimitPerSecBase = 0.5
-TransactionLimitPerSecBaseIncrease = 0.01
-TransactionBuyLimit = 3.0
+PeakFeatureCount = 0
+TransactionCountPerSecBase = 6
+TransactionLimitPerSecBase = 0.3
 
+
+def chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+def CreateTransactionList(inList):
+    transPatternReturnVal = []
+    newList = list(chunks(inList, 4))
+    for listElem in newList:
+        elem = BasicTransactionData(listElem)
+        transPatternReturnVal.append(elem)
+    return transPatternReturnVal
+
+def GetListFromBasicTransData( inBasicTransactionDataList ):
+    returnList = []
+    for i in range(len(inBasicTransactionDataList)):
+        returnList.append(inBasicTransactionDataList[i].transactionBuyCount)
+        returnList.append(inBasicTransactionDataList[i].transactionSellCount)
+        returnList.append(inBasicTransactionDataList[i].totalBuy)
+        returnList.append(inBasicTransactionDataList[i].totalSell)
+    return returnList
 
 class TransactionParam:
     def __init__ ( self, msec, gramCount ):
@@ -15,6 +34,19 @@ class TransactionParam:
 
     def __repr__(self):
         return "MSec:%d,GramCount:%d" % (self.msec, self.gramCount)
+
+class BasicTransactionData:
+    def __init__(self, list):
+        self.totalBuy = list[2]
+        self.totalSell = list[3]
+        self.transactionBuyCount = list[0]
+        self.transactionSellCount = list[1]
+
+    def CombineData(self, otherData):
+        self.transactionSellCount += otherData.transactionSellCount
+        self.transactionBuyCount += otherData.transactionBuyCount
+        self.totalBuy += otherData.totalBuy
+        self.totalSell += otherData.totalSell
 
 class TransactionData:
     def __init__(self):
@@ -34,7 +66,7 @@ class TransactionData:
 
     # "m": true, "l": 6484065,"M": true,"q": "44113.00000000","a": 5378484,"T": 1591976004949,"p": "0.00000225","f": 6484064
     def AddData(self, jsonIn):
-        isSell = jsonIn["m"]
+        isSell = bool(jsonIn["m"])
         power = float(jsonIn["q"]) * float(jsonIn["p"])
         if self.firstPrice == 0.0:
             self.firstPrice = float(jsonIn["p"])
@@ -45,6 +77,14 @@ class TransactionData:
             self.totalBuy += power
         else:
             self.totalSell += power
+
+    def CombineData(self, otherData):
+        self.totalTransactionCount += otherData.totalTransactionCount
+        self.transactionBuyCount += otherData.transactionBuyCount
+        self.totalBuy += otherData.totalBuy
+        self.totalSell += otherData.totalSell
+        self.lastPrice = otherData.lastPrice
+        self.timeInSecs = otherData.timeInSecs
 
     def SetTime(self, timeInSecs):
         self.timeInSecs = timeInSecs
@@ -80,10 +120,11 @@ class TransactionPattern:
         self.timeList = []
 
     def SetPeaks(self, peakList, timeList):
-        self.peaks = copy.deepcopy(peakList)
-        self.timeList = copy.deepcopy(timeList)
-        self.peaks[-1] += (self.priceDiff - 1.0)
-        self.timeList[-1] += (self.timeDiffInSeconds//60)
+        if PeakFeatureCount > 0:
+            self.peaks = copy.deepcopy(peakList)
+            self.timeList = copy.deepcopy(timeList)
+            self.peaks[-1] += (self.priceDiff - 1.0)
+            self.timeList[-1] += (self.timeDiffInSeconds//60)
 
 
 
@@ -120,8 +161,9 @@ class TransactionPattern:
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
         #returnList.extend(self.marketStateList)
-        returnList.extend(self.peaks[-PeakFeatureCount:])
-        returnList.extend(self.timeList[-PeakFeatureCount:])
+        if PeakFeatureCount > 0:
+            returnList.extend(self.peaks[-PeakFeatureCount:])
+            returnList.extend(self.timeList[-PeakFeatureCount:])
 
         return returnList
 

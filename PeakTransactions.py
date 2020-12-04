@@ -39,7 +39,7 @@ class RiseMinute:
 
 
 class PeakHandler:
-    def __init__(self, jsonIn, transactionParam, riseList, timeList):
+    def __init__(self, jsonIn, isBottom, transactionParam, riseList, timeList):
         self.patternList = []
         self.mustBuyList = []
         self.badPatternList = []
@@ -59,7 +59,7 @@ class PeakHandler:
         if priceLen == 0:
             return
 
-        self.isBottom = True if riseList[-1] < 0.0 else False
+        self.isBottom = isBottom
 
         if self.isBottom:
             self.peakIndex = prices.index(min(prices))
@@ -99,10 +99,15 @@ class PeakHandler:
         if startBin < 0 or endBin > lenArray:
             return
 
+        lastTotalTradePower = self.dataList[curIndex].totalBuy + self.dataList[curIndex].totalSell
+        if self.dataList[curIndex].totalTransactionCount < self.lowestTransaction or \
+            lastTotalTradePower < self.acceptedTransLimit:
+            return
+
         pattern = TransactionBasics.TransactionPattern()
         pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds, self.peakVal, None )
         pattern.SetPeaks( self.riseList, self.timeList )
-        if pattern.totalTransactionCount < self.lowestTransaction or pattern.totalBuy+pattern.totalSell < self.acceptedTransLimit:
+        if pattern.totalTransactionCount < self.lowestTransaction*3 or pattern.totalBuy+pattern.totalSell < self.acceptedTransLimit*2:
             if pattern.totalBuy+pattern.totalSell < self.buyTransLimit:
                 return
 
@@ -119,9 +124,9 @@ class PeakHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isBottom:
-            if price < self.peakVal * 1.005:
+            if price < self.peakVal * 1.002:
                 return 1  # Good
-            if self.isJumpInWindow and price < self.peakVal * 1.01:
+            if self.isJumpInWindow and price < self.peakVal * 1.005:
                 return 1
             if price > self.peakVal * 0.97 and time < self.peakTimeSeconds:
                 return 2  # Bad
@@ -215,9 +220,14 @@ class PeakMerger:
             for index in range(startIndex, len(transactionData)):
                 if index < 8:
                     continue
-                curPriceList = riseList[index + 1 - PeakFeatureCount:index + 1]
-                curTimeList = timeList[index+1-PeakFeatureCount:index+1]
-                handler = PeakHandler(transactionData[index], self.transactionParam, curPriceList, curTimeList)
+                if PeakFeatureCount > 0:
+                    curPriceList = riseList[index + 1 - PeakFeatureCount:index + 1]
+                    curTimeList = timeList[index+1-PeakFeatureCount:index+1]
+                else:
+                    curPriceList = []
+                    curTimeList = []
+                isBottom = riseList[index] < 0
+                handler = PeakHandler(transactionData[index], isBottom, self.transactionParam, curPriceList, curTimeList)
                 self.handlerList.append(handler)
 
     def Finalize(self):

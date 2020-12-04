@@ -1,6 +1,7 @@
 import numpy as np
 
 import SuddenChangeTransactions
+import TransactionBasics
 import DynamicTuner
 import MarketStateManager as marketState
 from datetime import datetime
@@ -78,16 +79,22 @@ class ExtraDataManager:
                         #print("Bad extra trans data ", len(justTransactions))
                         #continue
                     #print( len(justTransactions), " ", justTransactions)
-                    currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec,
-                                                                            transParam.gramCount)
-
+                    multipliedGramCount = SuddenChangeTransactions.GetTotalPatternCount(transParam.gramCount)
+                    currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, multipliedGramCount)
+                    basicList = TransactionBasics.CreateTransactionList(currentTransactionList)
+                    basicList = SuddenChangeTransactions.ReduceToNGrams(basicList, transParam.gramCount)
+                    currentTransactionList = TransactionBasics.GetListFromBasicTransData(basicList)
                     datetime_object = datetime.strptime(lineSplitList[14+extraLineCount], '%Y-%b-%d %H:%M:%S')
                     epoch = datetime.utcfromtimestamp(0)
                     curSeconds = (datetime_object - epoch).total_seconds()
-                    #marketStateList = self.marketState.getState(curSeconds)
+                    if self.marketState:
+                        marketStateList = self.marketState.getState(curSeconds)
                     #totalFeatures = currentTransactionList + marketStateList + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:] + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:]
-                    totalFeatures = currentTransactionList + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:] + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:]
-
+                    if SuddenChangeTransactions.PeakFeatureCount > 0:
+                        totalFeatures = currentTransactionList + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:] + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:]
+                    else :
+                        totalFeatures = currentTransactionList
+                        #totalFeatures = currentTransactionList + marketStateList
 
                     self.totalLen = len(totalFeatures)
                     if float(lineSplitList[11+extraLineCount]) < 1.005:

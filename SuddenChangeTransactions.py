@@ -20,6 +20,38 @@ TotalExtraFeatureCount = PeakFeatureCount + MaxMinDataLen + UpSideDataLen
 percent = 0.01
 
 
+def GetTotalPatternCount(ngrams):
+    transCount = ngrams
+    returnVal = 0
+    for i in range(transCount // 2):
+        returnVal += pow(2, i + 1)
+    return returnVal
+
+def ReduceToNGrams(listToMerge, ngrams):
+    transCount = ngrams
+    mergeRuleList = []
+    returnVal = 0
+    listToMerge.reverse()
+    for i in range(transCount // 2):
+        returnVal += pow(2, i + 1)
+        mergeRuleList.append(returnVal)
+
+    mergeListLen = len(listToMerge)
+    curIndex = 2
+    newMergeList = listToMerge[:2]
+    while curIndex < mergeListLen:
+        mergePos = bisect.bisect(mergeRuleList, curIndex)
+        mergeSize = pow(2, mergePos)
+        startData = listToMerge[curIndex]
+        for k in range(mergeSize-1):
+            if isinstance(startData, float):
+                startData += listToMerge[curIndex+k+1]
+            else:
+                startData.CombineData(listToMerge[curIndex+k+1])
+        curIndex += mergeSize
+        newMergeList.append(startData)
+    newMergeList.reverse()
+    return newMergeList
 
 
 class SuddenChangeHandler:
@@ -43,10 +75,8 @@ class SuddenChangeHandler:
         self.jumpState = []
         self.__Parse(jsonIn)
 
-        totalSec = transactionParam.msec * transactionParam.gramCount / 1000
-        self.lowestTransaction = TransactionBasics.TransactionCountPerSecBase + TransactionBasics.TransactionCountPerSecIncrease * totalSec
-        self.acceptedTransLimit = TransactionBasics.TransactionLimitPerSecBase + TransactionBasics.TransactionLimitPerSecBaseIncrease * totalSec
-        self.buyTransLimit = TransactionBasics.TransactionBuyLimit + TransactionBasics.TransactionLimitPerSecBaseIncrease * totalSec
+        self.lowestTransaction = TransactionBasics.TransactionCountPerSecBase
+        self.acceptedTransLimit = TransactionBasics.TransactionLimitPerSecBase
         self.dataList = []
         tempTransaction = json.loads(jsonIn["transactions"])
         self.__DivideDataInSeconds(tempTransaction) #populates the dataList with TransactionData
@@ -66,7 +96,7 @@ class SuddenChangeHandler:
         self.reportTimeInSeconds = (datetime_object - epoch).total_seconds()
         self.riseList = jsonIn["riseList"]
         self.timeList = jsonIn["timeList"]
-        self.maxMinList = jsonIn["maxMin"]
+        self.maxMinList                          = jsonIn["maxMin"]
         datetime_object = datetime.strptime(jsonIn["time"].split(".")[0], '%Y-%b-%d %H:%M:%S')
         self.jumpTimeInSeconds = (datetime_object - epoch).total_seconds()
         self.downUpList = jsonIn["downUps"]
@@ -114,17 +144,22 @@ class SuddenChangeHandler:
         del self.dataList
 
     def __AppendToPatternListImpl(self, ngramCount, curIndex, lenArray):
-        startBin = curIndex + 1 - ngramCount
+        totalCount = GetTotalPatternCount(ngramCount)
+        startBin = curIndex + 1 - totalCount
         endBin = curIndex + 1
         if startBin < 0 or endBin > lenArray:
             return
 
+        lastTotalTradePower = self.dataList[curIndex].totalBuy + self.dataList[curIndex].totalSell
+        if self.dataList[curIndex].totalTransactionCount < self.lowestTransaction or \
+            lastTotalTradePower < self.acceptedTransLimit:
+            return
+
         pattern = TransactionBasics.TransactionPattern()
-        pattern.Append(self.dataList[startBin:endBin], self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
+        dataRange = ReduceToNGrams(self.dataList[startBin:endBin], ngramCount)
+        pattern.Append( dataRange, self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
         pattern.SetPeaks( self.riseList, self.timeList )
-        if pattern.totalTransactionCount < self.lowestTransaction or pattern.totalBuy+pattern.totalSell < self.acceptedTransLimit:
-            if pattern.totalBuy+pattern.totalSell < self.buyTransLimit:
-                return
+
         #print(pattern.marketStateList)
         if self.__GetCategory(curIndex) == 0:
             self.mustBuyList.append(pattern)
@@ -134,14 +169,13 @@ class SuddenChangeHandler:
         elif self.__GetCategory(curIndex) == 2:
             self.badPatternList.append(pattern)
 
-
     def __GetCategory(self, curIndex):
         price = self.dataList[curIndex].lastPrice
         firstPrice = self.dataList[curIndex].firstPrice
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.jumpPrice * 1.01:
+            if price < self.jumpPrice * 1.005:
                 return 1  # Good
             #elif price < self.jumpPrice * 1.01 and time < self.jumpTimeInSeconds:
                 #return 1  # Good
@@ -191,6 +225,7 @@ class SuddenChangeMerger:
     def toTransactionFeaturesNumpy(self):
         badCount = len(self.badPatternList)
         goodCount = len(self.patternList)
+        self.Print()
         #mustBuyCount = len(self.mustBuyList)
         allData = np.concatenate( (self.patternList, self.badPatternList), axis=0)
         print("Good count: ", goodCount, " Bad Count: ", badCount)
@@ -206,6 +241,29 @@ class SuddenChangeMerger:
         badResult = [0] * len(self.badPatternList)
         returnPatternList = goodResult + badResult
         return returnPatternList
+
+    def Print(self):
+
+        #mustBuyList = np.array(self.mustBuyList)
+        buyList = np.array(self.patternList)
+        badList = np.array(self.badPatternList)
+
+        for i in range(len(self.patternList[0])):
+            a = {'Good': buyList[:, -(i + 1)],
+                 'Bad': badList[:, -(i + 1)]}
+            df = pd.DataFrame.from_dict( a, orient='index')
+            df = df.transpose()
+            df.plot.box()
+            #mustBuyLegend = str(np.quantile(mustBuyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.9))
+            buyLegend = str(np.quantile(buyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.9))
+            badLegend = str(np.quantile(badList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.9))
+            print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend , " ", badLegend)
+            plt.savefig('Plots/' + str(self.transactionParam.msec) + "_" + str(i) + "_box.pdf")
+            plt.cla()
+            plt.clf()
+
+        plt.close()
+
 
     def __MergeInTransactions(self, handler):
         for pattern in handler.patternList:

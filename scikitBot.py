@@ -20,14 +20,12 @@ import PeakTransactions
 
 transactionBinCountList = [6,8]
 totalTimeCount = 6
-isUsePeaks = True
+isUsePeaks = False
 totalUsedCurveCount = 4
-isUseExtraData = False
+isUseExtraData = True
 acceptedProbibilty = 0.7
 testRatio = 4
-transParamList = [TransactionBasics.TransactionParam(1000,  5),
-                  TransactionBasics.TransactionParam(2000,  5),
-                  TransactionBasics.TransactionParam(4000,  5)]
+transParamList = [TransactionBasics.TransactionParam(1000, 8 )]
 
 currentProbs = []
 
