@@ -1,6 +1,7 @@
 import copy
+import bisect
 
-PeakFeatureCount = 0
+PeakFeatureCount = 8
 TransactionCountPerSecBase = 6
 TransactionLimitPerSecBase = 0.3
 
@@ -26,6 +27,41 @@ def GetListFromBasicTransData( inBasicTransactionDataList ):
         returnList.append(inBasicTransactionDataList[i].totalBuy)
         returnList.append(inBasicTransactionDataList[i].totalSell)
     return returnList
+
+
+
+def GetTotalPatternCount(ngrams):
+    transCount = ngrams
+    returnVal = 0
+    for i in range(transCount // 2):
+        returnVal += pow(2, i + 1)
+    return returnVal
+
+def ReduceToNGrams(listToMerge, ngrams):
+    transCount = ngrams
+    mergeRuleList = []
+    returnVal = 0
+    listToMerge.reverse()
+    for i in range(transCount // 2):
+        returnVal += pow(2, i + 1)
+        mergeRuleList.append(returnVal)
+
+    mergeListLen = len(listToMerge)
+    curIndex = 2
+    newMergeList = listToMerge[:2]
+    while curIndex < mergeListLen:
+        mergePos = bisect.bisect(mergeRuleList, curIndex)
+        mergeSize = pow(2, mergePos)
+        startData = listToMerge[curIndex]
+        for k in range(mergeSize-1):
+            if isinstance(startData, float):
+                startData += listToMerge[curIndex+k+1]
+            else:
+                startData.CombineData(listToMerge[curIndex+k+1])
+        curIndex += mergeSize
+        newMergeList.append(startData)
+    newMergeList.reverse()
+    return newMergeList
 
 class TransactionParam:
     def __init__ ( self, msec, gramCount ):
@@ -160,7 +196,7 @@ class TransactionPattern:
             returnList.append(self.transactionSellList[i])
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
-        #returnList.extend(self.marketStateList)
+        returnList.extend(self.marketStateList)
         if PeakFeatureCount > 0:
             returnList.extend(self.peaks[-PeakFeatureCount:])
             returnList.extend(self.timeList[-PeakFeatureCount:])

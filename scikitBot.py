@@ -1,5 +1,3 @@
-
-
 import ExtraDataManager as extraDataMan
 import MarketStateManager as marketState
 import zmq
@@ -25,7 +23,7 @@ totalUsedCurveCount = 4
 isUseExtraData = True
 acceptedProbibilty = 0.7
 testRatio = 4
-transParamList = [TransactionBasics.TransactionParam(1000, 8 )]
+transParamList = [TransactionBasics.TransactionParam(1000, 10)]
 
 currentProbs = []
 
@@ -39,15 +37,22 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
     resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
-    #marketStateList = dynamicMarketState.curUpDowns
+    marketStateList = dynamicMarketState.curUpDowns
     resultStr = ""
 
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         justTransactions = resultsTransactionFloat
-        currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, transParam.gramCount)
+        multipliedGramCount = TransactionBasics.GetTotalPatternCount(transParam.gramCount)
+        currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, multipliedGramCount)
+        basicList = TransactionBasics.CreateTransactionList(currentTransactionList)
+        basicList = TransactionBasics.ReduceToNGrams(basicList, transParam.gramCount)
+        currentTransactionList = TransactionBasics.GetListFromBasicTransData(basicList)
         # + marketStateList market state is cancelled for now
-        totalFeatures = currentTransactionList  + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
+        #totalFeatures = currentTransactionList  + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
+        totalFeatures = currentTransactionList + marketStateList + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
+
+
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
         totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)
@@ -70,7 +75,7 @@ def Learn():
             numpyArr = np.concatenate((numpyArr, numpyArrPeak), axis=0)
 
 
-        mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24), activation='relu',
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(32, 32, 32), activation='relu',
                                        solver='adam', max_iter=500)
         mlpTransactionList.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
@@ -80,10 +85,14 @@ def Learn():
         if isUsePeaks:
             yPeak = peakManager.toTransactionResultsNumpy(transactionIndex)
             y += yPeak
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=40)
+
         if isUseExtraData:
             X_test = transactionScaler.transform(extraDataManager.getNumpy(transactionIndex))
             y_test = extraDataManager.getConcanatedResult(transactionIndex)
+            X_train = X
+            y_train = y
+        else:
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
 
         mlpTransaction.fit(X_train, y_train)
 
@@ -102,12 +111,12 @@ def Learn():
 
 dynamicMarketState = marketState.MarketStateManager()
 suddenChangeManager = SuddenChangeTransactions.SuddenChangeManager(transParamList)
-
+if isUsePeaks:
+    peakManager = PeakTransactions.PeakManager(transParamList)
 if isUseExtraData:
     extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
     extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,suddenChangeManager.marketState)
-if isUsePeaks:
-    peakManager = PeakTransactions.PeakManager(transParamList)
+
 
 
 mlpTransactionList = []

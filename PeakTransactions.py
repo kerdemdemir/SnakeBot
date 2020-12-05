@@ -50,9 +50,8 @@ class PeakHandler:
         self.isFinalize = True
         self.transactionParam = transactionParam
         totalSec = transactionParam.msec * transactionParam.gramCount / 1000
-        self.lowestTransaction = TransactionBasics.TransactionCountPerSecBase + TransactionBasics.TransactionCountPerSecIncrease * totalSec
-        self.acceptedTransLimit = TransactionBasics.TransactionLimitPerSecBase + TransactionBasics.TransactionLimitPerSecBaseIncrease * totalSec
-        self.buyTransLimit = TransactionBasics.TransactionBuyLimit + TransactionBasics.TransactionLimitPerSecBaseIncrease * totalSec
+        self.lowestTransaction = TransactionBasics.TransactionCountPerSecBase
+        self.acceptedTransLimit = TransactionBasics.TransactionLimitPerSecBase
 
         prices = list(map(lambda x: float(x["p"]), jsonIn))
         priceLen = len(prices)
@@ -94,7 +93,8 @@ class PeakHandler:
         del self.dataList
 
     def __AppendToPatternList(self, ngramCount, curIndex, lenArray):
-        startBin = curIndex + 1 - ngramCount
+        totalCount = TransactionBasics.GetTotalPatternCount(ngramCount)
+        startBin = curIndex + 1 - totalCount
         endBin = curIndex + 1
         if startBin < 0 or endBin > lenArray:
             return
@@ -105,11 +105,10 @@ class PeakHandler:
             return
 
         pattern = TransactionBasics.TransactionPattern()
-        pattern.Append(self.dataList[startBin:endBin], self.peakTimeSeconds, self.peakVal, None )
+        copyList = copy.deepcopy(self.dataList[startBin:endBin])
+        dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
+        pattern.Append(dataRange, self.peakTimeSeconds, self.peakVal, None )
         pattern.SetPeaks( self.riseList, self.timeList )
-        if pattern.totalTransactionCount < self.lowestTransaction*3 or pattern.totalBuy+pattern.totalSell < self.acceptedTransLimit*2:
-            if pattern.totalBuy+pattern.totalSell < self.buyTransLimit:
-                return
 
         if self.__GetCategory(curIndex) == 0:
             self.mustBuyList.append(pattern)
@@ -124,7 +123,7 @@ class PeakHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isBottom:
-            if price < self.peakVal * 1.002:
+            if price < self.peakVal * 1.003:
                 return 1  # Good
             if self.isJumpInWindow and price < self.peakVal * 1.005:
                 return 1

@@ -19,41 +19,6 @@ UpSideDataLen = 6
 TotalExtraFeatureCount = PeakFeatureCount + MaxMinDataLen + UpSideDataLen
 percent = 0.01
 
-
-def GetTotalPatternCount(ngrams):
-    transCount = ngrams
-    returnVal = 0
-    for i in range(transCount // 2):
-        returnVal += pow(2, i + 1)
-    return returnVal
-
-def ReduceToNGrams(listToMerge, ngrams):
-    transCount = ngrams
-    mergeRuleList = []
-    returnVal = 0
-    listToMerge.reverse()
-    for i in range(transCount // 2):
-        returnVal += pow(2, i + 1)
-        mergeRuleList.append(returnVal)
-
-    mergeListLen = len(listToMerge)
-    curIndex = 2
-    newMergeList = listToMerge[:2]
-    while curIndex < mergeListLen:
-        mergePos = bisect.bisect(mergeRuleList, curIndex)
-        mergeSize = pow(2, mergePos)
-        startData = listToMerge[curIndex]
-        for k in range(mergeSize-1):
-            if isinstance(startData, float):
-                startData += listToMerge[curIndex+k+1]
-            else:
-                startData.CombineData(listToMerge[curIndex+k+1])
-        curIndex += mergeSize
-        newMergeList.append(startData)
-    newMergeList.reverse()
-    return newMergeList
-
-
 class SuddenChangeHandler:
     def __init__(self, jsonIn, transactionParam,marketState):
         self.marketState = marketState
@@ -132,7 +97,8 @@ class SuddenChangeHandler:
                         break
             else:
                 transactionData.AddData(curElement)
-        self.dataList.append(copy.deepcopy(transactionData))
+        copyData = copy.deepcopy(transactionData)
+        self.dataList.append(copyData)
 
     def __AppendToPatternList(self):
         lenArray = len(self.dataList)
@@ -144,7 +110,7 @@ class SuddenChangeHandler:
         del self.dataList
 
     def __AppendToPatternListImpl(self, ngramCount, curIndex, lenArray):
-        totalCount = GetTotalPatternCount(ngramCount)
+        totalCount = TransactionBasics.GetTotalPatternCount(ngramCount)
         startBin = curIndex + 1 - totalCount
         endBin = curIndex + 1
         if startBin < 0 or endBin > lenArray:
@@ -156,14 +122,14 @@ class SuddenChangeHandler:
             return
 
         pattern = TransactionBasics.TransactionPattern()
-        dataRange = ReduceToNGrams(self.dataList[startBin:endBin], ngramCount)
+        copyList = copy.deepcopy(self.dataList[startBin:endBin])
+        dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
         pattern.Append( dataRange, self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
         pattern.SetPeaks( self.riseList, self.timeList )
 
         #print(pattern.marketStateList)
         if self.__GetCategory(curIndex) == 0:
             self.mustBuyList.append(pattern)
-            # self.patternList.append(pattern)
         elif self.__GetCategory(curIndex) == 1:
             self.patternList.append(pattern)
         elif self.__GetCategory(curIndex) == 2:
@@ -175,14 +141,14 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.jumpPrice * 1.0025:
+            if price < self.jumpPrice * 1.003:
                 return 1  # Good
             #elif price < self.jumpPrice * 1.01 and time < self.jumpTimeInSeconds:
                 #return 1  # Good
         else:
             if price > self.jumpPrice * 0.99:
                 return 2
-            if price > self.jumpPrice * 0.97 and time > self.jumpTimeInSeconds:
+            if price > self.jumpPrice * 0.98 and time > self.jumpTimeInSeconds:
                 return 2
         return -1
 
@@ -225,7 +191,7 @@ class SuddenChangeMerger:
     def toTransactionFeaturesNumpy(self):
         badCount = len(self.badPatternList)
         goodCount = len(self.patternList)
-        self.Print()
+        #self.Print()
         #mustBuyCount = len(self.mustBuyList)
         allData = np.concatenate( (self.patternList, self.badPatternList), axis=0)
         print("Good count: ", goodCount, " Bad Count: ", badCount)
