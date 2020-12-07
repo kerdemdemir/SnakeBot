@@ -99,9 +99,9 @@ class ExtraDataManager:
                         totalFeatures = currentTransactionList
 
                     self.totalLen = len(totalFeatures)
-                    if float(lineSplitList[11+extraLineCount]) < 1.005:
+                    if float(lineSplitList[11+extraLineCount]) < 0.99:
                         self.totalFeaturesList[transactionIndex].append(totalFeatures)
-                    else:
+                    elif float(lineSplitList[11+extraLineCount]) > 1.01:
                         self.totalGoodFeaturesList[transactionIndex].append(totalFeatures)
                     #print(totalFeatures)
                     #print(len(totalFeatures), " ", totalFeatures)
