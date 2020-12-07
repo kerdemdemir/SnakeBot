@@ -64,6 +64,8 @@ class ExtraDataManager:
                 resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
                 resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
+                if float(priceStrList[-1]) > 1.0:
+                    continue
                 resultStr = ""
                 #scores = list(map(lambda x: float(x), lineSplitList[1][1:-1].split(";")))
                 #print("scores ", scores )
@@ -99,9 +101,9 @@ class ExtraDataManager:
                         totalFeatures = currentTransactionList
 
                     self.totalLen = len(totalFeatures)
-                    if float(lineSplitList[11+extraLineCount]) < 0.99:
+                    if float(lineSplitList[11+extraLineCount]) < 1.0:
                         self.totalFeaturesList[transactionIndex].append(totalFeatures)
-                    elif float(lineSplitList[11+extraLineCount]) > 1.01:
+                    elif float(lineSplitList[11+extraLineCount]) > 1.002:
                         self.totalGoodFeaturesList[transactionIndex].append(totalFeatures)
                     #print(totalFeatures)
                     #print(len(totalFeatures), " ", totalFeatures)
