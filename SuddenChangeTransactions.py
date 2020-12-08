@@ -168,18 +168,13 @@ class SuddenChangeMerger:
             if not jsonIn[index]:
                 continue
 
-            handler = SuddenChangeHandler(jsonIn[index],self.transactionParam,self.marketState)
-            self.handlerList.append(handler)
-
-    def AddPeakFile(self, jsonIn):
-        for index in range(len(jsonIn)):
-            if not jsonIn[index]:
+            jsonPeakTrans = jsonIn[index]
+            isRising = jsonPeakTrans["riseList"][-1] > 1.0
+            if isRising:
                 continue
 
-            jsonPeakTrans = jsonIn[index]
 
-
-            handler = SuddenChangeHandler(jsonIn[index],self.transactionParam,self.marketState)
+            handler = SuddenChangeHandler(jsonPeakTrans,self.transactionParam,self.marketState)
             self.handlerList.append(handler)
 
     def Finalize(self):
