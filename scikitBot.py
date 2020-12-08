@@ -147,4 +147,6 @@ while True:
         isRising = messageChangeTimeTransactionStrList[1] == "Increase"
         dynamicMarketState.addRecent(isRising)
         socket.send_string("Done", encoding='ascii')
-
+    elif command == "MarketState":
+        resultStr = str(dynamicMarketState.curUpDowns)
+        socket.send_string(resultStr, encoding='ascii')
