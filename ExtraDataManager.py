@@ -98,7 +98,7 @@ class ExtraDataManager:
                         #totalFeatures = currentTransactionList + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:]
                     else :
                         #totalFeatures = currentTransactionList + marketStateList
-                        totalFeatures = currentTransactionList
+                        totalFeatures = currentTransactionList + marketStateList
 
                     self.totalLen = len(totalFeatures)
                     if float(lineSplitList[11+extraLineCount]) < 1.0:
