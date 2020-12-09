@@ -50,7 +50,10 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         currentTransactionList = TransactionBasics.GetListFromBasicTransData(basicList)
         # + marketStateList market state is cancelled for now
         #totalFeatures = currentTransactionList  + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
-        totalFeatures = currentTransactionList + marketStateList + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
+        if TransactionBasics.PeakFeatureCount == 0 :
+            totalFeatures = currentTransactionList + marketStateList
+        else:
+            totalFeatures = currentTransactionList + marketStateList + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
 
 
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
