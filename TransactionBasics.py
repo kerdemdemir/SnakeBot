@@ -1,7 +1,7 @@
 import copy
 import bisect
 
-PeakFeatureCount = 0
+PeakFeatureCount = 4
 TransactionCountPerSecBase = 6
 TransactionLimitPerSecBase = 0.3
 
