@@ -37,6 +37,11 @@ class SuddenChangeHandler:
         self.patternList = []
         self.mustBuyList = []
         self.badPatternList = []
+
+        self.mustSellList = []
+        self.keepList = []
+
+
         self.jumpState = []
         self.__Parse(jsonIn)
 
@@ -125,8 +130,13 @@ class SuddenChangeHandler:
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
         pattern.Append( dataRange, self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
-        pattern.SetPeaks( self.riseList, self.timeList )
 
+        if self.__GetCategorySell(curIndex) == 1:
+            self.mustSellList.append(copy.deepcopy(pattern))
+        elif self.__GetCategorySell(curIndex) == 2:
+            self.keepList.append(copy.deepcopy(pattern))
+
+        pattern.SetPeaks( self.riseList, self.timeList )
         #print(pattern.marketStateList)
         if self.__GetCategory(curIndex) == 0:
             self.mustBuyList.append(pattern)
@@ -134,6 +144,8 @@ class SuddenChangeHandler:
             self.patternList.append(pattern)
         elif self.__GetCategory(curIndex) == 2:
             self.badPatternList.append(pattern)
+
+
 
     def __GetCategory(self, curIndex):
         price = self.dataList[curIndex].lastPrice
@@ -152,12 +164,31 @@ class SuddenChangeHandler:
                 return 2
         return -1
 
+    def __GetCategorySell(self, curIndex):
+        price = self.dataList[curIndex].lastPrice
+        firstPrice = self.dataList[curIndex].firstPrice
+        time = self.dataList[curIndex].timeInSecs
+
+        if self.isRise:
+            if price < self.jumpPrice * 1.005:
+                return 2  # We can keep
+            elif price < self.jumpPrice * 1.02 and time > self.jumpTimeInSeconds:
+                return 2  # Good
+        else:
+            if price > self.jumpPrice * 0.997:
+                return 1 # We need to sell now
+        return -1
+
 class SuddenChangeMerger:
 
     def __init__(self, transactionParam, marketState):
         self.mustBuyList = []
         self.patternList = []
         self.badPatternList = []
+
+        self.mustSellList = []
+        self.keepList = []
+
         self.handlerList = []
         self.peakHelperList = []
         self.transactionParam = transactionParam
@@ -199,8 +230,28 @@ class SuddenChangeMerger:
         print("Good count: ", goodCount, " Bad Count: ", badCount)
         #mustBuyResult = [2] * mustBuyCount
         goodResult = [1] * goodCount
-        badResult = [0] * len(self.badPatternList)
+        badResult = [0] * badCount
         returnPatternList = goodResult + badResult
+        return returnPatternList
+
+    def toSellTransactions(self):
+        mustSellCount = len(self.mustSellList)
+        keepCount = len(self.keepList)
+        #self.Print()
+        #mustBuyCount = len(self.mustBuyList)
+        allData = np.concatenate( (self.mustSellList, self.keepList), axis=0)
+        #print(allData)
+        print("Must sell count: ", mustSellCount, " Keep count: ", keepCount)
+        return allData
+
+    def toSellResultsNumpy(self):
+        mustSellCount = len(self.mustSellList)
+        keepCount = len(self.keepList)
+
+        print("Must sell count: ", mustSellCount, " Keep count: ", keepCount)
+        mustSellResult = [1] * keepCount
+        keepResult  = [0] * mustSellCount
+        returnPatternList = mustSellResult + keepResult
         return returnPatternList
 
     def Print(self):
@@ -235,6 +286,13 @@ class SuddenChangeMerger:
 
         for pattern in handler.badPatternList:
             self.badPatternList.append(pattern.GetFeatures() + handler.GetFeatures())
+
+        for pattern in handler.mustSellList:
+            self.mustSellList.append(pattern.GetFeatures() + handler.GetFeatures())
+
+        for pattern in handler.keepList:
+            self.keepList.append(pattern.GetFeatures() + handler.GetFeatures())
+
 
 class SuddenChangeManager:
 
@@ -287,6 +345,12 @@ class SuddenChangeManager:
 
     def toTransactionResultsNumpy(self, index):
         return self.suddenChangeMergerList[index].toTransactionResultsNumpy()
+
+    def toSellTransactions(self, index):
+        return self.suddenChangeMergerList[index].toSellTransactions()
+
+    def toSellResultsNumpy(self, index):
+        return self.suddenChangeMergerList[index].toSellResultsNumpy()
 
     def FinalizeMergers(self):
         for transactionIndex in range(len(self.transParamList)):

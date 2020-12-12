@@ -30,11 +30,16 @@ currentProbs = []
 
 
 def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList):
-    priceStrList = messageChangeTimeTransactionStrList[0].split(",")
-    timeStrList = messageChangeTimeTransactionStrList[1].split(",")
-    transactionStrList = messageChangeTimeTransactionStrList[2].split(",")
-    resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
-    resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
+    isAvoidPeaks = len(messageChangeTimeTransactionStrList) == 1
+
+    if not isAvoidPeaks:
+        priceStrList = messageChangeTimeTransactionStrList[0].split(",")
+        timeStrList = messageChangeTimeTransactionStrList[1].split(",")
+        transactionStrList = messageChangeTimeTransactionStrList[2].split(",")
+        resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
+        resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
+    else:
+        transactionStrList = messageChangeTimeTransactionStrList[0].split(",")
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
     marketStateList = dynamicMarketState.curUpDowns
@@ -50,7 +55,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         currentTransactionList = TransactionBasics.GetListFromBasicTransData(basicList)
         # + marketStateList market state is cancelled for now
         #totalFeatures = currentTransactionList  + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
-        if TransactionBasics.PeakFeatureCount == 0 :
+        if TransactionBasics.PeakFeatureCount == 0 or isAvoidPeaks :
             totalFeatures = currentTransactionList + marketStateList
         else:
             totalFeatures = currentTransactionList + marketStateList + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
@@ -112,6 +117,32 @@ def Learn():
 
         sys.stdout.flush()
 
+
+def LearnWhenToSell():
+    for transactionIndex in range(len(transParamList)):
+        transParam = transParamList[transactionIndex]
+        numpyArr = suddenChangeManager.toSellTransactions(transactionIndex)
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(32, 32, 32), activation='relu',
+                                       solver='adam', max_iter=500)
+        mlpTransactionListSell.append(mlpTransaction)
+        transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
+        mlpTransactionScalerListSell.append(transactionScaler)
+        X = transactionScaler.transform(numpyArr)
+        y = suddenChangeManager.toSellResultsNumpy(transactionIndex)  # + extraDataManager.getResult(transactionIndex)
+
+        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
+
+        mlpTransaction.fit(X_train, y_train)
+
+        predict_test = mlpTransaction.predict_proba(X_test)
+        finalResult = predict_test[:, 1] >= 0.6
+        print("60 ", confusion_matrix(y_test, finalResult))
+
+        print(" Sell Transactions time: ", transParam.msec, " Sell Transaction Index ", transParam.gramCount, " Sell Index ",
+              transactionIndex)
+
+        sys.stdout.flush()
+
 dynamicMarketState = marketState.MarketStateManager()
 suddenChangeManager = SuddenChangeTransactions.SuddenChangeManager(transParamList)
 if isUsePeaks:
@@ -125,6 +156,10 @@ if isUseExtraData:
 mlpTransactionList = []
 mlpTransactionScalerList = []
 Learn()
+
+mlpTransactionListSell = []
+mlpTransactionScalerListSell = []
+LearnWhenToSell()
 
 print("Memory cleaned")
 sys.stdout.flush()
@@ -141,6 +176,13 @@ while True:
     if command == "Predict":
         messageChangeTimeTransactionStrList = messageChangeTimeTransactionStrList[1:]
         resultStr = Predict(messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList)
+        print("Results are: ", resultStr)
+        #  Send reply back to client
+        socket.send_string(resultStr, encoding='ascii')
+        sys.stdout.flush()
+    elif command == "ShouldSell":
+        messageChangeTimeTransactionStrList = messageChangeTimeTransactionStrList[1:]
+        resultStr = Predict(messageChangeTimeTransactionStrList, mlpTransactionScalerListSell, mlpTransactionListSell)
         print("Results are: ", resultStr)
         #  Send reply back to client
         socket.send_string(resultStr, encoding='ascii')

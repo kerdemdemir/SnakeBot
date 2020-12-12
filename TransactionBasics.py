@@ -154,6 +154,7 @@ class TransactionPattern:
         self.marketStateList = []
         self.peaks = []
         self.timeList = []
+        self.isAvoidPeaks = True
 
     def SetPeaks(self, peakList, timeList):
         if PeakFeatureCount > 0:
@@ -161,8 +162,7 @@ class TransactionPattern:
             self.timeList = copy.deepcopy(timeList)
             self.peaks[-1] += (self.priceDiff - 1.0)
             self.timeList[-1] += (self.timeDiffInSeconds//60)
-
-
+        self.isAvoidPeaks = False
 
     def Append(self, dataList, peakTime, jumpPrice, marketState):
 
@@ -197,7 +197,7 @@ class TransactionPattern:
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
         returnList.extend(self.marketStateList)
-        if PeakFeatureCount > 0:
+        if PeakFeatureCount > 0 and not self.isAvoidPeaks:
             returnList.extend(self.peaks[-PeakFeatureCount:])
             returnList.extend(self.timeList[-PeakFeatureCount:])
 
