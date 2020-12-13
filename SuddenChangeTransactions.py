@@ -255,8 +255,8 @@ class SuddenChangeMerger:
         keepCount = len(self.keepList)
 
         print("Must sell count: ", mustSellCount, " Keep count: ", keepCount)
-        mustSellResult = [1] * keepCount
-        keepResult  = [0] * mustSellCount
+        mustSellResult = [0] * keepCount
+        keepResult  = [1] * mustSellCount
         returnPatternList = mustSellResult + keepResult
         return returnPatternList
 
