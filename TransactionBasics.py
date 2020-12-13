@@ -1,7 +1,7 @@
 import copy
 import bisect
 
-PeakFeatureCount = 4
+PeakFeatureCount = 6
 TransactionCountPerSecBase = 6
 TransactionLimitPerSecBase = 0.3
 
@@ -28,7 +28,20 @@ def GetListFromBasicTransData( inBasicTransactionDataList ):
         returnList.append(inBasicTransactionDataList[i].totalSell)
     return returnList
 
+def RiseListSanitizer( riseList, timeList ):
+    correctIndexes = []
+    for i in range(len(riseList) - 1):
+        if riseList[i] * riseList[i + 1] > 0.0:
+            correctIndexes.append( i+1 )
 
+    for index in correctIndexes:
+        timeValue = timeList[index - 1]
+        timeList[index - 1] = timeValue//2
+        timeList.insert(index,timeValue//2)
+        if riseList[index - 1] > 0.0 :
+            riseList.insert(index, -3.0)
+        else:
+            riseList.insert(index, 3.0)
 
 def GetTotalPatternCount(ngrams):
     transCount = ngrams

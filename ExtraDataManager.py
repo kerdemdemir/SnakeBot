@@ -63,8 +63,10 @@ class ExtraDataManager:
                 resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
                 resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
                 resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
-
-                if float(priceStrList[-1]) > 1.0:
+                TransactionBasics.RiseListSanitizer(resultsChangeFloat, resultsTimeFloat)
+                if float(resultsChangeFloat[-1]) > 1.0:
+                    continue
+                if float(lineSplitList[8+extraLineCount]) > 0.01:
                     continue
                 resultStr = ""
                 #scores = list(map(lambda x: float(x), lineSplitList[1][1:-1].split(";")))
@@ -93,7 +95,7 @@ class ExtraDataManager:
                         marketStateList = self.marketState.getState(curSeconds)
                     #totalFeatures = currentTransactionList + marketStateList + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:] + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:]
                     if SuddenChangeTransactions.PeakFeatureCount > 0:
-                        totalFeatures = currentTransactionList + marketStateList + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:] + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:]
+                        totalFeatures = currentTransactionList + marketStateList + resultsChangeFloat[-SuddenChangeTransactions.PeakFeatureCount:] + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:]
                         #totalFeatures = currentTransactionList + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:] + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:]
                         #totalFeatures = currentTransactionList + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:]
                     else :
@@ -103,7 +105,7 @@ class ExtraDataManager:
                     self.totalLen = len(totalFeatures)
                     if float(lineSplitList[11+extraLineCount]) < 1.0:
                         self.totalFeaturesList[transactionIndex].append(totalFeatures)
-                    elif float(lineSplitList[11+extraLineCount]) > 1.002:
+                    elif float(lineSplitList[11+extraLineCount]) > 1.01:
                         self.totalGoodFeaturesList[transactionIndex].append(totalFeatures)
                     #print(totalFeatures)
                     #print(len(totalFeatures), " ", totalFeatures)

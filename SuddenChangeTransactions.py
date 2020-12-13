@@ -66,6 +66,12 @@ class SuddenChangeHandler:
         self.reportTimeInSeconds = (datetime_object - epoch).total_seconds()
         self.riseList = jsonIn["riseList"]
         self.timeList = jsonIn["timeList"]
+
+        for i in range(len(self.riseList) - 1 ):
+            if self.riseList[i]*self.riseList[i+1] > 0.0:
+                TransactionBasics.RiseListSanitizer(self.riseList, self.timeList)
+
+
         self.maxMinList                          = jsonIn["maxMin"]
         datetime_object = datetime.strptime(jsonIn["time"].split(".")[0], '%Y-%b-%d %H:%M:%S')
         self.jumpTimeInSeconds = (datetime_object - epoch).total_seconds()
