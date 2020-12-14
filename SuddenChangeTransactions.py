@@ -128,8 +128,7 @@ class SuddenChangeHandler:
             return
 
         lastTotalTradePower = self.dataList[curIndex].totalBuy + self.dataList[curIndex].totalSell
-        if self.dataList[curIndex].totalTransactionCount < self.lowestTransaction or \
-            lastTotalTradePower < self.acceptedTransLimit:
+        if self.dataList[curIndex].totalTransactionCount < self.lowestTransaction:
             return
 
         pattern = TransactionBasics.TransactionPattern()
@@ -142,6 +141,8 @@ class SuddenChangeHandler:
         elif self.__GetCategorySell(curIndex) == 2:
             self.keepList.append(copy.deepcopy(pattern))
 
+        if lastTotalTradePower < self.acceptedTransLimit:
+            return
         pattern.SetPeaks( self.riseList, self.timeList )
         #print(pattern.marketStateList)
         if self.__GetCategory(curIndex) == 0:
