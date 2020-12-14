@@ -23,7 +23,7 @@ totalUsedCurveCount = 4
 isUseExtraData = True
 acceptedProbibilty = 0.7
 testRatio = 4
-transParamList = [TransactionBasics.TransactionParam(1000, 10)]
+transParamList = [TransactionBasics.TransactionParam(1000, 12)]
 
 currentProbs = []
 
@@ -150,7 +150,6 @@ if isUsePeaks:
 if isUseExtraData:
     extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
     extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,suddenChangeManager.marketState)
-
 
 
 mlpTransactionList = []

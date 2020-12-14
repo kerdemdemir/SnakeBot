@@ -14,6 +14,8 @@ listCount = 4
 def MergeTransactions ( transactionList, msec, transactionBinCount ):
     index = (msec - startTime) // smallestTime
     totalElement = index * transactionBinCount * listCount
+    if totalElement >= len(transactionList):
+        return []
     arrayList = transactionList[-totalElement:]
     mergeArray = []
     for i in range(transactionBinCount):

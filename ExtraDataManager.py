@@ -66,6 +66,10 @@ class ExtraDataManager:
                 TransactionBasics.RiseListSanitizer(resultsChangeFloat, resultsTimeFloat)
                 if float(resultsChangeFloat[-1]) > 1.0:
                     continue
+                totalPower = resultsTransactionFloat[-1]+resultsTransactionFloat[-2]
+                totalTransCount = resultsTransactionFloat[-3] + resultsTransactionFloat[-4]
+                if totalPower < TransactionBasics.TransactionLimitPerSecBase or totalTransCount < TransactionBasics.TransactionCountPerSecBase:
+                    continue
                 if float(lineSplitList[8+extraLineCount]) > 0.01:
                     continue
                 resultStr = ""
@@ -85,6 +89,9 @@ class ExtraDataManager:
                     #print( len(justTransactions), " ", justTransactions)
                     multipliedGramCount = TransactionBasics.GetTotalPatternCount(transParam.gramCount)
                     currentTransactionList = DynamicTuner.MergeTransactions(justTransactions, transParam.msec, multipliedGramCount)
+                    if len(currentTransactionList) == 0:
+                        continue
+
                     basicList = TransactionBasics.CreateTransactionList(currentTransactionList)
                     basicList = TransactionBasics.ReduceToNGrams(basicList, transParam.gramCount)
                     currentTransactionList = TransactionBasics.GetListFromBasicTransData(basicList)
