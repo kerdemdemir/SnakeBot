@@ -2,8 +2,8 @@ import copy
 import bisect
 
 PeakFeatureCount = 6
-TransactionCountPerSecBase = 3
-TransactionLimitPerSecBase = 0.2
+TransactionCountPerSecBase = 5
+TransactionLimitPerSecBase = 0.3
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""

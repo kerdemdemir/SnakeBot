@@ -53,13 +53,13 @@ class SuddenChangeHandler:
         tempTransaction = json.loads(jsonIn["transactions"])
         if len(tempTransaction) == 0:
             return
-        prices = list(map(lambda x: float(x["p"]), tempTransaction))
-        if self.isRise:
-            self.peakIndex = prices.index(max(prices))
-        else:
-            self.peakIndex = prices.index(min(prices))
-        self.peakTime = int(tempTransaction[self.peakIndex]["T"])
-        self.peakVal = float(tempTransaction[self.peakIndex]["p"])
+        # prices = list(map(lambda x: float(x["p"]), tempTransaction))
+        # if self.isRise:
+        #     self.peakIndex = prices.index(max(prices))
+        # else:
+        #     self.peakIndex = prices.index(min(prices))
+        # self.peakTime = int(tempTransaction[self.peakIndex]["T"])
+        # self.peakVal = float(tempTransaction[self.peakIndex]["p"])
 
         self.__DivideDataInSeconds(tempTransaction) #populates the dataList with TransactionData
         self.__AppendToPatternList() # deletes dataList and populates mustBuyList, patternList badPatternList
@@ -218,6 +218,10 @@ class SuddenChangeMerger:
                 continue
 
             jsonPeakTrans = jsonIn[index]
+            isRising = jsonPeakTrans["riseList"][-1] > 1.0
+
+            if isRising:
+                continue
 
             handler = SuddenChangeHandler(jsonPeakTrans,self.transactionParam,self.marketState)
             self.handlerList.append(handler)
