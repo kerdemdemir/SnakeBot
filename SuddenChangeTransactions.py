@@ -51,7 +51,8 @@ class SuddenChangeHandler:
         self.acceptedTransLimit = TransactionBasics.TransactionLimitPerSecBase
         self.dataList = []
         tempTransaction = json.loads(jsonIn["transactions"])
-
+        if len(tempTransaction) == 0:
+            return
         prices = list(map(lambda x: float(x["p"]), tempTransaction))
         if self.isRise:
             self.peakIndex = prices.index(max(prices))
