@@ -45,10 +45,21 @@ class SuddenChangeHandler:
         self.jumpState = []
         self.__Parse(jsonIn)
 
+
+
         self.lowestTransaction = TransactionBasics.TransactionCountPerSecBase
         self.acceptedTransLimit = TransactionBasics.TransactionLimitPerSecBase
         self.dataList = []
         tempTransaction = json.loads(jsonIn["transactions"])
+
+        prices = list(map(lambda x: float(x["p"]), tempTransaction))
+        if self.isRise:
+            self.peakIndex = prices.index(max(prices))
+        else:
+            self.peakIndex = prices.index(min(prices))
+        self.peakTime = int(tempTransaction[self.peakIndex]["T"])
+        self.peakVal = float(tempTransaction[self.peakIndex]["p"])
+
         self.__DivideDataInSeconds(tempTransaction) #populates the dataList with TransactionData
         self.__AppendToPatternList() # deletes dataList and populates mustBuyList, patternList badPatternList
 
@@ -162,6 +173,9 @@ class SuddenChangeHandler:
 
         if self.isRise:
             if price < self.jumpPrice * 1.003:
+                if  time > self.peakTime:
+                    print("Alert")
+                    return -1
                 return 1  # Good
             #elif price < self.jumpPrice * 1.01 and time < self.jumpTimeInSeconds:
                 #return 1  # Good
@@ -271,18 +285,20 @@ class SuddenChangeMerger:
         for i in range(len(self.patternList[0])):
             a = {'Good': buyList[:, -(i + 1)],
                  'Bad': badList[:, -(i + 1)]}
-            df = pd.DataFrame.from_dict( a, orient='index')
-            df = df.transpose()
-            df.plot.box()
+            #df = pd.DataFrame.from_dict( a, orient='index')
+            #df = df.transpose()
+            #df.plot.box()
             #mustBuyLegend = str(np.quantile(mustBuyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.9))
-            buyLegend = str(np.quantile(buyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.9))
-            badLegend = str(np.quantile(badList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.9))
+            buyLegend = str(np.quantile(buyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.25)) + "," \
+                        + str(np.quantile(buyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.75)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.9))
+            badLegend = str(np.quantile(badList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.25)) +\
+                        "," + str(np.quantile(badList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.75)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.9))
             print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend , " ", badLegend)
-            plt.savefig('Plots/' + str(self.transactionParam.msec) + "_" + str(i) + "_box.pdf")
-            plt.cla()
-            plt.clf()
+            #plt.savefig('Plots/' + str(self.transactionParam.msec) + "_" + str(i) + "_box.pdf")
+            #plt.cla()
+            #plt.clf()
 
-        plt.close()
+        #plt.close()
 
 
     def __MergeInTransactions(self, handler):
