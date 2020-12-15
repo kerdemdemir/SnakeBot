@@ -189,10 +189,8 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.jumpPrice * 1.005:
+            if price < self.jumpPrice * 1.005 and time < self.jumpTimeInSeconds:
                 return 2  # We can keep
-            elif price < self.jumpPrice * 1.02 and time > self.jumpTimeInSeconds:
-                return 2  # Good
         else:
             if price > self.jumpPrice * 0.997:
                 return 1 # We need to sell now
