@@ -172,13 +172,10 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.jumpPrice * 1.003:
-                if  time > self.peakTime:
-                    print("Alert")
-                    return -1
+            if price < self.jumpPrice * 1.001:
                 return 1  # Good
-            #elif price < self.jumpPrice * 1.01 and time < self.jumpTimeInSeconds:
-                #return 1  # Good
+            elif price < self.jumpPrice * 1.005 and time > self.jumpTimeInSeconds:
+                return 1  # Good
         else:
             if price > self.jumpPrice * 0.99:
                 return 2
@@ -222,10 +219,6 @@ class SuddenChangeMerger:
                 continue
 
             jsonPeakTrans = jsonIn[index]
-            isRising = jsonPeakTrans["riseList"][-1] > 1.0
-            if isRising:
-                continue
-
 
             handler = SuddenChangeHandler(jsonPeakTrans,self.transactionParam,self.marketState)
             self.handlerList.append(handler)
