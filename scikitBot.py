@@ -27,7 +27,28 @@ transParamList = [TransactionBasics.TransactionParam(1000, 12)]
 
 currentProbs = []
 
+def TrainAnaylzer():
+    falsePositives = []
+    truePositives = []
+    for i in range(100):
+        mlpTransactionList.clear()
+        mlpTransactionScalerList.clear()
+        curResult = Learn()
+        falsePositives.append(int(curResult[0][1]))
+        truePositives.append(int(curResult[1][1]))
 
+        print(falsePositives, " ", truePositives)
+
+    badListArray = np.array(falsePositives)
+    goodListArray = np.array(truePositives)
+    badLegend = str(np.quantile(badListArray, 0.1)) + ", " + str(np.quantile(badListArray, 0.25)) + " , ** " \
+                + str(np.quantile(badListArray, 0.5)) + " ** ," + str(np.quantile(badListArray, 0.75)) + " , " + str(
+        np.quantile(badListArray, 0.9))
+    goodLegend = str(np.quantile(goodListArray, 0.1)) + " , " + str(np.quantile(goodListArray, 0.25)) + \
+                 " , ** " + str(np.quantile(goodListArray, 0.5)) + " ** , " + str(np.quantile(goodListArray, 0.75)) + " , " + str(
+        np.quantile(goodListArray, 0.9))
+    print(" Good results ", goodLegend)
+    print(" Bad results ", badLegend)
 
 def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList):
     isAvoidPeaks = len(messageChangeTimeTransactionStrList) == 1
@@ -108,7 +129,8 @@ def Learn():
         #print(predict_test)
         
         finalResult = predict_test[:, 1] >= 0.6
-        print("60 ",confusion_matrix(y_test, finalResult))
+        returnResult = confusion_matrix(y_test, finalResult)
+        print("60 ", returnResult)
         #print(predict_test)
         #predict_test = np.delete(finalResult, 0, 1)
 
@@ -116,6 +138,7 @@ def Learn():
               transactionIndex)
 
         sys.stdout.flush()
+        return returnResult
 
 
 def LearnWhenToSell():
@@ -136,12 +159,14 @@ def LearnWhenToSell():
 
         predict_test = mlpTransaction.predict_proba(X_test)
         finalResult = predict_test[:, 1] >= 0.6
-        print("60 ", confusion_matrix(y_test, finalResult))
+        returnResult = confusion_matrix(y_test, finalResult)
+        print("60 ", returnResult)
 
         print(" Sell Transactions time: ", transParam.msec, " Sell Transaction Index ", transParam.gramCount, " Sell Index ",
               transactionIndex)
 
         sys.stdout.flush()
+        return returnResult
 
 dynamicMarketState = marketState.MarketStateManager()
 suddenChangeManager = SuddenChangeTransactions.SuddenChangeManager(transParamList)
@@ -151,10 +176,10 @@ if isUseExtraData:
     extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
     extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,suddenChangeManager.marketState)
 
-
 mlpTransactionList = []
 mlpTransactionScalerList = []
-Learn()
+#TrainAnaylzer()
+curResult = Learn()
 
 mlpTransactionListSell = []
 mlpTransactionScalerListSell = []

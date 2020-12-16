@@ -53,13 +53,13 @@ class SuddenChangeHandler:
         tempTransaction = json.loads(jsonIn["transactions"])
         if len(tempTransaction) == 0:
             return
-        # prices = list(map(lambda x: float(x["p"]), tempTransaction))
-        # if self.isRise:
-        #     self.peakIndex = prices.index(max(prices))
-        # else:
-        #     self.peakIndex = prices.index(min(prices))
-        # self.peakTime = int(tempTransaction[self.peakIndex]["T"])
-        # self.peakVal = float(tempTransaction[self.peakIndex]["p"])
+        prices = list(map(lambda x: float(x["p"]), tempTransaction))
+        if self.isRise:
+            self.peakIndex = prices.index(min(prices))
+        else:
+            self.peakIndex = prices.index(max(prices))
+        self.peakTime = int(tempTransaction[self.peakIndex]["T"])
+        self.peakVal = float(tempTransaction[self.peakIndex]["p"])
 
         self.__DivideDataInSeconds(tempTransaction) #populates the dataList with TransactionData
         self.__AppendToPatternList() # deletes dataList and populates mustBuyList, patternList badPatternList
@@ -173,14 +173,14 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.jumpPrice * 1.001:
+            if price < self.peakVal * 1.002:
                 return 1  # Good
-            elif price < self.jumpPrice * 1.005 and time > self.jumpTimeInSeconds:
+            elif price < self.peakVal * 1.01 and time > self.peakTime:
                 return 1  # Good
         else:
-            if price > self.jumpPrice * 0.99:
+            if price > self.peakVal * 0.99:
                 return 2
-            if price > self.jumpPrice * 0.98 and time > self.jumpTimeInSeconds:
+            if price > self.peakVal * 0.98 and time > self.peakTime:
                 return 2
         return -1
 
@@ -190,10 +190,10 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.jumpPrice * 1.005 and time < self.jumpTimeInSeconds:
+            if price < self.peakVal * 1.005 and time < self.peakTime:
                 return 2  # We can keep
         else:
-            if price > self.jumpPrice * 0.997:
+            if price > self.peakVal * 0.997:
                 return 1 # We need to sell now
         return -1
 
