@@ -58,8 +58,26 @@ class SuddenChangeHandler:
             self.peakIndex = prices.index(min(prices))
         else:
             self.peakIndex = prices.index(max(prices))
+
         self.peakTime = int(tempTransaction[self.peakIndex]["T"])
         self.peakVal = float(tempTransaction[self.peakIndex]["p"])
+
+        peakTimeInSecs =  self.peakTime // 1000
+        timeDiff = abs(peakTimeInSecs - self.jumpTimeInSeconds)
+
+        if timeDiff > 1500:
+            self.jumpTimeInSeconds -= 3600
+        timeDiff = abs(peakTimeInSecs - self.jumpTimeInSeconds)
+
+        if timeDiff > 20:
+            #print("Alert1 ", timeDiff, " ", peakTimeInSecs, " ", self.jumpTimeInSeconds )
+            priceDiff = abs(self.peakVal / self.jumpPrice - 1.0)
+            if priceDiff < 0.01:
+                self.peakTime = self.jumpTimeInSeconds
+                self.peakVal = self.jumpPrice
+            else:
+                print("Alert3 ", priceDiff)
+
 
         self.__DivideDataInSeconds(tempTransaction) #populates the dataList with TransactionData
         self.__AppendToPatternList() # deletes dataList and populates mustBuyList, patternList badPatternList
