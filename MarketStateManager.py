@@ -17,8 +17,8 @@ class MarketStateManager:
     def __init__(self):
         self.stateList = []
         self.curStateList = deque([])
-        self.curUpDowns = [0, 0]
-        self.durationList = [300]
+        self.curUpDowns = [0, 0, 0, 0]
+        self.durationList = [300, 900]
 
     def add(self, isRise, timeInSec):
         self.stateList.append(PeakStateAndTime( timeInSec, isRise))
