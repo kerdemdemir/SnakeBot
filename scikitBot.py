@@ -30,7 +30,7 @@ currentProbs = []
 def TrainAnaylzer():
     falsePositives = []
     truePositives = []
-    for i in range(100):
+    for i in range(25):
         mlpTransactionList.clear()
         mlpTransactionScalerList.clear()
         curResult = Learn()
@@ -104,7 +104,7 @@ def Learn():
             numpyArr = np.concatenate((numpyArr, numpyArrPeak), axis=0)
 
 
-        mlpTransaction = MLPClassifier(hidden_layer_sizes=(36, 36, 36), activation='relu',
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(36, 36, 36, 36), activation='relu',
                                        solver='adam', max_iter=500)
         mlpTransactionList.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
@@ -178,8 +178,8 @@ if isUseExtraData:
 
 mlpTransactionList = []
 mlpTransactionScalerList = []
-#TrainAnaylzer()
-curResult = Learn()
+TrainAnaylzer()
+#curResult = Learn()
 
 mlpTransactionListSell = []
 mlpTransactionScalerListSell = []
