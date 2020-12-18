@@ -72,7 +72,7 @@ class SuddenChangeHandler:
         if timeDiff > 20:
             #print("Alert1 ", timeDiff, " ", peakTimeInSecs, " ", self.jumpTimeInSeconds )
             priceDiff = abs(self.peakVal / self.jumpPrice - 1.0)
-            if priceDiff < 0.01:
+            if priceDiff < 0.0075 or peakTimeInSecs > self.jumpTimeInSeconds:
                 self.peakTime = self.jumpTimeInSeconds
                 self.peakVal = self.jumpPrice
             else:
