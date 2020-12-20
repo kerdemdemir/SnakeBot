@@ -84,7 +84,8 @@ class SuddenChangeHandler:
         self.__AppendToPatternList() # deletes dataList and populates mustBuyList, patternList badPatternList
 
     def GetFeatures(self):
-        return []#self.timeList[-PeakFeatureCount:] + self.riseList[-PeakFeatureCount:]
+        return TransactionBasics.GetMaxMinList( self.maxMinList )
+        #self.timeList[-PeakFeatureCount:] + self.riseList[-PeakFeatureCount:]
         #return self.maxMinList  + self.timeList[-SuddenChangeHandler.PeakFeatureCount:] + self.riseList[-SuddenChangeHandler.PeakFeatureCount:]
 
     def __Parse(self, jsonIn):

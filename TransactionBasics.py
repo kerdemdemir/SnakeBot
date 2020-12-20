@@ -1,9 +1,71 @@
 import copy
 import bisect
+from datetime import datetime
+import bisect
 
 PeakFeatureCount = 4
 TransactionCountPerSecBase = 4
 TransactionLimitPerSecBase = 0.25
+MaxMinListTimes = [60*60*6, 60*60*24, 60*60*48, 60*60*72]
+IsUseMaxInList = False
+
+def GetMaxMinList(maxMinList):
+    extraCount = len(MaxMinListTimes)
+    if extraCount == 0:
+        return []
+
+    returnVal = []
+    for index in range(extraCount * 2):
+        if index % 2 == 0:
+            returnVal.append(maxMinList[index])
+        elif IsUseMaxInList:
+            returnVal.append(maxMinList[index])
+    return returnVal
+
+
+class TimePriceBasic:
+    def __init__( self, timeInSeconds, priceIn ) :
+        self.timeInSec = timeInSeconds
+        self.price = priceIn
+
+    def __lt__(self, other):
+        return self.timeInSec < other.timeInSec
+
+
+def GetMaxMinListWithTime(allPeaksStr, buyTimeInSeconds, buyPrice):
+    activePeak = allPeaksStr.split("|")[0]
+    allPeakListStr = activePeak.split('&')
+    allPeakList = []
+    epoch = datetime.utcfromtimestamp(0)
+    for peakStr in allPeakListStr:
+        price = float(peakStr.split(" ")[0])
+        timeStr = peakStr.split(" ")[1]
+        datetime_object = datetime.strptime(timeStr, '%Y%m%dT%H%M%S')
+        curSeconds = (datetime_object - epoch).total_seconds()
+        if curSeconds > buyTimeInSeconds:
+            break
+        curTimePrice = TimePriceBasic(curSeconds, price)
+        allPeakList.append(curTimePrice)
+
+    returnValue = []
+    for cureTimeOffset in MaxMinListTimes:
+        curTimeInSeconds = buyTimeInSeconds - cureTimeOffset
+        startIndex = bisect.bisect_right(allPeakList, TimePriceBasic(curTimeInSeconds,0.0))
+        # if len(allPeakList) > startIndex:
+        #     timeTemp = allPeakList[startIndex].timeInSec
+        #     print("Alert " , timeTemp-curTimeInSeconds, " ", timeTemp," " ,curTimeInSeconds, " ", buyTimeInSeconds)
+        # else:
+        #     print("Alert2 ", len(allPeakList), " ", startIndex)
+
+        curMax = 1.0
+        curMin = 1.0
+        for peak in allPeakList[startIndex:]:
+            curMin = min( peak.price/buyPrice, curMin )
+            curMax = max( peak.price/buyPrice, curMax )
+        returnValue.append(curMin)
+        if IsUseMaxInList:
+            returnValue.append(curMax)
+    return returnValue
 
 def chunks(lst, n):
     """Yield successive n-sized chunks from lst."""

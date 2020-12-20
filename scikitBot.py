@@ -30,7 +30,7 @@ currentProbs = []
 def TrainAnaylzer():
     falsePositives = []
     truePositives = []
-    for i in range(25):
+    for i in range(10):
         mlpTransactionList.clear()
         mlpTransactionScalerList.clear()
         curResult = Learn()
@@ -57,15 +57,16 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         priceStrList = messageChangeTimeTransactionStrList[0].split(",")
         timeStrList = messageChangeTimeTransactionStrList[1].split(",")
         transactionStrList = messageChangeTimeTransactionStrList[2].split(",")
+        extrasStrList = messageChangeTimeTransactionStrList[3].split(",")
         resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
         resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
     else:
         transactionStrList = messageChangeTimeTransactionStrList[0].split(",")
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
-
+    resultsExtraFloat = [float(extraStr) for extraStr in extrasStrList]
     marketStateList = dynamicMarketState.curUpDowns
     resultStr = ""
-
+    extraMaxMinList = TransactionBasics.GetMaxMinList(resultsExtraFloat)
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         justTransactions = resultsTransactionFloat
@@ -79,7 +80,9 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         if TransactionBasics.PeakFeatureCount == 0 or isAvoidPeaks :
             totalFeatures = currentTransactionList + marketStateList
         else:
-            totalFeatures = currentTransactionList + marketStateList + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
+            totalFeatures = currentTransactionList + marketStateList +\
+                            resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + \
+                            resultsTimeFloat[-TransactionBasics.PeakFeatureCount:] + extraMaxMinList
 
 
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
@@ -167,6 +170,10 @@ def LearnWhenToSell():
 
         sys.stdout.flush()
         return returnResult
+
+#if isUseExtraData:
+#    extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
+#    extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,None)
 
 dynamicMarketState = marketState.MarketStateManager()
 suddenChangeManager = SuddenChangeTransactions.SuddenChangeManager(transParamList)

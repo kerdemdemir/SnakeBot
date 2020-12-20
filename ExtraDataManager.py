@@ -5,6 +5,7 @@ import TransactionBasics
 import DynamicTuner
 import MarketStateManager as marketState
 from datetime import datetime
+import bisect
 
 
 from os import listdir
@@ -20,6 +21,8 @@ class ExtraDataManager:
             self.totalFeaturesList.append([])
             self.totalGoodFeaturesList.append([])
         self.totalLen = 0
+        self.goodCount = 0
+        self.badCount = 0
         self.ReadFiles( readFolderPath )
 
     def getNumpy(self,index):
@@ -39,9 +42,12 @@ class ExtraDataManager:
         return [0] * len(self.totalFeaturesList[index]) + [1] * len(self.totalGoodFeaturesList[index])
 
     def ReadFiles(self, folderPath ):
+        self.goodCount = 0
+        self.badCount = 0
         onlyfiles = [f for f in listdir(folderPath) if isfile(join(folderPath, f))]
         for fileName in onlyfiles:
             self.__ReadFile( folderPath + "/" + fileName )
+        print("Good count: ", self.goodCount , " Bad count: ", self.badCount)
 
     def __ReadFile(self, fileName):
         with open(fileName) as fp:
@@ -49,7 +55,11 @@ class ExtraDataManager:
             extraLineCount = 0
             if line.strip().split(",")[2] == "MarketState":
                 extraLineCount = 1
+
+            if line.strip().split(",")[4] == "BargainRatio":
+                extraLineCount += 2
                 print("ExtraLine")
+            print(fileName, " ", extraLineCount)
             line = fp.readline()
             while line:
                 lineSplitList = line.strip().split(",")
@@ -98,22 +108,36 @@ class ExtraDataManager:
                     datetime_object = datetime.strptime(lineSplitList[14+extraLineCount], '%Y-%b-%d %H:%M:%S')
                     epoch = datetime.utcfromtimestamp(0)
                     curSeconds = (datetime_object - epoch).total_seconds()
+
+                    buyPrice = float(lineSplitList[13 + extraLineCount])
+                    maxMinDataList = TransactionBasics.GetMaxMinListWithTime(lineSplitList[20 + extraLineCount], curSeconds, buyPrice)
+
+                    #if maxMinDataList[1] < 0.95:
+                        #print("Alert3 ", maxMinDataList[0], " ", float(lineSplitList[15 + extraLineCount]))
+                        #continue
+
                     if self.marketState:
                         marketStateList = self.marketState.getState(curSeconds)
+                    else:
+                        marketStateList = []
+
+
                     #totalFeatures = currentTransactionList + marketStateList + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:] + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:]
                     if SuddenChangeTransactions.PeakFeatureCount > 0:
-                        totalFeatures = currentTransactionList + marketStateList + resultsChangeFloat[-SuddenChangeTransactions.PeakFeatureCount:] + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:]
+                        totalFeatures = currentTransactionList + marketStateList + resultsChangeFloat[-SuddenChangeTransactions.PeakFeatureCount:] \
+                                        + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:] + maxMinDataList
                         #totalFeatures = currentTransactionList + priceStrList[-SuddenChangeTransactions.PeakFeatureCount:] + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:]
                         #totalFeatures = currentTransactionList + resultsTimeFloat[-SuddenChangeTransactions.PeakFeatureCount:]
                     else :
                         #totalFeatures = currentTransactionList + marketStateList
-                        totalFeatures = currentTransactionList + marketStateList
+                        totalFeatures = currentTransactionList + marketStateList + maxMinDataList
 
                     self.totalLen = len(totalFeatures)
                     if float(lineSplitList[11+extraLineCount]) < 1.0:
                         self.totalFeaturesList[transactionIndex].append(totalFeatures)
-                    elif float(lineSplitList[11+extraLineCount]) > 1.01:
+                        self.badCount+=1
+                    elif float(lineSplitList[11+extraLineCount]) > 1.002:
                         self.totalGoodFeaturesList[transactionIndex].append(totalFeatures)
+                        self.goodCount+=1
                     #print(totalFeatures)
                     #print(len(totalFeatures), " ", totalFeatures)
-
