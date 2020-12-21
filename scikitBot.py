@@ -1,5 +1,7 @@
 import ExtraDataManager as extraDataMan
 import MarketStateManager as marketState
+import BuySellAnalyzer as buyAnalyzer
+
 import zmq
 import numpy as np
 import sys
@@ -147,14 +149,14 @@ def Learn():
 def LearnWhenToSell():
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
-        numpyArr = suddenChangeManager.toSellTransactions(transactionIndex)
-        mlpTransaction = MLPClassifier(hidden_layer_sizes=(32, 32, 32), activation='relu',
+        numpyArr = buySellDataManager.toSellTransactions(transactionIndex)
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24, 24), activation='relu',
                                        solver='adam', max_iter=500)
         mlpTransactionListSell.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
         mlpTransactionScalerListSell.append(transactionScaler)
         X = transactionScaler.transform(numpyArr)
-        y = suddenChangeManager.toSellResultsNumpy(transactionIndex)  # + extraDataManager.getResult(transactionIndex)
+        y = buySellDataManager.toSellResultsNumpy(transactionIndex)  # + extraDataManager.getResult(transactionIndex)
 
         X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
 
@@ -171,9 +173,7 @@ def LearnWhenToSell():
         sys.stdout.flush()
         return returnResult
 
-#if isUseExtraData:
-#    extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
-#    extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,None)
+
 
 dynamicMarketState = marketState.MarketStateManager()
 suddenChangeManager = SuddenChangeTransactions.SuddenChangeManager(transParamList)
@@ -185,8 +185,12 @@ if isUseExtraData:
 
 mlpTransactionList = []
 mlpTransactionScalerList = []
-TrainAnaylzer()
-#curResult = Learn()
+#TrainAnaylzer()
+curResult = Learn()
+
+buySellDataManager = buyAnalyzer.BuyAnalyzeManager(transParamList, suddenChangeManager.marketState)
+print("BuySellAnalyzeFinished")
+sys.stdout.flush()
 
 mlpTransactionListSell = []
 mlpTransactionScalerListSell = []

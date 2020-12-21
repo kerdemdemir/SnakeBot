@@ -263,6 +263,25 @@ class TransactionPattern:
         self.priceDiff = dataList[-1].lastPrice/jumpPrice
 
 
+    def AppendWithOutPeaks(self, dataList, marketState):
+
+        lastTime = dataList[-1].timeInSecs
+        if marketState:
+            self.marketStateList = marketState.getState(lastTime)
+        else:
+            self.marketStateList = []
+        print(self.marketStateList)
+        for elem in dataList:
+            self.transactionBuyList.append(elem.transactionBuyCount)
+            self.transactionSellList.append(elem.totalTransactionCount - elem.transactionBuyCount)
+            self.transactionBuyPowerList.append(elem.totalBuy)
+            self.transactionSellPowerList.append(elem.totalSell)
+            self.totalBuy += elem.totalBuy
+            self.totalSell += elem.totalSell
+            self.transactionCount += elem.transactionBuyCount
+            self.totalTransactionCount += elem.totalTransactionCount
+
+
     def GetFeatures(self):
         returnList = []
         for i in range(len(self.transactionBuyList)):
