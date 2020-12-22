@@ -34,8 +34,8 @@ class BuySellHandler:
         self.keepList = []
         self.__Parse(jsonIn)
 
-        self.lowestTransaction = TransactionBasics.TransactionCountPerSecBase/2
-        self.acceptedTransLimit = TransactionBasics.TransactionLimitPerSecBase/2
+        self.lowestTransaction = TransactionBasics.TransactionCountPerSecBase/3
+        self.acceptedTransLimit = TransactionBasics.TransactionLimitPerSecBase/3
         self.dataList = []
 
         tempTransaction = json.loads(jsonIn["transactions"])

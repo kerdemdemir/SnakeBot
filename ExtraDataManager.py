@@ -53,8 +53,16 @@ class ExtraDataManager:
         with open(fileName) as fp:
             line = fp.readline()
             extraLineCount = 0
+
+            if "lock" in fileName:
+                return
+
             if line.strip().split(",")[2] == "MarketState":
                 extraLineCount = 1
+
+            if line.strip().split(",")[6] == "SellResults":
+                extraLineCount += 1
+                print("ExtraLine")
 
             if line.strip().split(",")[4] == "BargainRatio":
                 extraLineCount += 2
