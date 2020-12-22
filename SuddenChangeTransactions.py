@@ -76,8 +76,6 @@ class SuddenChangeHandler:
             if priceDiff < 0.0075 or peakTimeInSecs > self.jumpTimeInSeconds:
                 self.peakTime = self.jumpTimeInSeconds
                 self.peakVal = self.jumpPrice
-            else:
-                print("Alert3 ", priceDiff)
 
 
         self.__DivideDataInSeconds(tempTransaction) #populates the dataList with TransactionData

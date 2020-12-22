@@ -62,13 +62,15 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         extrasStrList = messageChangeTimeTransactionStrList[3].split(",")
         resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
         resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
+        resultsExtraFloat = [float(extraStr) for extraStr in extrasStrList]
+        extraMaxMinList = TransactionBasics.GetMaxMinList(resultsExtraFloat)
     else:
         transactionStrList = messageChangeTimeTransactionStrList[0].split(",")
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
-    resultsExtraFloat = [float(extraStr) for extraStr in extrasStrList]
+
     marketStateList = dynamicMarketState.curUpDowns
     resultStr = ""
-    extraMaxMinList = TransactionBasics.GetMaxMinList(resultsExtraFloat)
+
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         justTransactions = resultsTransactionFloat
@@ -80,7 +82,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         # + marketStateList market state is cancelled for now
         #totalFeatures = currentTransactionList  + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
         if TransactionBasics.PeakFeatureCount == 0 or isAvoidPeaks :
-            totalFeatures = currentTransactionList + marketStateList
+            totalFeatures = currentTransactionList + marketStateList[0:2]
         else:
             totalFeatures = currentTransactionList + marketStateList +\
                             resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + \

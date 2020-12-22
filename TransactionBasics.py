@@ -267,10 +267,9 @@ class TransactionPattern:
 
         lastTime = dataList[-1].timeInSecs
         if marketState:
-            self.marketStateList = marketState.getState(lastTime)
+            self.marketStateList = marketState.getState(lastTime)[0:2]
         else:
             self.marketStateList = []
-        print(self.marketStateList)
         for elem in dataList:
             self.transactionBuyList.append(elem.transactionBuyCount)
             self.transactionSellList.append(elem.totalTransactionCount - elem.transactionBuyCount)
