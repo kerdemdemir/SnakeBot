@@ -54,15 +54,20 @@ class SuddenChangeHandler:
         if len(tempTransaction) == 0:
             return
         prices = list(map(lambda x: float(x["p"]), tempTransaction))
+        self.minIndex = prices.index(min(prices))
         if self.isRise:
             self.peakIndex = prices.index(min(prices))
         else:
             self.peakIndex = prices.index(max(prices))
 
+
         self.peakTime = int(tempTransaction[self.peakIndex]["T"])
         self.peakVal = float(tempTransaction[self.peakIndex]["p"])
 
-        peakTimeInSecs =  self.peakTime // 1000
+        self.minTime = int(tempTransaction[self.minIndex]["T"])
+        self.minVal = float(tempTransaction[self.minIndex]["p"])
+
+        peakTimeInSecs = self.peakTime // 1000
         timeDiff = abs(peakTimeInSecs - self.jumpTimeInSeconds)
 
         if timeDiff > 1500:
@@ -196,10 +201,17 @@ class SuddenChangeHandler:
             elif price < self.peakVal * 1.01 and time > self.peakTime:
                 return 1  # Good
         else:
-            if price > self.peakVal * 0.99:
-                return 2
-            if price > self.peakVal * 0.98 and time > self.peakTime:
-                return 2
+            #self.minTime = int(tempTransaction[self.minIndex]["T"])
+            #self.minVal = float(tempTransaction[self.minIndex]["p"])
+            if price > self.minVal * 1.002:
+                 if time > self.peakTime and time < self.minTime:
+                     return 2
+
+            #if price > self.peakVal * 0.99:
+            #    return 2
+            #if price > self.peakVal * 0.98 and time > self.peakTime:
+            #    return 2
+
         return -1
 
     def __GetCategorySell(self, curIndex):

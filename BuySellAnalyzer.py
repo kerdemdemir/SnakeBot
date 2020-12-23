@@ -121,7 +121,7 @@ class BuySellHandler:
         pattern = TransactionBasics.TransactionPattern()
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
-        pattern.AppendWithOutPeaks( dataRange, self.marketState)
+        pattern.AppendWithOutPeaks( dataRange, self.marketState, self.buyPrice, self.buyTimeInSeconds)
 
         if self.__GetCategory(curIndex) == 1:
             self.mustSellList.append(copy.deepcopy(pattern))
@@ -137,7 +137,7 @@ class BuySellHandler:
             return 1  # Sell
         elif time > self.peakTime and price > self.peakVal * 0.995:
             return 1  # Sell
-        elif time < self.peakTime:
+        elif time > self.buyTimeInSeconds and time < self.peakTime:
             return 2
         return -1
 

@@ -229,6 +229,9 @@ class TransactionPattern:
         self.peaks = []
         self.timeList = []
         self.isAvoidPeaks = True
+        self.buyRatio = 1.0
+        self.buyTimeDiffInSecs = 0
+        self.buyInfoEnabled  = False
 
     def SetPeaks(self, peakList, timeList):
         if PeakFeatureCount > 0:
@@ -263,9 +266,12 @@ class TransactionPattern:
         self.priceDiff = dataList[-1].lastPrice/jumpPrice
 
 
-    def AppendWithOutPeaks(self, dataList, marketState):
+    def AppendWithOutPeaks(self, dataList, marketState, buyPrice, buyTimeInSecs):
 
         lastTime = dataList[-1].timeInSecs
+        self.buyTimeDiffInSecs = lastTime - buyTimeInSecs
+        self.buyRatio = dataList[-1].lastPrice/buyPrice
+        self.buyInfoEnabled = True
         if marketState:
             self.marketStateList = marketState.getState(lastTime)[0:2]
         else:
@@ -292,7 +298,9 @@ class TransactionPattern:
         if PeakFeatureCount > 0 and not self.isAvoidPeaks:
             returnList.extend(self.peaks[-PeakFeatureCount:])
             returnList.extend(self.timeList[-PeakFeatureCount:])
-
+        if self.buyInfoEnabled:
+            returnList.append(self.buyRatio)
+            returnList.append(self.buyTimeDiffInSecs)
         return returnList
 
     def __repr__(self):

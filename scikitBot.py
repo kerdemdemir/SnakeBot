@@ -53,7 +53,7 @@ def TrainAnaylzer():
     print(" Bad results ", badLegend)
 
 def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList):
-    isAvoidPeaks = len(messageChangeTimeTransactionStrList) == 1
+    isAvoidPeaks = len(messageChangeTimeTransactionStrList) < 3
 
     if not isAvoidPeaks:
         priceStrList = messageChangeTimeTransactionStrList[0].split(",")
@@ -66,6 +66,8 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         extraMaxMinList = TransactionBasics.GetMaxMinList(resultsExtraFloat)
     else:
         transactionStrList = messageChangeTimeTransactionStrList[0].split(",")
+        extraStrList = messageChangeTimeTransactionStrList[1].split(",")
+        resultsExtraFloat = [float(extraStr) for extraStr in extraStrList]
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
     marketStateList = dynamicMarketState.curUpDowns
@@ -82,7 +84,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
         # + marketStateList market state is cancelled for now
         #totalFeatures = currentTransactionList  + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
         if TransactionBasics.PeakFeatureCount == 0 or isAvoidPeaks :
-            totalFeatures = currentTransactionList + marketStateList[0:2]
+            totalFeatures = currentTransactionList + resultsExtraFloat + marketStateList[0:2]
         else:
             totalFeatures = currentTransactionList + marketStateList +\
                             resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + \
@@ -222,6 +224,7 @@ while True:
         resultStr = Predict(messageChangeTimeTransactionStrList, mlpTransactionScalerListSell, mlpTransactionListSell)
         print("Results are: ", resultStr)
         #  Send reply back to client
+        socket.send_string(resultStr, encoding='ascii')
         socket.send_string(resultStr, encoding='ascii')
         sys.stdout.flush()
     elif command == "Peak":
