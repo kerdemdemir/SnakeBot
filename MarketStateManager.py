@@ -48,9 +48,14 @@ class MarketStateManager:
         filteredList = filter(lambda x: curTime - x.time < duration and x.isBottom == isRise, self.curStateList)
         return len(list(filteredList))
 
-
     def sort(self):
         self.stateList = sorted(self.stateList, key=lambda l: l.time)
+
+    def getNowAndBuyState(self, timeDiffInSec ):
+        epoch_time = int(time.time())
+        timeInSec = epoch_time - timeDiffInSec
+        buyTimeResult = self.getState(timeInSec)
+        return self.curUpDowns[0:2] + buyTimeResult[0:2]
 
     def getState(self, timeInSecs ):
         returnList = []

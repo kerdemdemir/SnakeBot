@@ -70,7 +70,10 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerListIn, m
         resultsExtraFloat = [float(extraStr) for extraStr in extraStrList]
     resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
 
-    marketStateList = dynamicMarketState.curUpDowns
+    if not isAvoidPeaks:
+        marketStateList = dynamicMarketState.curUpDowns
+    else:
+        marketStateList = dynamicMarketState.getNowAndBuyState(resultsExtraFloat[1])
     resultStr = ""
 
     for transactionIndex in range(len(transParamList)):
@@ -84,7 +87,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerListIn, m
         # + marketStateList market state is cancelled for now
         #totalFeatures = currentTransactionList  + resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + resultsTimeFloat[-TransactionBasics.PeakFeatureCount:]
         if TransactionBasics.PeakFeatureCount == 0 or isAvoidPeaks :
-            totalFeatures = currentTransactionList + resultsExtraFloat + marketStateList[0:2]
+            totalFeatures = currentTransactionList + marketStateList + resultsExtraFloat
         else:
             totalFeatures = currentTransactionList + marketStateList +\
                             resultsChangeFloat[-TransactionBasics.PeakFeatureCount:] + \
@@ -114,7 +117,7 @@ def Learn():
 
 
         mlpTransaction = MLPClassifier(hidden_layer_sizes=(36, 36, 36, 36), activation='relu',
-                                       solver='adam', max_iter=500)
+                                       solver='adam', max_iter=750)
         mlpTransactionList.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
         mlpTransactionScalerList.append(transactionScaler)
@@ -155,7 +158,7 @@ def LearnWhenToSell():
         transParam = transParamList[transactionIndex]
         numpyArr = buySellDataManager.toSellTransactions(transactionIndex)
         mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24, 24), activation='relu',
-                                       solver='adam', max_iter=500)
+                                       solver='adam', max_iter=750)
         mlpTransactionListSell.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
         mlpTransactionScalerListSell.append(transactionScaler)

@@ -274,6 +274,7 @@ class TransactionPattern:
         self.buyInfoEnabled = True
         if marketState:
             self.marketStateList = marketState.getState(lastTime)[0:2]
+            self.marketStateList.extend(marketState.getState(buyTimeInSecs)[0:2])
         else:
             self.marketStateList = []
         for elem in dataList:
