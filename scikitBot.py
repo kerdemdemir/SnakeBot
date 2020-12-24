@@ -52,7 +52,7 @@ def TrainAnaylzer():
     print(" Good results ", goodLegend)
     print(" Bad results ", badLegend)
 
-def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlpTransactionList):
+def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerListIn, mlpTransactionListIn):
     isAvoidPeaks = len(messageChangeTimeTransactionStrList) < 3
 
     if not isAvoidPeaks:
@@ -92,11 +92,11 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerList, mlp
 
 
         totalFeaturesNumpy = np.array(totalFeatures).reshape(1, -1)
-        totalFeaturesScaled = mlpTransactionScalerList[transactionIndex].transform(totalFeaturesNumpy)
+        totalFeaturesScaled = mlpTransactionScalerListIn[transactionIndex].transform(totalFeaturesNumpy)
         print("I will predict: ", totalFeatures, " scaled: ", totalFeaturesScaled)
         npTotalFeatures = np.array(totalFeaturesScaled)
         npTotalFeatures = npTotalFeatures.reshape(1, -1)
-        predict_test = mlpTransactionList[transactionIndex].predict_proba(npTotalFeatures)
+        predict_test = mlpTransactionListIn[transactionIndex].predict_proba(npTotalFeatures)
         curResultStr = str(predict_test) + ";"
         resultStr += curResultStr
 
@@ -224,7 +224,6 @@ while True:
         resultStr = Predict(messageChangeTimeTransactionStrList, mlpTransactionScalerListSell, mlpTransactionListSell)
         print("Results are: ", resultStr)
         #  Send reply back to client
-        socket.send_string(resultStr, encoding='ascii')
         socket.send_string(resultStr, encoding='ascii')
         sys.stdout.flush()
     elif command == "Peak":
