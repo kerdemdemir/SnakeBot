@@ -203,13 +203,16 @@ class SuddenChangeHandler:
         else:
             #self.minTime = int(tempTransaction[self.minIndex]["T"])
             #self.minVal = float(tempTransaction[self.minIndex]["p"])
-            if price > self.minVal * 1.002:
-                 if time > self.peakTime and time < self.minTime:
-                     return 2
 
-            #if price > self.peakVal * 0.99:
+            if price > self.peakVal * 0.98:
+                return 2
+            if price > self.minVal * 1.002:
+                  if time > self.peakTime and time < self.minTime:
+                      return 2
+
+            # if price > self.peakVal * 0.99:
             #    return 2
-            #if price > self.peakVal * 0.98 and time > self.peakTime:
+            # if price > self.peakVal * 0.98 and time > self.peakTime:
             #    return 2
 
         return -1
