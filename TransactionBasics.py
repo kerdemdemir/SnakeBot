@@ -3,9 +3,9 @@ import bisect
 from datetime import datetime
 import bisect
 
-PeakFeatureCount = 4
+PeakFeatureCount = 6
 TransactionCountPerSecBase = 4
-TransactionLimitPerSecBase = 0.25
+TransactionLimitPerSecBase = 0.1
 MaxMinListTimes = [60*60*6, 60*60*24, 60*60*48, 60*60*72]
 IsUseMaxInList = False
 
@@ -271,7 +271,7 @@ class TransactionPattern:
         lastTime = dataList[-1].timeInSecs
         self.buyTimeDiffInSecs = lastTime - buyTimeInSecs
         self.buyRatio = dataList[-1].lastPrice/buyPrice
-        self.buyInfoEnabled = True
+        self.buyInfoEnabled = False
         if marketState:
             self.marketStateList = marketState.getState(lastTime)[0:2]
             self.marketStateList.extend(marketState.getState(buyTimeInSecs)[0:2])

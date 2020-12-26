@@ -54,18 +54,23 @@ class SuddenChangeHandler:
         if len(tempTransaction) == 0:
             return
         prices = list(map(lambda x: float(x["p"]), tempTransaction))
+
         self.minIndex = prices.index(min(prices))
-        if self.isRise:
-            self.peakIndex = prices.index(min(prices))
-        else:
-            self.peakIndex = prices.index(max(prices))
-
-
-        self.peakTime = int(tempTransaction[self.peakIndex]["T"])
-        self.peakVal = float(tempTransaction[self.peakIndex]["p"])
+        self.maxIndex = prices.index(max(prices))
 
         self.minTime = int(tempTransaction[self.minIndex]["T"])
         self.minVal = float(tempTransaction[self.minIndex]["p"])
+
+        self.maxTime = int(tempTransaction[self.maxIndex]["T"])
+        self.maxVal = float(tempTransaction[self.maxIndex]["p"])
+
+        if self.isRise:
+            self.peakIndex = self.minIndex
+        else:
+            self.peakIndex = self.maxIndex
+
+        self.peakTime = int(tempTransaction[self.peakIndex]["T"])
+        self.peakVal = float(tempTransaction[self.peakIndex]["p"])
 
         peakTimeInSecs = self.peakTime // 1000
         timeDiff = abs(peakTimeInSecs - self.jumpTimeInSeconds)
@@ -76,7 +81,6 @@ class SuddenChangeHandler:
 
         if timeDiff > 20:
             #print("Alert1 ", timeDiff, " ", peakTimeInSecs, " ", self.jumpTimeInSeconds )
-
             priceDiff = abs(self.peakVal / self.jumpPrice - 1.0)
             if priceDiff < 0.0075 or peakTimeInSecs > self.jumpTimeInSeconds:
                 self.peakTime = self.jumpTimeInSeconds
@@ -171,10 +175,10 @@ class SuddenChangeHandler:
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
         pattern.Append( dataRange, self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
 
-        # if self.__GetCategorySell(curIndex) == 1:
-        #     self.mustSellList.append(copy.deepcopy(pattern))
-        # elif self.__GetCategorySell(curIndex) == 2:
-        #     self.keepList.append(copy.deepcopy(pattern))
+        if self.__GetCategorySell(curIndex) == 1:
+             self.mustSellList.append(copy.deepcopy(pattern))
+        elif self.__GetCategorySell(curIndex) == 2:
+             self.keepList.append(copy.deepcopy(pattern))
 
         if self.dataList[curIndex].totalTransactionCount < self.lowestTransaction:
             return
@@ -196,24 +200,25 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.peakVal * 1.002:
+            if price < self.peakVal * 1.001:
                 return 1  # Good
             elif price < self.peakVal * 1.01 and time > self.peakTime:
                 return 1  # Good
         else:
             #self.minTime = int(tempTransaction[self.minIndex]["T"])
             #self.minVal = float(tempTransaction[self.minIndex]["p"])
-
-            if price > self.peakVal * 0.98:
-                return 2
-            if price > self.minVal * 1.002:
-                  if time > self.peakTime and time < self.minTime:
-                      return 2
+            if price > self.peakVal * 0.995:
+                 return 2
+            if price > self.peakVal * 0.98 and time > self.peakTime:
+                 return 2
+            if price > self.minVal * 1.005:
+                if time > self.peakTime and time < self.minTime:
+                    return 2
 
             # if price > self.peakVal * 0.99:
-            #    return 2
+            #     return 2
             # if price > self.peakVal * 0.98 and time > self.peakTime:
-            #    return 2
+            #     return 2
 
         return -1
 
@@ -223,10 +228,18 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if price < self.peakVal * 1.005 and time < self.peakTime:
+            if price < self.peakVal * 1.0025 and time < self.peakTime:
                 return 2  # We can keep
+            if price < self.peakVal * 1.02 and time > self.peakTime:
+                return 2  # We can keep
+            if time > self.peakTime and time < self.maxTime:
+                if price < self.maxVal * 0.995:
+                    return 2
+
         else:
-            if price > self.peakVal * 0.997:
+            if price > self.peakVal * 0.998:
+                return 1 # We need to sell now
+            if price > self.peakVal * 0.99 and time > self.peakTime:
                 return 1 # We need to sell now
         return -1
 
@@ -341,10 +354,10 @@ class SuddenChangeMerger:
             self.badPatternList.append(pattern.GetFeatures() + handler.GetFeatures())
 
         for pattern in handler.mustSellList:
-            self.mustSellList.append(pattern.GetFeatures() + handler.GetFeatures())
+            self.mustSellList.append(pattern.GetFeatures() )
 
         for pattern in handler.keepList:
-            self.keepList.append(pattern.GetFeatures() + handler.GetFeatures())
+            self.keepList.append(pattern.GetFeatures())
 
 
 class SuddenChangeManager:
