@@ -174,7 +174,7 @@ class SuddenChangeHandler:
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
         pattern.Append( dataRange, self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
-
+        pattern.SetPeaks(self.riseList, self.timeList)
         if self.__GetCategorySell(curIndex) == 1:
              self.mustSellList.append(copy.deepcopy(pattern))
         elif self.__GetCategorySell(curIndex) == 2:
@@ -183,7 +183,7 @@ class SuddenChangeHandler:
         if self.dataList[curIndex].totalTransactionCount < self.lowestTransaction:
             return
 
-        pattern.SetPeaks( self.riseList, self.timeList )
+
         #print(pattern.marketStateList)
         if self.__GetCategory(curIndex) == 0:
             self.mustBuyList.append(pattern)
