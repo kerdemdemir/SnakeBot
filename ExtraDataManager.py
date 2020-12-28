@@ -64,6 +64,10 @@ class ExtraDataManager:
                 extraLineCount += 1
                 print("ExtraLine")
 
+            if line.strip().split(",")[7] == "InitialSellResult":
+                extraLineCount += 1
+                print("ExtraLine")
+
             if line.strip().split(",")[4] == "BargainRatio":
                 extraLineCount += 2
                 print("ExtraLine")

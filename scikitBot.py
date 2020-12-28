@@ -12,6 +12,7 @@ from sklearn import preprocessing
 # Import necessary modules
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report,confusion_matrix
+from sklearn.model_selection import GridSearchCV
 
 import DynamicTuner
 import SuddenChangeTransactions
@@ -28,6 +29,14 @@ testRatio = 4
 transParamList = [TransactionBasics.TransactionParam(1000, 12)]
 
 currentProbs = []
+
+parameter_space = {
+    'hidden_layer_sizes': [(36,36,36,36), (36,36,36)],
+    'activation': ['tanh', 'relu'],
+    'solver': ['sgd', 'adam'],
+    'alpha': [0.0001, 0.05],
+    'learning_rate': ['constant','adaptive'],
+}
 
 def TrainAnaylzer():
     falsePositives = []
@@ -113,8 +122,8 @@ def Learn():
             numpyArr = np.concatenate((numpyArr, numpyArrPeak), axis=0)
 
 
-        mlpTransaction = MLPClassifier(hidden_layer_sizes=(36, 36, 36, 36, 36), activation='relu',
-                                       solver='adam', max_iter=500)
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(36, 36, 36, 36), activation='relu',
+                                       solver='adam', learning_rate='adaptive', max_iter=500)
         mlpTransactionList.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
         mlpTransactionScalerList.append(transactionScaler)
@@ -132,6 +141,18 @@ def Learn():
         else:
             X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
 
+        # clf = GridSearchCV(mlpTransaction, parameter_space, n_jobs=-1, cv=3, scoring='precision')
+        # clf.fit(X_train, y_train)
+        #
+        # # Best paramete set
+        # print('Best parameters found:\n', clf.best_params_)
+        #
+        # # All results
+        # means = clf.cv_results_['mean_test_score']
+        # stds = clf.cv_results_['std_test_score']
+        # for mean, std, params in zip(means, stds, clf.cv_results_['params']):
+        #     print("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params))
+        #
         mlpTransaction.fit(X_train, y_train)
 
         predict_test = mlpTransaction.predict_proba(X_test)

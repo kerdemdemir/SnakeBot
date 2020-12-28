@@ -4,8 +4,9 @@ from datetime import datetime
 import bisect
 
 PeakFeatureCount = 6
+MaximumSampleSizeFromPattern = 5
 TransactionCountPerSecBase = 4
-TransactionLimitPerSecBase = 0.1
+TransactionLimitPerSecBase = 0.2
 MaxMinListTimes = [60*60*6, 60*60*24, 60*60*48, 60*60*72]
 IsUseMaxInList = False
 
