@@ -43,7 +43,7 @@ parameter_space = {
 def TrainAnaylzer():
     falsePositives = []
     truePositives = []
-    minFalsePositive = 1000
+    minFalsePositive = 1000000000
     selectedGoodBadRatio = 0
     global mlpTransactionList
     global mlpTransactionScalerList
