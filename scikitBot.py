@@ -23,7 +23,7 @@ transactionBinCountList = [6,8]
 totalTimeCount = 6
 isUsePeaks = False
 totalUsedCurveCount = 4
-isUseExtraData = True
+isUseExtraData = False
 acceptedProbibilty = 0.7
 testRatio = 4
 transParamList = [TransactionBasics.TransactionParam(500, 14)]
@@ -48,7 +48,7 @@ def TrainAnaylzer():
     global mlpTransactionList
     global mlpTransactionScalerList
 
-    for i in range(3):
+    for i in range(2):
         curmlpTransactionList = []
         curmlpTransactionScalerList = []
         curResult = Learn(curmlpTransactionList, curmlpTransactionScalerList)
@@ -168,7 +168,7 @@ def Learn( mlpTransactionListIn, mlpTransactionScalerListIn ):
             X_train = X
             y_train = y
         else:
-            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=40)
+            X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.05, random_state=40)
 
         # clf = GridSearchCV(mlpTransaction, parameter_space, n_jobs=-1, cv=3, scoring='precision')
         # clf.fit(X_train, y_train)
