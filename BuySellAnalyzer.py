@@ -51,6 +51,7 @@ class BuySellHandler:
         self.minPeakTime = int(tempTransaction[self.minPeakIndex]["T"])//1000
         self.minPeakVal = float(tempTransaction[self.minPeakIndex]["p"])
 
+
         self.__DivideDataInSeconds(tempTransaction) #populates the dataList with TransactionData
         self.__AppendToPatternList() # deletes dataList and populates mustBuyList, patternList badPatternList
 
@@ -130,9 +131,9 @@ class BuySellHandler:
 
 
     def __GetCategory(self, curIndex):
-        price = self.dataList[curIndex].lastPrice
-        firstPrice = self.dataList[curIndex].firstPrice
+        price = self.dataList[curIndex].maxPrice
         time = self.dataList[curIndex].timeInSecs
+
         if price > self.peakVal * 0.997:
             return 1  # Sell
         elif time > self.peakTime and price > self.peakVal * 0.995:

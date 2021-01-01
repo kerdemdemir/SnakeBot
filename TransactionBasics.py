@@ -4,9 +4,10 @@ from datetime import datetime
 import bisect
 
 PeakFeatureCount = 6
-MaximumSampleSizeFromPattern = 5
-TransactionCountPerSecBase = 4
-TransactionLimitPerSecBase = 0.2
+MaximumSampleSizeFromPattern = 20
+MaximumSampleSizeFromGoodPattern = 2
+TransactionCountPerSecBase = 3
+TransactionLimitPerSecBase = 0.1
 MaxMinListTimes = [60*60*6, 60*60*24, 60*60*48, 60*60*72]
 IsUseMaxInList = False
 
@@ -169,6 +170,8 @@ class TransactionData:
         self.timeInSecs = 0
         self.firstPrice = 0.0
         self.lastPrice = 0.0
+        self.maxPrice = 0.0
+        self.minPrice = 1000.0
 
     def __repr__(self):
         return "TotalBuy:%f,TotalSell:%f,TransactionCount:%f,Score:%f,LastPrice:%f,Time:%d" % (
@@ -182,6 +185,8 @@ class TransactionData:
         if self.firstPrice == 0.0:
             self.firstPrice = float(jsonIn["p"])
         self.lastPrice = float(jsonIn["p"])
+        self.maxPrice = max(self.lastPrice, self.maxPrice)
+        self.minPrice = min(self.lastPrice, self.minPrice)
         self.totalTransactionCount += 1
         if not isSell:
             self.transactionBuyCount += 1
@@ -196,6 +201,9 @@ class TransactionData:
         self.totalSell += otherData.totalSell
         self.lastPrice = otherData.lastPrice
         self.timeInSecs = otherData.timeInSecs
+        self.maxPrice = max(self.maxPrice, otherData.maxPrice)
+        if otherData.minPrice != 0.0:
+            self.minPrice = min(self.minPrice, otherData.minPrice)
 
     def SetTime(self, timeInSecs):
         self.timeInSecs = timeInSecs
@@ -209,7 +217,8 @@ class TransactionData:
         self.timeInSecs = 0
         self.firstPrice = 0.0
         self.lastPrice = 0.0
-
+        self.maxPrice = 0.0
+        self.minPrice = 1000.0
 
 class TransactionPattern:
     def __init__(self):

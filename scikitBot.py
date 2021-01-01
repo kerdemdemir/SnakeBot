@@ -28,27 +28,56 @@ acceptedProbibilty = 0.7
 testRatio = 4
 transParamList = [TransactionBasics.TransactionParam(1000, 12)]
 
-currentProbs = []
+mlpTransactionList = []
+mlpTransactionScalerList = []
 
+currentProbs = []
 parameter_space = {
-    'hidden_layer_sizes': [(36,36,36,36), (36,36,36)],
-    'activation': ['tanh', 'relu'],
+    'hidden_layer_sizes': [ (36,36,36) ],
+    'activation': [ 'relu'],
     'solver': ['sgd', 'adam'],
-    'alpha': [0.0001, 0.05],
-    'learning_rate': ['constant','adaptive'],
+    'alpha': [0.0001, 0.001, 0.01],
+    'learning_rate': ['adaptive'],
 }
 
 def TrainAnaylzer():
     falsePositives = []
     truePositives = []
-    for i in range(25):
-        mlpTransactionList.clear()
-        mlpTransactionScalerList.clear()
-        curResult = Learn()
-        falsePositives.append(int(curResult[0][1]))
-        truePositives.append(int(curResult[1][1]))
+    minFalsePositive = 1000
+    selectedGoodBadRatio = 0
+    global mlpTransactionList
+    global mlpTransactionScalerList
+
+    for i in range(3):
+        curmlpTransactionList = []
+        curmlpTransactionScalerList = []
+        curResult = Learn(curmlpTransactionList, curmlpTransactionScalerList)
+        falsePositive = int(curResult[0][1])
+        truePositive = int(curResult[1][1])
+        curGoodBadRatio = truePositive / falsePositive
+        falsePositives.append(falsePositive)
+        truePositives.append(truePositive)
+        if falsePositive < minFalsePositive:
+            if curGoodBadRatio > 1.2:
+                minFalsePositive = falsePositive
+                mlpTransactionList = curmlpTransactionList
+                mlpTransactionScalerList = curmlpTransactionScalerList
+                selectedGoodBadRatio = curGoodBadRatio
+                print("Selecting a new result ", falsePositive, " ", truePositive)
+        elif falsePositive == minFalsePositive:
+            if curGoodBadRatio > selectedGoodBadRatio:
+                minFalsePositive = falsePositive
+                mlpTransactionList = curmlpTransactionList
+                mlpTransactionScalerList = curmlpTransactionScalerList
+                selectedGoodBadRatio = curGoodBadRatio
+                print("Selecting a new result ", falsePositive, " ", truePositive)
 
         print(falsePositives, " ", truePositives)
+
+    if not mlpTransactionList:
+        print("Results were horrible we are assigning a random one. ")
+        Learn(mlpTransactionList, mlpTransactionScalerList)
+
 
     badListArray = np.array(falsePositives)
     goodListArray = np.array(truePositives)
@@ -113,7 +142,7 @@ def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerListIn, m
     print("Results are: ", resultStr)
     return resultStr
 
-def Learn():
+def Learn( mlpTransactionListIn, mlpTransactionScalerListIn ):
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         numpyArr = suddenChangeManager.toTransactionFeaturesNumpy(transactionIndex)
@@ -122,11 +151,11 @@ def Learn():
             numpyArr = np.concatenate((numpyArr, numpyArrPeak), axis=0)
 
 
-        mlpTransaction = MLPClassifier(hidden_layer_sizes=(36, 36, 36, 36), activation='relu',
-                                       solver='adam', learning_rate='adaptive', max_iter=500)
-        mlpTransactionList.append(mlpTransaction)
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(36, 36, 36), activation='relu',
+                                       solver='sgd', learning_rate='adaptive', max_iter=500)
+        mlpTransactionListIn.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
-        mlpTransactionScalerList.append(transactionScaler)
+        mlpTransactionScalerListIn.append(transactionScaler)
         X = transactionScaler.transform(numpyArr)
         y = suddenChangeManager.toTransactionResultsNumpy(transactionIndex) #+ extraDataManager.getResult(transactionIndex)
         if isUsePeaks:
@@ -157,10 +186,19 @@ def Learn():
 
         predict_test = mlpTransaction.predict_proba(X_test)
         #print(predict_test)
-        
+
+        finalResult = predict_test[:, 1] >= 0.5
+        returnResult = confusion_matrix(y_test, finalResult)
+        print("50 ", returnResult)
+
+        finalResult = predict_test[:, 1] >= 0.7
+        returnResult = confusion_matrix(y_test, finalResult)
+        print("70 ", returnResult)
+
         finalResult = predict_test[:, 1] >= 0.6
         returnResult = confusion_matrix(y_test, finalResult)
         print("60 ", returnResult)
+
         #print(predict_test)
         #predict_test = np.delete(finalResult, 0, 1)
 
@@ -175,7 +213,7 @@ def LearnWhenToSell():
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         numpyArr = buySellDataManager.toSellTransactions(transactionIndex)
-        mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24, 24), activation='relu',
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24), activation='relu',
                                        solver='adam', max_iter=500)
         mlpTransactionListSell.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
@@ -203,7 +241,7 @@ def LearnAvoidPeak():
     for transactionIndex in range(len(transParamList)):
         transParam = transParamList[transactionIndex]
         numpyArr = suddenChangeManager.toSellTransactions(transactionIndex)
-        mlpTransaction = MLPClassifier(hidden_layer_sizes=(24, 24, 24, 24), activation='relu',
+        mlpTransaction = MLPClassifier(hidden_layer_sizes=(36, 36, 36), activation='relu',
                                        solver='adam', max_iter=500)
         mlpTransactionListAvoidPeak.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
@@ -235,10 +273,8 @@ if isUseExtraData:
     extraFolderPath = os.path.abspath(os.getcwd()) + "/Data/ExtraData/"
     extraDataManager = extraDataMan.ExtraDataManager(extraFolderPath,transParamList,suddenChangeManager.marketState)
 
-mlpTransactionList = []
-mlpTransactionScalerList = []
-#TrainAnaylzer()
-curResult = Learn()
+TrainAnaylzer()
+#curResult = Learn(mlpTransactionList, mlpTransactionScalerList)
 
 buySellDataManager = buyAnalyzer.BuyAnalyzeManager(transParamList, suddenChangeManager.marketState)
 print("BuySellAnalyzeFinished")
