@@ -23,6 +23,7 @@ class ExtraDataManager:
         self.totalLen = 0
         self.goodCount = 0
         self.badCount = 0
+        self.strList = []
         self.ReadFiles( readFolderPath )
 
     def getNumpy(self,index):
@@ -80,8 +81,8 @@ class ExtraDataManager:
                 messageChangeTimeTransactionStrList = lineSplitList[0].split(";")
                 priceStrList = messageChangeTimeTransactionStrList[1:9]
                 timeStrList = messageChangeTimeTransactionStrList[9:17]
-                transactionStrList = messageChangeTimeTransactionStrList[17:]
-
+                transactionStrList = messageChangeTimeTransactionStrList[17:-8]
+                #print(transactionStrList)
                 resultsChangeFloat = [float(messageStr) for messageStr in priceStrList]
                 resultsTimeFloat = [float(timeStr) for timeStr in timeStrList]
                 resultsTransactionFloat = [float(transactionStr) for transactionStr in transactionStrList]
@@ -90,8 +91,8 @@ class ExtraDataManager:
                     continue
                 totalPower = resultsTransactionFloat[-1]+resultsTransactionFloat[-2]
                 totalTransCount = resultsTransactionFloat[-3] + resultsTransactionFloat[-4]
-                if totalPower < TransactionBasics.TransactionLimitPerSecBase or totalTransCount < TransactionBasics.TransactionCountPerSecBase:
-                    continue
+                #if totalPower < TransactionBasics.TransactionLimitPerSecBase or totalTransCount < TransactionBasics.TransactionCountPerSecBase:
+                #    continue
                 if float(lineSplitList[8+extraLineCount]) > 0.01:
                     continue
                 resultStr = ""
@@ -122,12 +123,14 @@ class ExtraDataManager:
                     curSeconds = (datetime_object - epoch).total_seconds()
 
                     buyPrice = float(lineSplitList[13 + extraLineCount])
-                    maxMinDataList = TransactionBasics.GetMaxMinListWithTime(lineSplitList[20 + extraLineCount], curSeconds, buyPrice)
-
+                    #maxMinDataList2 = TransactionBasics.GetMaxMinListWithTime(lineSplitList[20 + extraLineCount], curSeconds, buyPrice)
+                    maxMinStrList = lineSplitList[1].split(";")
+                    maxMinDataList = [float(messageStr) for messageStr in maxMinStrList]
+                    if not TransactionBasics.IsUseMaxInList:
+                        maxMinDataList = [maxMinDataList[0],maxMinDataList[2],maxMinDataList[4],maxMinDataList[6]]
                     #if maxMinDataList[1] < 0.95:
                         #print("Alert3 ", maxMinDataList[0], " ", float(lineSplitList[15 + extraLineCount]))
                         #continue
-
                     if self.marketState:
                         marketStateList = self.marketState.getState(curSeconds)
                     else:
@@ -151,5 +154,7 @@ class ExtraDataManager:
                     elif float(lineSplitList[11+extraLineCount]) > 1.002:
                         self.totalGoodFeaturesList[transactionIndex].append(totalFeatures)
                         self.goodCount+=1
+
+                    self.strList.append(lineSplitList[0])
                     #print(totalFeatures)
                     #print(len(totalFeatures), " ", totalFeatures)
