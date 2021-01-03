@@ -7,7 +7,7 @@ PeakFeatureCount = 6
 MaximumSampleSizeFromPattern = 20
 MaximumSampleSizeFromGoodPattern = 2
 TransactionCountPerSecBase = 3
-TransactionLimitPerSecBase = 0.1
+TransactionLimitPerSecBase = 0.25
 MaxMinListTimes = [60*60*6, 60*60*24, 60*60*48, 60*60*72]
 IsUseMaxInList = True
 

@@ -246,9 +246,12 @@ class SuddenChangeHandler:
         price = self.dataList[curIndex].lastPrice
         minVal = self.dataList[curIndex].minPrice
         maxVal = self.dataList[curIndex].maxPrice
+        curTimeSecs = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if minVal < self.peakVal * 1.015:
+            if minVal < self.peakVal * 1.005:
+                if self.maxTime - curTimeSecs < 3:
+                    return -1
                 return 1  # Good
         else:
             if maxVal > self.peakVal * 0.975:
@@ -267,7 +270,7 @@ class SuddenChangeHandler:
                 return 2  # We can keep
 
         else:
-            if maxVal > self.peakVal * 0.99:
+            if maxVal > self.peakVal * 0.995:
                 return 1 # We need to sell now
         return -1
 

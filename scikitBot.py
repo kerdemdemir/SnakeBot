@@ -23,7 +23,7 @@ transactionBinCountList = [6,8]
 totalTimeCount = 6
 isUsePeaks = False
 totalUsedCurveCount = 4
-isUseExtraData = True
+isUseExtraData = False
 acceptedProbibilty = 0.7
 testRatio = 4
 transParamList = [TransactionBasics.TransactionParam(500, 14)]
@@ -33,11 +33,9 @@ mlpTransactionScalerList = []
 
 currentProbs = []
 parameter_space = {
-    'hidden_layer_sizes': [ (36,36,36) ],
-    'activation': [ 'relu'],
+    'hidden_layer_sizes': [ (36,36,36),(36,36,36,36,36),(36,36,36,36),(48,48,48),(48,48,48,48) ],
     'solver': ['sgd', 'adam'],
     'alpha': [0.0001, 0.001, 0.01],
-    'learning_rate': ['adaptive'],
 }
 
 def TrainAnaylzer():
@@ -90,7 +88,7 @@ def TrainAnaylzer():
     print(" Good results ", goodLegend)
     print(" Bad results ", badLegend)
 
-def Predict ( messageChangeTimeTransactionStrList, mlpTransactionScalerListIn, mlpTransactionListIn, isBuySell, isAvoidPeaks ):
+def Predict( messageChangeTimeTransactionStrList, mlpTransactionScalerListIn, mlpTransactionListIn, isBuySell, isAvoidPeaks ):
 
     priceStrList = messageChangeTimeTransactionStrList[0].split(",")
     timeStrList = messageChangeTimeTransactionStrList[1].split(",")
@@ -191,14 +189,13 @@ def Learn( mlpTransactionListIn, mlpTransactionScalerListIn ):
         returnResult = confusion_matrix(y_test, finalResult)
         print("50 ", returnResult)
 
-        finalResult = predict_test[:, 1] >= 0.7
-        returnResult = confusion_matrix(y_test, finalResult)
-        print("70 ", returnResult)
-
         finalResult = predict_test[:, 1] >= 0.6
         returnResult = confusion_matrix(y_test, finalResult)
         print("60 ", returnResult)
 
+        finalResult = predict_test[:, 1] >= 0.7
+        returnResult = confusion_matrix(y_test, finalResult)
+        print("70 ", returnResult)
         #print(predict_test)
         #predict_test = np.delete(finalResult, 0, 1)
 
