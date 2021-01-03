@@ -20,6 +20,7 @@ MaxMinDataLen = 8
 UpSideDataLen = 6
 TotalExtraFeatureCount = PeakFeatureCount + MaxMinDataLen + UpSideDataLen
 percent = 0.01
+IsOneFileOnly = False
 
 
 class SuddenChangeHandler:
@@ -443,6 +444,8 @@ class SuddenChangeManager:
                     self.marketState.add(isRise, reportTimeInSeconds)
             except:
                 print("There was a exception in ", fileName)
+            if IsOneFileOnly:
+                break
         self.marketState.sort()
         print("Total rise: ", riseCount, " total down: ", downCount)
 
@@ -458,6 +461,8 @@ class SuddenChangeManager:
                     merger.AddFile(jsonDictionary)
             except:
                 print("There was a exception in ", fileName)
+            if IsOneFileOnly:
+                break
 
     def toTransactionFeaturesNumpy(self, index):
         return self.suddenChangeMergerList[index].toTransactionFeaturesNumpy()
