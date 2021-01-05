@@ -26,7 +26,7 @@ totalUsedCurveCount = 4
 isUseExtraData = False
 acceptedProbibilty = 0.7
 testRatio = 4
-transParamList = [TransactionBasics.TransactionParam(500, 14)]
+transParamList = [TransactionBasics.TransactionParam(250, 16)]
 
 mlpTransactionList = []
 mlpTransactionScalerList = []
@@ -150,7 +150,7 @@ def Learn( mlpTransactionListIn, mlpTransactionScalerListIn ):
 
 
         mlpTransaction = MLPClassifier(hidden_layer_sizes=(36, 36, 36), activation='relu',
-                                       solver='sgd', learning_rate='adaptive', max_iter=500)
+                                       solver='sgd', learning_rate='adaptive', alpha=0.01, max_iter=500)
         mlpTransactionListIn.append(mlpTransaction)
         transactionScaler = preprocessing.StandardScaler().fit(numpyArr)
         mlpTransactionScalerListIn.append(transactionScaler)
@@ -179,7 +179,7 @@ def Learn( mlpTransactionListIn, mlpTransactionScalerListIn ):
         # stds = clf.cv_results_['std_test_score']
         # for mean, std, params in zip(means, stds, clf.cv_results_['params']):
         #     print("%0.3f (+/-%0.03f) for %r" % (mean, std * 2, params))
-        #
+
         mlpTransaction.fit(X_train, y_train)
 
         predict_test = mlpTransaction.predict_proba(X_test)

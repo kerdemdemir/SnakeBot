@@ -7,7 +7,9 @@ PeakFeatureCount = 6
 MaximumSampleSizeFromPattern = 20
 MaximumSampleSizeFromGoodPattern = 2
 TransactionCountPerSecBase = 3
-TransactionLimitPerSecBase = 0.25
+TransactionLimitPerSecBase = 0.1
+TotalPowerLimit = 0.5
+TotalElementLimitMsecs = 10000
 MaxMinListTimes = [60*60*6, 60*60*24, 60*60*48, 60*60*72]
 IsUseMaxInList = True
 
@@ -24,6 +26,12 @@ def GetMaxMinList(maxMinList):
             returnVal.append(maxMinList[index])
     return returnVal
 
+def LastNElementsTransactionPower(list, index, elementCount):
+    totalTradePower = 0
+    for curIndex in range(index-elementCount, index+1):
+        lastTotalTradePower = list[curIndex].totalBuy + list[curIndex].totalSell
+        totalTradePower += lastTotalTradePower
+    return totalTradePower
 
 class TimePriceBasic:
     def __init__( self, timeInSeconds, priceIn ) :

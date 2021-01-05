@@ -213,8 +213,11 @@ class SuddenChangeHandler:
             return
 
         lastTotalTradePower = self.dataList[curIndex].totalBuy + self.dataList[curIndex].totalSell
-
         if lastTotalTradePower < self.acceptedTransLimit/2:
+            return
+        totalElement = TransactionBasics.TotalElementLimitMsecs // self.transactionParam.msec
+        totalTradePower = TransactionBasics.LastNElementsTransactionPower(self.dataList, curIndex, totalElement)
+        if totalTradePower < TransactionBasics.TotalPowerLimit:
             return
 
         pattern = TransactionBasics.TransactionPattern()
