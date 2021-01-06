@@ -56,7 +56,7 @@ def TrainAnaylzer():
         falsePositives.append(falsePositive)
         truePositives.append(truePositive)
         if falsePositive < minFalsePositive:
-            if curGoodBadRatio > 1.2:
+            if curGoodBadRatio > 1.2 or curGoodBadRatio > selectedGoodBadRatio:
                 minFalsePositive = falsePositive
                 mlpTransactionList = curmlpTransactionList
                 mlpTransactionScalerList = curmlpTransactionScalerList

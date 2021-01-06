@@ -65,22 +65,12 @@ class PeakHandler:
         else:
             self.peakIndex = prices.index(max(prices))
         self.peakVal = float(jsonIn[self.peakIndex]["p"])
-
-        self.isJumpInWindow = False
-        for index in range(len(prices[self.peakIndex:])):
-            curPrice = prices[self.peakIndex + index]
-            if self.isBottom and curPrice/self.peakVal > 1.025:
-                self.isJumpInWindow = True
-            if not self.isBottom and self.peakVal/curPrice < 1.025:
-                self.isJumpInWindow = True
-
-
         self.peakTimeSeconds = int(jsonIn[self.peakIndex]["T"]) // 1000
         self.__DivideDataInSeconds(jsonIn)
         self.__AssignScores()
 
     def GetFeatures(self):
-        return []
+        return TransactionBasics.GetMaxMinListWithTime(self.riseList, self.peakTimeSeconds,self.peakVal)
 
     # TransactionData, self.totalBuy = 0.0, self.totalSell = 0.0,self.transactionCount = 0.0,self.score = 0
     def __AssignScores(self):
@@ -103,7 +93,10 @@ class PeakHandler:
         if self.dataList[curIndex].totalTransactionCount < self.lowestTransaction or \
             lastTotalTradePower < self.acceptedTransLimit:
             return
-
+        totalElement = TransactionBasics.TotalElementLimitMsecs // self.transactionParam.msec
+        totalTradePower = TransactionBasics.LastNElementsTransactionPower(self.dataList, curIndex, totalElement)
+        if totalTradePower < TransactionBasics.TotalPowerLimit:
+            return
         pattern = TransactionBasics.TransactionPattern()
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
@@ -123,16 +116,14 @@ class PeakHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isBottom:
-            if price < self.peakVal * 1.003:
+            if price < self.peakVal * 1.01:
                 return 1  # Good
-            if self.isJumpInWindow and price < self.peakVal * 1.005:
-                return 1
-            if price > self.peakVal * 0.97 and time < self.peakTimeSeconds:
+            else:
                 return 2  # Bad
         else:
             if price < self.peakVal * 0.97 and time < self.peakTimeSeconds:
                 return 1  # Good
-            if price > self.peakVal * 0.995:
+            else:
                 return 2
         return -1
 

@@ -176,7 +176,7 @@ class SuddenChangeHandler:
         maxIndex = 0
         for x in range(lenArray):
             curTimeInSeconds = self.dataList[x].timeInSecs
-            if curTimeInSeconds < self.jumpTimeInSeconds - 10 or curTimeInSeconds > self.reportTimeInSeconds+10:
+            if  curTimeInSeconds > self.reportTimeInSeconds+10:
                 continue
             lastTotalTradePower = self.dataList[x].totalBuy + self.dataList[x].totalSell
             if lastTotalTradePower > maxTradeVal  :
@@ -184,24 +184,20 @@ class SuddenChangeHandler:
                 maxIndex = x
             self.__AppendToPatternListImpl(self.transactionParam.gramCount, x, lenArray)
 
-        if self.isRise:
-            if len(self.patternList) > TransactionBasics.MaximumSampleSizeFromGoodPattern:
-               self.patternList = self.patternList[-TransactionBasics.MaximumSampleSizeFromGoodPattern:]
-        else:
-            if len(self.badPatternList) > TransactionBasics.MaximumSampleSizeFromPattern:
-                self.badPatternList = random.sample(self.badPatternList, TransactionBasics.MaximumSampleSizeFromPattern)
+        if len(self.patternList) > TransactionBasics.MaximumSampleSizeFromGoodPattern:
+           self.patternList = self.patternList[-TransactionBasics.MaximumSampleSizeFromGoodPattern:]
+        if len(self.badPatternList) > TransactionBasics.MaximumSampleSizeFromPattern:
+            self.badPatternList = random.sample(self.badPatternList, TransactionBasics.MaximumSampleSizeFromPattern)
 
         if self.isRise:
             SuddenChangeHandler.riseTotalPower.append(maxTradeVal)
         else:
             SuddenChangeHandler.fallTotalPower.append(maxTradeVal)
 
-        if self.isRise:
-            if len(self.mustSellList) > TransactionBasics.MaximumSampleSizeFromPattern:
-                self.mustSellList = random.sample(self.mustSellList, TransactionBasics.MaximumSampleSizeFromPattern)
-        else:
-            if len(self.mustBuyList) > TransactionBasics.MaximumSampleSizeFromPattern:
-                self.mustBuyList = random.sample(self.mustBuyList, TransactionBasics.MaximumSampleSizeFromPattern)
+        if len(self.mustSellList) > TransactionBasics.MaximumSampleSizeFromPattern:
+            self.mustSellList = random.sample(self.mustSellList, TransactionBasics.MaximumSampleSizeFromPattern)
+        if len(self.mustBuyList) > TransactionBasics.MaximumSampleSizeFromPattern:
+            self.mustBuyList = random.sample(self.mustBuyList, TransactionBasics.MaximumSampleSizeFromPattern)
 
         del self.dataList
 
@@ -215,10 +211,6 @@ class SuddenChangeHandler:
         lastTotalTradePower = self.dataList[curIndex].totalBuy + self.dataList[curIndex].totalSell
         if lastTotalTradePower < self.acceptedTransLimit/2:
             return
-        totalElement = TransactionBasics.TotalElementLimitMsecs // self.transactionParam.msec
-        totalTradePower = TransactionBasics.LastNElementsTransactionPower(self.dataList, curIndex, totalElement)
-        if totalTradePower < TransactionBasics.TotalPowerLimit:
-            return
 
         pattern = TransactionBasics.TransactionPattern()
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
@@ -229,6 +221,11 @@ class SuddenChangeHandler:
              self.mustSellList.append(copy.deepcopy(pattern))
         elif self.__GetCategorySell(curIndex) == 2:
              self.keepList.append(copy.deepcopy(pattern))
+
+        totalElement = TransactionBasics.TotalElementLimitMsecs // self.transactionParam.msec
+        totalTradePower = TransactionBasics.LastNElementsTransactionPower(self.dataList, curIndex, totalElement)
+        if totalTradePower < TransactionBasics.TotalPowerLimit:
+            return
 
         if self.dataList[curIndex].totalTransactionCount < self.lowestTransaction:
             return
@@ -252,12 +249,14 @@ class SuddenChangeHandler:
         curTimeSecs = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if minVal < self.peakVal * 1.005:
+            if minVal < self.peakVal * 1.0125:
                 if self.maxTime - curTimeSecs < 3:
                     return -1
                 return 1  # Good
+            elif curTimeSecs < self.peakTime:
+                return 2
         else:
-            if maxVal > self.peakVal * 0.975:
+            if maxVal > self.peakVal * 0.98:
                 return 2
 
         return -1
@@ -269,7 +268,7 @@ class SuddenChangeHandler:
         time = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if minVal < self.peakVal * 1.025:
+            if minVal < self.peakVal * 1.03:
                 return 2  # We can keep
 
         else:
