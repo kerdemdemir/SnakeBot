@@ -14,8 +14,8 @@ import MarketStateManager
 import TransactionBasics
 
 PeakFeatureCount = TransactionBasics.PeakFeatureCount
-MaxMinDataLen = 8
-UpSideDataLen = 6
+MaxMinDataLen = 2
+UpSideDataLen = 2
 TotalExtraFeatureCount = PeakFeatureCount + MaxMinDataLen + UpSideDataLen
 percent = 0.01
 
@@ -102,7 +102,8 @@ class PeakHandler:
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
         pattern.Append(dataRange, self.peakTimeSeconds, self.peakVal, None )
         pattern.SetPeaks( self.riseList, self.timeList )
-
+        if timeList[-1] < 15:
+            return
         if self.__GetCategory(curIndex) == 0:
             self.mustBuyList.append(pattern)
         elif self.__GetCategory(curIndex) == 1:

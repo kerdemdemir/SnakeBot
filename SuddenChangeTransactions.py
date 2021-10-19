@@ -16,9 +16,6 @@ import random
 
 
 PeakFeatureCount = TransactionBasics.PeakFeatureCount
-MaxMinDataLen = 8
-UpSideDataLen = 6
-TotalExtraFeatureCount = PeakFeatureCount + MaxMinDataLen + UpSideDataLen
 percent = 0.01
 IsOneFileOnly = False
 
@@ -86,18 +83,6 @@ class SuddenChangeHandler:
                 self.maxIndex = index
                 self.maxTime = curTimeInSeconds
 
-
-        if self.isRise:
-            if self.minTime > self.maxTime:
-                if self.maxPrice/self.minPrice < 1.03:
-                    return
-                self.isRise = False
-        else:
-            if self.maxTime > self.minTime:
-                if self.maxPrice/self.minPrice < 1.03:
-                    return
-                self.isRise = True
-
         if self.isRise:
             self.peakIndex = self.minIndex
         else:
@@ -106,11 +91,12 @@ class SuddenChangeHandler:
         self.peakTime = int(tempTransaction[self.peakIndex]["T"])//1000
         self.peakVal = float(tempTransaction[self.peakIndex]["p"])
 
-        self.__DivideDataInSeconds(tempTransaction) #populates the dataList with TransactionData
-        self.__AppendToPatternList() # deletes dataList and populates mustBuyList, patternList badPatternList
+        self.__DivideDataInSeconds(tempTransaction, self.transactionParam.msec, self.dataList, 0, len(tempTransaction)) #populates the dataList with TransactionData
+        self.__AppendToPatternList(tempTransaction) # deletes dataList and populates mustBuyList, patternList badPatternList
 
     def GetFeatures(self):
-        return TransactionBasics.GetMaxMinList( self.maxMinList )
+        return self.downUpList
+        #return TransactionBasics.GetMaxMinList( self.maxMinList )
         #self.timeList[-PeakFeatureCount:] + self.riseList[-PeakFeatureCount:]
         #return self.maxMinList  + self.timeList[-SuddenChangeHandler.PeakFeatureCount:] + self.riseList[-SuddenChangeHandler.PeakFeatureCount:]
 
@@ -127,7 +113,11 @@ class SuddenChangeHandler:
 
         for i in range(len(self.riseList) - 1 ):
             if self.riseList[i]*self.riseList[i+1] > 0.0:
-                TransactionBasics.RiseListSanitizer(self.riseList, self.timeList)
+                self.riseList[i+1]=self.riseList[i]
+                self.timeList[i+1]=self.timeList[i]
+                self.riseList.pop()
+                self.timeList.pop()
+                #TransactionBasics.RiseListSanitizer(self.riseList, self.timeList)
 
 
         self.maxMinList = jsonIn["maxMin"]
@@ -136,44 +126,49 @@ class SuddenChangeHandler:
         self.downUpList = jsonIn["downUps"]
         self.currencyName = jsonIn["name"]
 
-    def __DivideDataInSeconds(self, jsonIn):
+    def __DivideDataInSeconds(self, jsonIn, msecs, datalist, startIndex, endIndex ):
         transactionData = TransactionBasics.TransactionData()
         lastEndTime = 0
-        stopMiliSecs = int(jsonIn[-1]["T"])
-        for x in range(len(jsonIn)):
+        stopMiliSecs = int(jsonIn[endIndex-1]["T"])
+        for x in range(startIndex,endIndex):
             curElement = jsonIn[x]
             curMiliSecs = int(curElement["T"])
-            if x == 0:
-                lastEndTime = curMiliSecs + self.transactionParam.msec
+            if x == startIndex:
+                lastEndTime = curMiliSecs//msecs*msecs + msecs
+                transactionData.SetTime(curMiliSecs // msecs)
 
             if curMiliSecs > lastEndTime:
                 copyData = copy.deepcopy(transactionData)
-                self.dataList.append(copyData)
+                datalist.append(copyData)
                 transactionData.Reset()
                 transactionData.AddData(curElement)
-                transactionData.SetTime(curMiliSecs // 1000)
-                lastEndTime += self.transactionParam.msec
+
                 while True:
-                    if curMiliSecs > lastEndTime and lastEndTime < stopMiliSecs:
-                        lastEndTime += self.transactionParam.msec
+                    if curMiliSecs > (lastEndTime + msecs) and lastEndTime < stopMiliSecs:
                         emptyData = TransactionBasics.TransactionData()
-                        emptyData.SetTime(lastEndTime // 1000)
+                        emptyData.SetTime(lastEndTime // msecs)
+                        emptyData.SetIndex(x)
                         emptyData.lastPrice = copyData.lastPrice
-                        self.dataList.append(emptyData)
+                        lastEndTime += msecs
+                        if startIndex == 0:
+                            datalist.append(emptyData)
                     else:
+                        transactionData.SetTime(curMiliSecs // msecs)
+                        transactionData.SetIndex(x)
+                        lastEndTime += msecs
                         break
             else:
                 transactionData.AddData(curElement)
+                transactionData.SetIndex(x)
         copyData = copy.deepcopy(transactionData)
-        self.dataList.append(copyData)
+        datalist.append(copyData)
 
-    def __AppendToPatternList(self):
+    def __AppendToPatternList(self, jsonIn):
         lenArray = len(self.dataList)
         if lenArray == 0:
             return
         # print(lenArray, self.dataList)
         maxTradeVal = 0
-        maxIndex = 0
         for x in range(lenArray):
             curTimeInSeconds = self.dataList[x].timeInSecs
             if  curTimeInSeconds > self.reportTimeInSeconds+10:
@@ -181,11 +176,10 @@ class SuddenChangeHandler:
             lastTotalTradePower = self.dataList[x].totalBuy + self.dataList[x].totalSell
             if lastTotalTradePower > maxTradeVal  :
                 maxTradeVal = lastTotalTradePower
-                maxIndex = x
-            self.__AppendToPatternListImpl(self.transactionParam.gramCount, x, lenArray)
+            self.__AppendToPatternListImpl(self.transactionParam.gramCount, x, lenArray, jsonIn)
 
         if len(self.patternList) > TransactionBasics.MaximumSampleSizeFromGoodPattern:
-           self.patternList = self.patternList[-TransactionBasics.MaximumSampleSizeFromGoodPattern:]
+           self.patternList = self.patternList[:TransactionBasics.MaximumSampleSizeFromGoodPattern]
         if len(self.badPatternList) > TransactionBasics.MaximumSampleSizeFromPattern:
             self.badPatternList = random.sample(self.badPatternList, TransactionBasics.MaximumSampleSizeFromPattern)
 
@@ -194,43 +188,49 @@ class SuddenChangeHandler:
         else:
             SuddenChangeHandler.fallTotalPower.append(maxTradeVal)
 
-        if len(self.mustSellList) > TransactionBasics.MaximumSampleSizeFromPattern:
-            self.mustSellList = random.sample(self.mustSellList, TransactionBasics.MaximumSampleSizeFromPattern)
-        if len(self.mustBuyList) > TransactionBasics.MaximumSampleSizeFromPattern:
-            self.mustBuyList = random.sample(self.mustBuyList, TransactionBasics.MaximumSampleSizeFromPattern)
-
         del self.dataList
 
-    def __AppendToPatternListImpl(self, ngramCount, curIndex, lenArray):
+    def __AppendToPatternListImpl(self, ngramCount, curIndex, lenArray, jsonIn):
         totalCount = TransactionBasics.GetTotalPatternCount(ngramCount)
         startBin = curIndex + 1 - totalCount
         endBin = curIndex + 1
         if startBin < 0 or endBin > lenArray:
             return
 
-        lastTotalTradePower = self.dataList[curIndex].totalBuy + self.dataList[curIndex].totalSell
-        if lastTotalTradePower < self.acceptedTransLimit/2:
+        lastTotalCount = self.dataList[curIndex].transactionBuyCount
+        if lastTotalCount < self.lowestTransaction:
             return
 
+        if self.dataList[curIndex].totalBuy < self.acceptedTransLimit:
+            return
+
+        if self.dataList[curIndex].totalSell > 0.02:
+            return
+        #
         pattern = TransactionBasics.TransactionPattern()
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
+        if dataRange[0].totalBuy + dataRange[0].totalSell > 0.01:
+            return
+
+
+        detailDataList = []
+        self.__DivideDataInSeconds(jsonIn, 100, detailDataList, self.dataList[curIndex-1].startIndex, self.dataList[curIndex].endIndex)
+        pattern.SetDetailedTransaction(detailDataList)
+        if pattern.detailedVariance < 4:
+            return
+
+        #if self.timeList[-1] < 15:
+        #    return
+        ratio = self.dataList[curIndex].lastPrice/self.jumpPrice
+        curTimeDiff =  (self.dataList[curIndex].timeInSecs - self.jumpTimeInSeconds)//60
+        pattern.SetPeaks(self.riseList, self.timeList, ratio, curTimeDiff)
+        if pattern.lastUpRatio < -2.0:
+            return
+
+
         pattern.Append( dataRange, self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
-        pattern.SetPeaks(self.riseList, self.timeList)
-        if self.__GetCategorySell(curIndex) == 1:
-             self.mustSellList.append(copy.deepcopy(pattern))
-        elif self.__GetCategorySell(curIndex) == 2:
-             self.keepList.append(copy.deepcopy(pattern))
 
-        totalElement = TransactionBasics.TotalElementLimitMsecs // self.transactionParam.msec
-        totalTradePower = TransactionBasics.LastNElementsTransactionPower(self.dataList, curIndex, totalElement)
-        if totalTradePower < TransactionBasics.TotalPowerLimit:
-            return
-
-        if self.dataList[curIndex].totalTransactionCount < self.lowestTransaction:
-            return
-        if lastTotalTradePower < self.acceptedTransLimit:
-            return
         #print(pattern.marketStateList)
         category = self.__GetCategory(curIndex)
         if category == 0:
@@ -249,15 +249,10 @@ class SuddenChangeHandler:
         curTimeSecs = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if minVal < self.peakVal * 1.0125:
-                if self.maxTime - curTimeSecs < 3:
-                    return -1
-                return 1  # Good
-            elif curTimeSecs < self.peakTime:
-                return 2
+            if minVal < self.jumpPrice * 1.03:
+                return 1
         else:
-            if maxVal > self.peakVal * 0.98:
-                return 2
+            return 2
 
         return -1
 
@@ -297,10 +292,6 @@ class SuddenChangeMerger:
                 continue
 
             jsonPeakTrans = jsonIn[index]
-            isRising = jsonPeakTrans["riseList"][-1] > 1.0
-
-            if isRising:
-                continue
 
             handler = SuddenChangeHandler(jsonPeakTrans,self.transactionParam,self.marketState)
             self.handlerList.append(handler)
@@ -309,7 +300,7 @@ class SuddenChangeMerger:
         for peak in self.handlerList:
             self.__MergeInTransactions(peak)
             del peak
-        #self.Print(index)
+        self.Print()
 
     def toTransactionFeaturesNumpy(self):
         badCount = len(self.badPatternList)
@@ -358,16 +349,14 @@ class SuddenChangeMerger:
         badList = np.array(self.badPatternList)
 
         for i in range(len(self.patternList[0])):
-            a = {'Good': buyList[:, -(i + 1)],
-                 'Bad': badList[:, -(i + 1)]}
+            a = {'Good': buyList[:, i],
+                 'Bad': badList[:, i]}
             #df = pd.DataFrame.from_dict( a, orient='index')
             #df = df.transpose()
             #df.plot.box()
-            #mustBuyLegend = str(np.quantile(mustBuyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(mustBuyList[:, -(i + 1)], 0.9))
-            buyLegend = str(np.quantile(buyList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.25)) + "," \
-                        + str(np.quantile(buyList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.75)) + "," + str(np.quantile(buyList[:, -(i + 1)], 0.9))
-            badLegend = str(np.quantile(badList[:, -(i + 1)], 0.1)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.25)) +\
-                        "," + str(np.quantile(badList[:, -(i + 1)], 0.5)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.75)) + "," + str(np.quantile(badList[:, -(i + 1)], 0.9))
+            #mustBuyLegend = str(np.quantile(mustBuyList[:, i], 0.1)) + "," + str(np.quantile(mustBuyList[:, i], 0.5)) + "," + str(np.quantile(mustBuyList[:, i], 0.9))
+            buyLegend = str(np.quantile(buyList[:, i], 0.1)) + "," + str(np.quantile(buyList[:, i], 0.25)) + "," +  str(np.quantile(buyList[:, i], 0.5)) + "," + str(np.quantile(buyList[:, i], 0.75)) + "," + str(np.quantile(buyList[:, i], 0.9))
+            badLegend = str(np.quantile(badList[:, i], 0.1)) + "," + str(np.quantile(badList[:, i], 0.25)) + "," +  str(np.quantile(badList[:, i], 0.5)) + "," + str(np.quantile(badList[:, i], 0.75)) + "," + str(np.quantile(badList[:, i], 0.9))
             print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend , " ", badLegend)
             #plt.savefig('Plots/' + str(self.transactionParam.msec) + "_" + str(i) + "_box.pdf")
             #plt.cla()
@@ -464,8 +453,8 @@ class SuddenChangeManager:
                 jsonDictionary = json.load(file)
                 for merger in self.suddenChangeMergerList:
                     merger.AddFile(jsonDictionary)
-            except:
-                print("There was a exception in ", fileName)
+            except Exception as e:
+                print("There was a exception in ", fileName, e )
             if IsOneFileOnly:
                 break
 

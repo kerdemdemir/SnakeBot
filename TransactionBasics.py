@@ -2,16 +2,18 @@ import copy
 import bisect
 from datetime import datetime
 import bisect
+import statistics
 
-PeakFeatureCount = 6
+PeakFeatureCount = 2
 MaximumSampleSizeFromPattern = 20
-MaximumSampleSizeFromGoodPattern = 2
-TransactionCountPerSecBase = 3
-TransactionLimitPerSecBase = 0.1
+MaximumSampleSizeFromGoodPattern = 3
+TransactionCountPerSecBase = 0
+TransactionLimitPerSecBase = 0.2
 TotalPowerLimit = 0.5
 TotalElementLimitMsecs = 10000
-MaxMinListTimes = [60*60*6, 60*60*24, 60*60*48, 60*60*72]
+MaxMinListTimes = [60*60*6,60*60*24,60*60*36]
 IsUseMaxInList = True
+MergeLenghtSize = 2
 
 def GetMaxMinList(maxMinList):
     extraCount = len(MaxMinListTimes)
@@ -115,34 +117,19 @@ def RiseListSanitizer( riseList, timeList ):
             riseList.insert(index, 3.0)
 
 def GetTotalPatternCount(ngrams):
-    transCount = ngrams
-    returnVal = 0
-    for i in range(transCount // 2):
-        returnVal += pow(2, i + 1)
-    return returnVal
+    return 362
 
 def ReduceToNGrams(listToMerge, ngrams):
-    transCount = ngrams
-    mergeRuleList = []
-    returnVal = 0
     listToMerge.reverse()
-    for i in range(transCount // 2):
-        returnVal += pow(2, i + 1)
-        mergeRuleList.append(returnVal)
-
-    mergeListLen = len(listToMerge)
-    curIndex = 2
-    newMergeList = listToMerge[:2]
-    while curIndex < mergeListLen:
-        mergePos = bisect.bisect(mergeRuleList, curIndex)
-        mergeSize = pow(2, mergePos)
-        startData = listToMerge[curIndex]
+    elemList = [1, 1, 360]
+    startIndex = 0
+    newMergeList = []
+    for mergeSize in elemList:
+        startData = listToMerge[startIndex]
         for k in range(mergeSize-1):
-            if isinstance(startData, float):
-                startData += listToMerge[curIndex+k+1]
-            else:
-                startData.CombineData(listToMerge[curIndex+k+1])
-        curIndex += mergeSize
+            startData.CombineData(listToMerge[startIndex+k+1])
+        startIndex += mergeSize
+        startData.Divide(mergeSize)
         newMergeList.append(startData)
     newMergeList.reverse()
     return newMergeList
@@ -180,6 +167,8 @@ class TransactionData:
         self.lastPrice = 0.0
         self.maxPrice = 0.0
         self.minPrice = 1000.0
+        self.startIndex = 0
+        self.endIndex = 0
 
     def __repr__(self):
         return "TotalBuy:%f,TotalSell:%f,TransactionCount:%f,Score:%f,LastPrice:%f,Time:%d" % (
@@ -201,6 +190,12 @@ class TransactionData:
             self.totalBuy += power
         else:
             self.totalSell += power
+            
+    def Divide(self, dividor):
+        self.transactionBuyCount /= dividor
+        self.totalTransactionCount /= dividor
+        self.totalSell /= dividor
+        self.totalBuy /= dividor
 
     def CombineData(self, otherData):
         self.totalTransactionCount += otherData.totalTransactionCount
@@ -208,6 +203,10 @@ class TransactionData:
         self.totalBuy += otherData.totalBuy
         self.totalSell += otherData.totalSell
         self.lastPrice = otherData.lastPrice
+        if self.firstPrice == 0.0:
+            self.firstPrice = otherData.firstPrice
+        self.timeInSecs = otherData.timeInSecs
+        self.endIndex = otherData.endIndex
         self.timeInSecs = otherData.timeInSecs
         self.maxPrice = max(self.maxPrice, otherData.maxPrice)
         if otherData.minPrice != 0.0:
@@ -215,6 +214,11 @@ class TransactionData:
 
     def SetTime(self, timeInSecs):
         self.timeInSecs = timeInSecs
+
+    def SetIndex(self, index):
+        if self.startIndex == 0:
+            self.startIndex = index
+        self.endIndex = index
 
     def Reset(self):
         self.totalBuy = 0.0
@@ -227,6 +231,8 @@ class TransactionData:
         self.lastPrice = 0.0
         self.maxPrice = 0.0
         self.minPrice = 1000.0
+        self.startIndex = 0
+        self.endIndex = 0
 
 class TransactionPattern:
     def __init__(self):
@@ -234,6 +240,19 @@ class TransactionPattern:
         self.transactionSellList = []
         self.transactionBuyPowerList = []
         self.transactionSellPowerList = []
+
+        self.detailedTransactionList = []
+        self.detailedHighestPowerNumber = 0.0
+        self.detailedHighestCountNumber = 0
+        self.detailLen = 0.0
+        self.detailAverage = 0.0
+
+        self.detailedVariance = 0.0
+        self.detailedCountVariance = 0.0
+
+        self.lastDownRatio = 0.0
+        self.lastUpRatio = 0.0
+
         self.totalBuy = 0.0
         self.totalSell = 0.0
         self.transactionCount = 0.0
@@ -251,20 +270,49 @@ class TransactionPattern:
         self.buyTimeDiffInSecs = 0
         self.buyInfoEnabled  = False
 
-    def SetPeaks(self, peakList, timeList):
+    def SetDetailedTransaction(self, detailedTransactionList):
+        self.detailedTransactionList = detailedTransactionList
+
+        buyPowerList = list(map(lambda x: x.totalBuy, detailedTransactionList))
+        buyCountList = list(map(lambda x: x.transactionBuyCount, detailedTransactionList))
+
+        self.detailLen = len(buyPowerList)
+        self.detailedHighestPowerNumber = (sum(buyPowerList) - max(buyPowerList)) / self.detailLen
+        self.detailedHighestCountNumber = (sum(buyCountList) - max(buyCountList)) / self.detailLen
+        self.detailAverage = 0.0
+
+        self.detailedVariance = max(buyCountList)
+        self.detailedCountVariance = max(buyPowerList)
+            
+
+    def SetPeaks(self, peakList, timeList, ratio, timeDif ):
         if PeakFeatureCount > 0:
             self.peaks = copy.deepcopy(peakList)
             self.timeList = copy.deepcopy(timeList)
-            self.peaks[-1] += (self.priceDiff - 1.0)
-            self.timeList[-1] += (self.timeDiffInSeconds//60)
+
+        self.peaks[-1] += ratio
+        self.timeList[-1] += timeDif
+
+        if self.peaks[-1] < 0.0:
+            self.lastDownRatio = self.peaks[-1]+self.peaks[-2]
+            self.lastUpRatio = self.peaks[-2] + self.peaks[-3]
+        else:
+            self.lastDownRatio = self.peaks[-2]+self.peaks[-3]
+            self.lastUpRatio = self.peaks[-1] + self.peaks[-2]
+
         self.isAvoidPeaks = False
 
     def Append(self, dataList, peakTime, jumpPrice, marketState):
+
+        minList = list(map(lambda x: x.minPrice, dataList))
+        minOfMin = min(minList)
 
         if len(dataList) > 0:
             priceList = list(map(lambda x: x.lastPrice, dataList))
             self.priceMaxRatio = dataList[-1].lastPrice / max(priceList)
             self.priceMinRatio = dataList[-1].lastPrice / min(priceList)
+
+        self.priceMinRatio = minOfMin / dataList[-1].lastPrice
         lastTime = dataList[-1].timeInSecs
         if marketState:
             self.marketStateList = marketState.getState(lastTime)
@@ -280,8 +328,8 @@ class TransactionPattern:
             self.totalSell += elem.totalSell
             self.transactionCount += elem.transactionBuyCount
             self.totalTransactionCount += elem.totalTransactionCount
-        self.timeDiffInSeconds = lastTime - peakTime
-        self.priceDiff = dataList[-1].lastPrice/jumpPrice
+            self.timeDiffInSeconds = lastTime - peakTime
+            self.priceDiff = dataList[-1].lastPrice/jumpPrice
 
 
     def AppendWithOutPeaks(self, dataList, marketState, buyPrice, buyTimeInSecs):
@@ -313,10 +361,20 @@ class TransactionPattern:
             returnList.append(self.transactionSellList[i])
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
+        returnList.append(self.detailedHighestPowerNumber)
+        returnList.append(self.detailedHighestCountNumber)
+        returnList.append(self.detailLen)
+
+        returnList.append(self.detailedVariance)
+        returnList.append(self.detailedCountVariance)
+        returnList.append(self.priceMinRatio)
         returnList.extend(self.marketStateList)
         if PeakFeatureCount > 0 and not self.isAvoidPeaks:
             returnList.extend(self.peaks[-PeakFeatureCount:])
             returnList.extend(self.timeList[-PeakFeatureCount:])
+
+        returnList.append(self.lastDownRatio)
+        returnList.append(self.lastUpRatio)
         if self.buyInfoEnabled:
             returnList.append(self.buyRatio)
             returnList.append(self.buyTimeDiffInSecs)
