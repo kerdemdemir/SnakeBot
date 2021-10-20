@@ -95,8 +95,8 @@ class SuddenChangeHandler:
         self.__AppendToPatternList(tempTransaction) # deletes dataList and populates mustBuyList, patternList badPatternList
 
     def GetFeatures(self):
-        return self.downUpList
-        #return TransactionBasics.GetMaxMinList( self.maxMinList )
+        #return self.downUpList
+        return TransactionBasics.GetMaxMinList( self.maxMinList )
         #self.timeList[-PeakFeatureCount:] + self.riseList[-PeakFeatureCount:]
         #return self.maxMinList  + self.timeList[-SuddenChangeHandler.PeakFeatureCount:] + self.riseList[-SuddenChangeHandler.PeakFeatureCount:]
 
@@ -213,20 +213,32 @@ class SuddenChangeHandler:
         if dataRange[0].totalBuy + dataRange[0].totalSell > 0.01:
             return
 
-
         detailDataList = []
         self.__DivideDataInSeconds(jsonIn, 100, detailDataList, self.dataList[curIndex-1].startIndex, self.dataList[curIndex].endIndex)
         pattern.SetDetailedTransaction(detailDataList)
         if pattern.detailedVariance < 4:
             return
-
+        #if pattern.detailLen < 3:
+        #    return
         #if self.timeList[-1] < 15:
         #    return
         ratio = self.dataList[curIndex].lastPrice/self.jumpPrice
         curTimeDiff =  (self.dataList[curIndex].timeInSecs - self.jumpTimeInSeconds)//60
         pattern.SetPeaks(self.riseList, self.timeList, ratio, curTimeDiff)
-        if pattern.lastUpRatio < -2.0:
+
+        if pattern.lastUpRatio < -1.0:
             return
+
+        if pattern.peaks[-1] < 0.0 and pattern.lastDownRatio < -1.0:
+            return
+        reverseRatio = 1/ratio
+
+        if self.maxMinList[0] * reverseRatio < 0.75 or self.maxMinList[0] * reverseRatio > 0.98 or self.maxMinList[2] * reverseRatio > 0.95:
+            return
+        if self.maxMinList[1] * reverseRatio > 1.2:
+            return
+
+
 
 
         pattern.Append( dataRange, self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
@@ -249,7 +261,7 @@ class SuddenChangeHandler:
         curTimeSecs = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if minVal < self.jumpPrice * 1.03:
+            if minVal < self.jumpPrice * 1.05:
                 return 1
         else:
             return 2
