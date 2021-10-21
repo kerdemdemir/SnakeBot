@@ -204,8 +204,8 @@ class SuddenChangeHandler:
         if self.dataList[curIndex].totalBuy < self.acceptedTransLimit:
             return
 
-        if self.dataList[curIndex].totalSell > 0.02:
-            return
+        # if self.dataList[curIndex].totalSell > 0.5:
+        #     return
         #
         pattern = TransactionBasics.TransactionPattern()
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
@@ -213,10 +213,15 @@ class SuddenChangeHandler:
         if dataRange[0].totalBuy + dataRange[0].totalSell > 0.01:
             return
 
+        if (dataRange[1].totalBuy + dataRange[1].totalSell) * 30 + dataRange[2].totalBuy + dataRange[2].totalSell < 0.75:
+            return
+
         detailDataList = []
         self.__DivideDataInSeconds(jsonIn, 100, detailDataList, self.dataList[curIndex-1].startIndex, self.dataList[curIndex].endIndex)
         pattern.SetDetailedTransaction(detailDataList)
         if pattern.detailedVariance < 4:
+            return
+        if not pattern.isMaxBuyLater:
             return
         #if pattern.detailLen < 3:
         #    return
@@ -231,15 +236,13 @@ class SuddenChangeHandler:
 
         if pattern.peaks[-1] < 0.0 and pattern.lastDownRatio < -1.0:
             return
-        reverseRatio = 1/ratio
 
+
+        reverseRatio = 1/ratio
         if self.maxMinList[0] * reverseRatio < 0.75 or self.maxMinList[0] * reverseRatio > 0.98 or self.maxMinList[2] * reverseRatio > 0.95:
             return
         if self.maxMinList[1] * reverseRatio > 1.2:
             return
-
-
-
 
         pattern.Append( dataRange, self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
 
@@ -261,7 +264,7 @@ class SuddenChangeHandler:
         curTimeSecs = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if minVal < self.jumpPrice * 1.05:
+            if minVal < self.jumpPrice * 1.04:
                 return 1
         else:
             return 2
@@ -319,8 +322,9 @@ class SuddenChangeMerger:
         goodCount = len(self.patternList)
         #self.Print()
         #mustBuyCount = len(self.mustBuyList)
-        allData = np.concatenate( (self.patternList, self.badPatternList), axis=0)
         print("Good count: ", goodCount, " Bad Count: ", badCount)
+
+        allData = np.concatenate( (self.patternList, self.badPatternList), axis=0)
         return allData
 
     def toTransactionResultsNumpy(self):
@@ -361,15 +365,19 @@ class SuddenChangeMerger:
         badList = np.array(self.badPatternList)
 
         for i in range(len(self.patternList[0])):
-            a = {'Good': buyList[:, i],
-                 'Bad': badList[:, i]}
+            # a = {'Good': buyList[:, i],
+            #      'Bad': badList[:, i]}
             #df = pd.DataFrame.from_dict( a, orient='index')
             #df = df.transpose()
             #df.plot.box()
             #mustBuyLegend = str(np.quantile(mustBuyList[:, i], 0.1)) + "," + str(np.quantile(mustBuyList[:, i], 0.5)) + "," + str(np.quantile(mustBuyList[:, i], 0.9))
             buyLegend = str(np.quantile(buyList[:, i], 0.1)) + "," + str(np.quantile(buyList[:, i], 0.25)) + "," +  str(np.quantile(buyList[:, i], 0.5)) + "," + str(np.quantile(buyList[:, i], 0.75)) + "," + str(np.quantile(buyList[:, i], 0.9))
-            badLegend = str(np.quantile(badList[:, i], 0.1)) + "," + str(np.quantile(badList[:, i], 0.25)) + "," +  str(np.quantile(badList[:, i], 0.5)) + "," + str(np.quantile(badList[:, i], 0.75)) + "," + str(np.quantile(badList[:, i], 0.9))
+            if len(badList) > 0:
+                badLegend = str(np.quantile(badList[:, i], 0.1)) + "," + str(np.quantile(badList[:, i], 0.25)) + "," +  str(np.quantile(badList[:, i], 0.5)) + "," + str(np.quantile(badList[:, i], 0.75)) + "," + str(np.quantile(badList[:, i], 0.9))
+            else:
+                badLegend = "empty"
             print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend , " ", badLegend)
+            
             #plt.savefig('Plots/' + str(self.transactionParam.msec) + "_" + str(i) + "_box.pdf")
             #plt.cla()
             #plt.clf()

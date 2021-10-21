@@ -5,8 +5,8 @@ import bisect
 import statistics
 
 PeakFeatureCount = 2
-MaximumSampleSizeFromPattern = 20
-MaximumSampleSizeFromGoodPattern = 3
+MaximumSampleSizeFromPattern = 1
+MaximumSampleSizeFromGoodPattern = 1
 TransactionCountPerSecBase = 0
 TransactionLimitPerSecBase = 0.2
 TotalPowerLimit = 0.5
@@ -68,7 +68,6 @@ def GetMaxMinListWithTime(allPeaksStr, buyTimeInSeconds, buyPrice):
         #     print("Alert " , timeTemp-curTimeInSeconds, " ", timeTemp," " ,curTimeInSeconds, " ", buyTimeInSeconds)
         # else:
         #     print("Alert2 ", len(allPeakList), " ", startIndex)
-
         curMax = 1.0
         curMin = 1.0
         for peak in allPeakList[startIndex:]:
@@ -121,7 +120,7 @@ def GetTotalPatternCount(ngrams):
 
 def ReduceToNGrams(listToMerge, ngrams):
     listToMerge.reverse()
-    elemList = [1, 1, 360]
+    elemList = [1, 30, 330]
     startIndex = 0
     newMergeList = []
     for mergeSize in elemList:
@@ -246,6 +245,7 @@ class TransactionPattern:
         self.detailedHighestCountNumber = 0
         self.detailLen = 0.0
         self.detailAverage = 0.0
+        self.isMaxBuyLater = False
 
         self.detailedVariance = 0.0
         self.detailedCountVariance = 0.0
@@ -275,14 +275,23 @@ class TransactionPattern:
 
         buyPowerList = list(map(lambda x: x.totalBuy, detailedTransactionList))
         buyCountList = list(map(lambda x: x.transactionBuyCount, detailedTransactionList))
+        buySellList = list(map(lambda x: x.totalSell, detailedTransactionList))
 
         self.detailLen = len(buyPowerList)
         self.detailedHighestPowerNumber = (sum(buyPowerList) - max(buyPowerList)) / self.detailLen
         self.detailedHighestCountNumber = (sum(buyCountList) - max(buyCountList)) / self.detailLen
         self.detailAverage = 0.0
 
+
+        maxSellVal = max(buySellList)
+        if maxSellVal < 0.1:
+            self.isMaxBuyLater = True
+        else:
+            self.isMaxBuyLater = buyPowerList.index(max(buyPowerList)) >= buySellList.index(maxSellVal)
+
         self.detailedVariance = max(buyCountList)
         self.detailedCountVariance = max(buyPowerList)
+
             
 
     def SetPeaks(self, peakList, timeList, ratio, timeDif ):
@@ -291,7 +300,6 @@ class TransactionPattern:
             self.timeList = copy.deepcopy(timeList)
 
         self.peaks[-1] += ratio
-        self.timeList[-1] += timeDif
 
         if self.peaks[-1] < 0.0:
             self.lastDownRatio = self.peaks[-1]+self.peaks[-2]
