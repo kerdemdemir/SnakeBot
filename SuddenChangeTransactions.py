@@ -4,9 +4,6 @@ from datetime import datetime
 import bisect
 import copy
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.image as mpimg
 import os
 from os import listdir
 from os.path import isfile, join
@@ -210,25 +207,34 @@ class SuddenChangeHandler:
         pattern = TransactionBasics.TransactionPattern()
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
-        if dataRange[0].totalBuy + dataRange[0].totalSell > 0.01:
+        if dataRange[0].totalBuy + dataRange[0].totalSell > 0.02:
+             return
+        #
+        if dataRange[1].totalSell > 0.005:
             return
 
-        if (dataRange[1].totalBuy + dataRange[1].totalSell) * 30 + dataRange[2].totalBuy + dataRange[2].totalSell < 0.75:
+        if dataRange[0].transactionBuyCount > 0.0 and dataRange[-1].transactionBuyCount/dataRange[0].transactionBuyCount < 8.0:
+            return
+
+        if dataRange[0].totalBuy > 0.0 and dataRange[-1].totalBuy/dataRange[0].totalBuy < 20.0:
+            return
+
+        if (dataRange[1].totalBuy + dataRange[1].totalSell) * 30 + dataRange[0].totalBuy + dataRange[0].totalSell < 0.75:
             return
 
         detailDataList = []
-        self.__DivideDataInSeconds(jsonIn, 100, detailDataList, self.dataList[curIndex-1].startIndex, self.dataList[curIndex].endIndex)
-        pattern.SetDetailedTransaction(detailDataList)
-        if pattern.detailedVariance < 4:
-            return
+        self.__DivideDataInSeconds(jsonIn, 100, detailDataList, self.dataList[curIndex].startIndex, self.dataList[curIndex].endIndex)
+        pattern.SetDetailedTransaction(detailDataList, dataRange)
+        # if pattern.detailedVariance < 3:
+        #     return
         if not pattern.isMaxBuyLater:
             return
-        #if pattern.detailLen < 3:
-        #    return
+        # if pattern.detailLen < 3:
+        #     return
         #if self.timeList[-1] < 15:
         #    return
         ratio = self.dataList[curIndex].lastPrice/self.jumpPrice
-        curTimeDiff =  (self.dataList[curIndex].timeInSecs - self.jumpTimeInSeconds)//60
+        curTimeDiff = (self.dataList[curIndex].timeInSecs - self.jumpTimeInSeconds)//60
         pattern.SetPeaks(self.riseList, self.timeList, ratio, curTimeDiff)
 
         if pattern.lastUpRatio < -1.0:
@@ -237,11 +243,8 @@ class SuddenChangeHandler:
         if pattern.peaks[-1] < 0.0 and pattern.lastDownRatio < -1.0:
             return
 
-
         reverseRatio = 1/ratio
-        if self.maxMinList[0] * reverseRatio < 0.75 or self.maxMinList[0] * reverseRatio > 0.98 or self.maxMinList[2] * reverseRatio > 0.95:
-            return
-        if self.maxMinList[1] * reverseRatio > 1.2:
+        if self.maxMinList[0] * reverseRatio < 0.75 or self.maxMinList[0] * reverseRatio > 0.98:
             return
 
         pattern.Append( dataRange, self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
@@ -264,9 +267,19 @@ class SuddenChangeHandler:
         curTimeSecs = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if minVal < self.jumpPrice * 1.04:
+            if minVal < self.jumpPrice * 1.05:
+                for i in range(curIndex, len(self.dataList)):
+                    if self.dataList[i].lastPrice/minVal<0.99:
+                        return -1
+                    if self.dataList[i].lastPrice/minVal>1.05:
+                        return 1
                 return 1
         else:
+            for i in range(curIndex, len(self.dataList)):
+                if self.dataList[i].lastPrice/minVal<0.98:
+                    return 2
+                if self.dataList[i].lastPrice/minVal>1.03:
+                    return -1
             return 2
 
         return -1
@@ -443,8 +456,8 @@ class SuddenChangeManager:
                     tempTransaction = json.loads(jsonIn["transactions"])
                     if len(tempTransaction) == 0:
                         continue
-
-                    datetime_object = datetime.strptime(jsonIn["reportTime"].split(".")[0], '%Y-%b-%d %H:%M:%S')
+                    timeStr = jsonIn["reportTime"]
+                    datetime_object = datetime.strptime(timeStr.split(".")[0], '%Y-%b-%d %H:%M:%S')
                     reportTimeInSeconds = (datetime_object - epoch).total_seconds()
 
                     lastTimeInSeconds = int(tempTransaction[-1]["T"]) // 1000
@@ -456,8 +469,8 @@ class SuddenChangeManager:
                     else:
                         downCount += 1
                     self.marketState.add(isRise, reportTimeInSeconds)
-            except:
-                print("There was a exception in ", fileName)
+            except Exception as e:
+                print("There was a exception in ", fileName, e)
             if IsOneFileOnly:
                 break
         self.marketState.sort()

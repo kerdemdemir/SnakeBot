@@ -5,10 +5,10 @@ import bisect
 import statistics
 
 PeakFeatureCount = 2
-MaximumSampleSizeFromPattern = 1
+MaximumSampleSizeFromPattern = 100
 MaximumSampleSizeFromGoodPattern = 1
-TransactionCountPerSecBase = 0
-TransactionLimitPerSecBase = 0.2
+TransactionCountPerSecBase = 3
+TransactionLimitPerSecBase = 0.1
 TotalPowerLimit = 0.5
 TotalElementLimitMsecs = 10000
 MaxMinListTimes = [60*60*6,60*60*24,60*60*36]
@@ -116,7 +116,7 @@ def RiseListSanitizer( riseList, timeList ):
             riseList.insert(index, 3.0)
 
 def GetTotalPatternCount(ngrams):
-    return 362
+    return 361
 
 def ReduceToNGrams(listToMerge, ngrams):
     listToMerge.reverse()
@@ -240,6 +240,11 @@ class TransactionPattern:
         self.transactionBuyPowerList = []
         self.transactionSellPowerList = []
 
+        self.upDownRangeBuyRatio = 10000000.0
+        self.upDownRangeSellRatio = 10000000.0
+        self.upDownRangeBuyRatioCount = 10000000.0
+        self.upDownRangeSellRatioCount = 10000000.0
+
         self.detailedTransactionList = []
         self.detailedHighestPowerNumber = 0.0
         self.detailedHighestCountNumber = 0
@@ -247,11 +252,14 @@ class TransactionPattern:
         self.detailAverage = 0.0
         self.isMaxBuyLater = False
 
-        self.detailedVariance = 0.0
-        self.detailedCountVariance = 0.0
+        self.maxDetailBuyCount = 0.0
+        self.maxDetailBuyPower = 0.0
 
         self.lastDownRatio = 0.0
         self.lastUpRatio = 0.0
+        self.lastRatio = 0.0
+
+        self.upDownRangeRatio = 0.0
 
         self.totalBuy = 0.0
         self.totalSell = 0.0
@@ -270,17 +278,16 @@ class TransactionPattern:
         self.buyTimeDiffInSecs = 0
         self.buyInfoEnabled  = False
 
-    def SetDetailedTransaction(self, detailedTransactionList):
+    def SetDetailedTransaction(self, detailedTransactionList, dataRange):
         self.detailedTransactionList = detailedTransactionList
 
         buyPowerList = list(map(lambda x: x.totalBuy, detailedTransactionList))
         buyCountList = list(map(lambda x: x.transactionBuyCount, detailedTransactionList))
         buySellList = list(map(lambda x: x.totalSell, detailedTransactionList))
-
         self.detailLen = len(buyPowerList)
-        self.detailedHighestPowerNumber = (sum(buyPowerList) - max(buyPowerList)) / self.detailLen
-        self.detailedHighestCountNumber = (sum(buyCountList) - max(buyCountList)) / self.detailLen
-        self.detailAverage = 0.0
+
+        self.maxDetailBuyCount = max(buyCountList) * dataRange[-1].transactionBuyCount/dataRange[0].transactionBuyCount
+        self.maxDetailBuyPower = max(buyPowerList) * dataRange[-1].totalBuy/dataRange[0].totalBuy
 
 
         maxSellVal = max(buySellList)
@@ -288,11 +295,6 @@ class TransactionPattern:
             self.isMaxBuyLater = True
         else:
             self.isMaxBuyLater = buyPowerList.index(max(buyPowerList)) >= buySellList.index(maxSellVal)
-
-        self.detailedVariance = max(buyCountList)
-        self.detailedCountVariance = max(buyPowerList)
-
-            
 
     def SetPeaks(self, peakList, timeList, ratio, timeDif ):
         if PeakFeatureCount > 0:
@@ -308,6 +310,7 @@ class TransactionPattern:
             self.lastDownRatio = self.peaks[-2]+self.peaks[-3]
             self.lastUpRatio = self.peaks[-1] + self.peaks[-2]
 
+        self.lastRatio = self.peaks[-1]
         self.isAvoidPeaks = False
 
     def Append(self, dataList, peakTime, jumpPrice, marketState):
@@ -326,6 +329,15 @@ class TransactionPattern:
             self.marketStateList = marketState.getState(lastTime)
         else:
             self.marketStateList = []
+
+        if dataList[0].transactionBuyCount != 0.0:
+            self.upDownRangeBuyRatioCount = dataList[-1].transactionBuyCount/dataList[0].transactionBuyCount
+        if dataList[0].totalBuy != 0.0:
+            self.upDownRangeBuyRatio = dataList[-1].totalBuy/dataList[0].totalBuy
+        if dataList[0].totalSell != 0.0:
+            self.upDownRangeSellRatio = dataList[-1].totalSell/dataList[0].totalSell
+
+
 
         for elem in dataList:
             self.transactionBuyList.append(elem.transactionBuyCount)
@@ -364,18 +376,19 @@ class TransactionPattern:
 
     def GetFeatures(self):
         returnList = []
+        returnList.append(self.upDownRangeBuyRatio)
+        returnList.append(self.upDownRangeSellRatio)
+        returnList.append(self.upDownRangeBuyRatioCount)
         for i in range(len(self.transactionBuyList)):
             returnList.append(self.transactionBuyList[i])
             returnList.append(self.transactionSellList[i])
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
-        returnList.append(self.detailedHighestPowerNumber)
-        returnList.append(self.detailedHighestCountNumber)
         returnList.append(self.detailLen)
-
-        returnList.append(self.detailedVariance)
-        returnList.append(self.detailedCountVariance)
+        returnList.append(self.maxDetailBuyCount)
+        returnList.append(self.maxDetailBuyPower)
         returnList.append(self.priceMinRatio)
+
         returnList.extend(self.marketStateList)
         if PeakFeatureCount > 0 and not self.isAvoidPeaks:
             returnList.extend(self.peaks[-PeakFeatureCount:])
