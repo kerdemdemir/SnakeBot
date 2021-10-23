@@ -291,7 +291,7 @@ class TransactionPattern:
 
 
         maxSellVal = max(buySellList)
-        if maxSellVal < 0.1:
+        if maxSellVal < 0.05:
             self.isMaxBuyLater = True
         else:
             self.isMaxBuyLater = buyPowerList.index(max(buyPowerList)) >= buySellList.index(maxSellVal)
