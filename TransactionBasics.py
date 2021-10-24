@@ -249,7 +249,7 @@ class TransactionPattern:
         self.detailedHighestPowerNumber = 0.0
         self.detailedHighestCountNumber = 0
         self.detailLen = 0.0
-        self.detailAverage = 0.0
+        self.detailedHighestSellCountNumber = 0.0
         self.isMaxBuyLater = False
 
         self.maxDetailBuyCount = 0.0
@@ -286,10 +286,8 @@ class TransactionPattern:
         buySellList = list(map(lambda x: x.totalSell, detailedTransactionList))
         self.detailLen = len(buyPowerList)
 
-        self.maxDetailBuyCount = max(buyCountList) * dataRange[-1].transactionBuyCount/dataRange[0].transactionBuyCount
-        self.maxDetailBuyPower = max(buyPowerList) * dataRange[-1].totalBuy/dataRange[0].totalBuy
-
-
+        self.maxDetailBuyCount = max(buyCountList)
+        self.maxDetailBuyPower = max(buyPowerList)
         maxSellVal = max(buySellList)
         if maxSellVal < 0.05:
             self.isMaxBuyLater = True
@@ -330,12 +328,13 @@ class TransactionPattern:
         else:
             self.marketStateList = []
 
-        if dataList[0].transactionBuyCount != 0.0:
-            self.upDownRangeBuyRatioCount = dataList[-1].transactionBuyCount/dataList[0].transactionBuyCount
         if dataList[0].totalBuy != 0.0:
-            self.upDownRangeBuyRatio = dataList[-1].totalBuy/dataList[0].totalBuy
+            self.upDownRangeBuyRatio = dataList[1].totalBuy/dataList[0].totalBuy
         if dataList[0].totalSell != 0.0:
-            self.upDownRangeSellRatio = dataList[-1].totalSell/dataList[0].totalSell
+            self.upDownRangeSellRatio = dataList[1].totalSell/dataList[0].totalSell
+        if dataList[0].transactionBuyCount != 0.0:
+            self.upDownRangeBuyRatioCount = dataList[1].transactionBuyCount/dataList[0].transactionBuyCount
+
 
 
 
@@ -387,6 +386,7 @@ class TransactionPattern:
         returnList.append(self.detailLen)
         returnList.append(self.maxDetailBuyCount)
         returnList.append(self.maxDetailBuyPower)
+        returnList.append(self.detailedHighestSellCountNumber)
         returnList.append(self.priceMinRatio)
 
         returnList.extend(self.marketStateList)
