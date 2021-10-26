@@ -208,13 +208,21 @@ class SuddenChangeHandler:
         # if self.dataList[curIndex].totalSell > 0.5:
         #     return
         #
+
         pattern = TransactionBasics.TransactionPattern()
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
+        #
         if dataRange[0].totalTransactionCount < 0.1:
             return
-        #
+        # #
         if dataRange[0].totalBuy > 0.008 or dataRange[0].totalBuy < 0.0015:
+            return
+        #
+        if dataRange[1].totalBuy < 0.0013:
+            return
+        #
+        if dataRange[1].totalBuy/dataRange[0].totalBuy > 7.0:
             return
 
         if dataRange[0].transactionBuyCount > 0.0 and dataRange[-1].transactionBuyCount/dataRange[0].transactionBuyCount < 8.0:
@@ -223,11 +231,6 @@ class SuddenChangeHandler:
         if dataRange[0].totalBuy > 0.0 and dataRange[-1].totalBuy/dataRange[0].totalBuy < 20.0:
             return
 
-        if dataRange[1].totalBuy < 0.0014:
-            return
-
-        if dataRange[1].totalBuy/dataRange[0].totalBuy > 6.0:
-            return
 
 
         detailDataList = []
@@ -284,7 +287,7 @@ class SuddenChangeHandler:
         pattern.SetDetailedTransaction(moreDetailDataList, dataRange)
         # if pattern.detailLen < 5:
         #     return
-        
+
         pattern.Append( dataRange, self.jumpTimeInSeconds, self.jumpPrice, self.marketState)
 
         #print(pattern.marketStateList)

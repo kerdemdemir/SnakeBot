@@ -331,7 +331,7 @@ class TransactionPattern:
         if dataList[0].totalBuy != 0.0:
             self.upDownRangeBuyRatio = dataList[1].totalBuy/dataList[0].totalBuy
         if dataList[0].totalSell != 0.0:
-            self.upDownRangeSellRatio = dataList[1].totalSell/dataList[0].totalSell
+            self.upDownRangeSellRatio = dataList[1].totalSell/dataList[0].totalBuy
         if dataList[0].transactionBuyCount != 0.0:
             self.upDownRangeBuyRatioCount = dataList[1].transactionBuyCount/dataList[0].transactionBuyCount
 
