@@ -239,7 +239,8 @@ class TransactionPattern:
         self.transactionSellList = []
         self.transactionBuyPowerList = []
         self.transactionSellPowerList = []
-
+        self.firstLastPriceList = []
+        self.minMaxPriceList = []
         self.upDownRangeBuyRatio = 10000000.0
         self.upDownRangeSellRatio = 10000000.0
         self.upDownRangeBuyRatioCount = 10000000.0
@@ -331,7 +332,7 @@ class TransactionPattern:
         if dataList[0].totalBuy != 0.0:
             self.upDownRangeBuyRatio = dataList[1].totalBuy/dataList[0].totalBuy
         if dataList[0].totalSell != 0.0:
-            self.upDownRangeSellRatio = dataList[1].totalSell/dataList[0].totalBuy
+            self.upDownRangeSellRatio = dataList[1].totalSell/dataList[0].totalSell
         if dataList[0].transactionBuyCount != 0.0:
             self.upDownRangeBuyRatioCount = dataList[1].transactionBuyCount/dataList[0].transactionBuyCount
 
@@ -343,6 +344,8 @@ class TransactionPattern:
             self.transactionSellList.append(elem.totalTransactionCount - elem.transactionBuyCount)
             self.transactionBuyPowerList.append(elem.totalBuy)
             self.transactionSellPowerList.append(elem.totalSell)
+            self.minMaxPriceList.append(elem.maxPrice/elem.minPrice)
+            self.firstLastPriceList.append(elem.lastPrice/elem.firstPrice)
             self.totalBuy += elem.totalBuy
             self.totalSell += elem.totalSell
             self.transactionCount += elem.transactionBuyCount
@@ -383,6 +386,8 @@ class TransactionPattern:
             returnList.append(self.transactionSellList[i])
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
+            returnList.append(self.minMaxPriceList[i])
+            returnList.append(self.firstLastPriceList[i])
         returnList.append(self.detailLen)
         returnList.append(self.maxDetailBuyCount)
         returnList.append(self.maxDetailBuyPower)

@@ -93,7 +93,8 @@ class SuddenChangeHandler:
 
     def GetFeatures(self):
         #return self.downUpList
-        return TransactionBasics.GetMaxMinList( self.maxMinList )
+        #return TransactionBasics.GetMaxMinList( self.maxMinList )
+        return []
         #self.timeList[-PeakFeatureCount:] + self.riseList[-PeakFeatureCount:]
         #return self.maxMinList  + self.timeList[-SuddenChangeHandler.PeakFeatureCount:] + self.riseList[-SuddenChangeHandler.PeakFeatureCount:]
 
@@ -198,17 +199,19 @@ class SuddenChangeHandler:
         if startBin < 0 or curIndex > lenArray:
              return
 
-        lastTotalCount = self.dataList[curIndex].transactionBuyCount
+        curPattern = self.dataList[curIndex]
+        lastTotalCount = curPattern.transactionBuyCount
         # if lastTotalCount < self.lowestTransaction:
         #     return
 
-        if self.dataList[curIndex].totalBuy < 0.125:
+        if curPattern.totalBuy < 0.1:
             return
 
         # if self.dataList[curIndex].totalSell > 0.5:
         #     return
         #
-
+        if self.isRise:
+            print("Analyzing rise")
         pattern = TransactionBasics.TransactionPattern()
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
@@ -222,7 +225,7 @@ class SuddenChangeHandler:
         if dataRange[1].totalBuy < 0.0013:
             return
         #
-        if dataRange[1].totalBuy/dataRange[0].totalBuy > 7.0:
+        if dataRange[1].totalBuy/dataRange[0].totalBuy > 6.0:
             return
 
         if dataRange[0].transactionBuyCount > 0.0 and dataRange[-1].transactionBuyCount/dataRange[0].transactionBuyCount < 8.0:
@@ -231,10 +234,12 @@ class SuddenChangeHandler:
         if dataRange[0].totalBuy > 0.0 and dataRange[-1].totalBuy/dataRange[0].totalBuy < 20.0:
             return
 
-
+        firstRatio = dataRange[0].lastPrice / dataRange[0].firstPrice
+        if firstRatio < 0.96 or firstRatio > 1.01:
+            return
 
         detailDataList = []
-        self.__DivideDataInSeconds(jsonIn, 100, detailDataList, self.dataList[curIndex].startIndex, self.dataList[curIndex].endIndex+1)
+        self.__DivideDataInSeconds(jsonIn, 100, detailDataList, curPattern.startIndex, curPattern.endIndex+1)
         pattern.SetDetailedTransaction(detailDataList, dataRange)
         if pattern.maxDetailBuyPower < self.acceptedTransLimit:
             return
@@ -461,7 +466,7 @@ class SuddenChangeManager:
 
     def __init__(self, transactionParamList):
         self.marketState = MarketStateManager.MarketStateManager()
-        #self.FeedMarketState()
+        self.FeedMarketState()
 
         self.transParamList = transactionParamList
         self.suddenChangeMergerList = []
