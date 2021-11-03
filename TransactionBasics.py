@@ -119,8 +119,7 @@ def GetTotalPatternCount(ngrams):
     return 361
 
 def ReduceToNGrams(listToMerge, ngrams):
-    listToMerge.reverse()
-    elemList = [1, 30, 330]
+    elemList = [330, 30, 1]
     startIndex = 0
     newMergeList = []
     for mergeSize in elemList:
@@ -130,7 +129,6 @@ def ReduceToNGrams(listToMerge, ngrams):
         startIndex += mergeSize
         startData.Divide(mergeSize)
         newMergeList.append(startData)
-    newMergeList.reverse()
     return newMergeList
 
 class TransactionParam:

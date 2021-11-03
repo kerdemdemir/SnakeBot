@@ -204,29 +204,29 @@ class SuddenChangeHandler:
         # if lastTotalCount < self.lowestTransaction:
         #     return
 
-        if curPattern.totalBuy < 0.1:
+        if curPattern.totalBuy < 0.2:
             return
 
         # if self.dataList[curIndex].totalSell > 0.5:
         #     return
         #
-        if self.isRise:
-            print("Analyzing rise")
+        #if self.isRise:
+        #    print("Analyzing rise")
         pattern = TransactionBasics.TransactionPattern()
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
         #
-        if dataRange[0].totalTransactionCount < 0.1:
-            return
-        # #
-        if dataRange[0].totalBuy > 0.008 or dataRange[0].totalBuy < 0.0015:
-            return
+        # if dataRange[0].totalTransactionCount < 0.1:
+        #     return
+        # # #
+        # if dataRange[0].totalBuy > 0.008 or dataRange[0].totalBuy < 0.0015:
+        #     return
         #
         if dataRange[1].totalBuy < 0.0013:
             return
         #
-        if dataRange[1].totalBuy/dataRange[0].totalBuy > 6.0:
-            return
+        # if dataRange[1].totalBuy/dataRange[0].totalBuy > 6.0:
+        #     return
 
         if dataRange[0].transactionBuyCount > 0.0 and dataRange[-1].transactionBuyCount/dataRange[0].transactionBuyCount < 8.0:
             return
@@ -235,17 +235,27 @@ class SuddenChangeHandler:
             return
 
         firstRatio = dataRange[0].lastPrice / dataRange[0].firstPrice
-        if firstRatio < 0.96 or firstRatio > 1.01:
+        if firstRatio < 0.99 or firstRatio > 1.04:
             return
 
+        firstRatio = dataRange[1].lastPrice / dataRange[1].firstPrice
+        if firstRatio < 0.99 or firstRatio > 1.025:
+            return
+
+        firstRatio = dataRange[1].lastPrice / dataRange[1].firstPrice
+        if firstRatio < 0.992 or firstRatio > 1.01:
+            return
+
+
+
         detailDataList = []
-        self.__DivideDataInSeconds(jsonIn, 100, detailDataList, curPattern.startIndex, curPattern.endIndex+1)
+        self.__DivideDataInSeconds(jsonIn, 100, detailDataList, curPattern.startIndex-1, curPattern.endIndex+1)
         pattern.SetDetailedTransaction(detailDataList, dataRange)
         if pattern.maxDetailBuyPower < self.acceptedTransLimit:
             return
 
-        # if pattern.maxDetailBuyCount < 3:
-        #     return
+        if pattern.detailLen < 3:
+            return
 
         basePrice = self.dataList[curIndex].lastPrice
         baseIndex = 0
@@ -262,8 +272,8 @@ class SuddenChangeHandler:
             totalSellPower += detailDataList[index].totalSell
             totalSellCount += (detailDataList[index].totalTransactionCount - detailDataList[index].transactionBuyCount)
         pattern.detailedHighestSellCountNumber = totalSellCount
-        if totalSellPower > 0.05:
-            return
+        # if totalSellPower > 0.05:
+        #     return
 
         # if not pattern.isMaxBuyLater:
         #     return
@@ -313,11 +323,11 @@ class SuddenChangeHandler:
         curTimeSecs = self.dataList[curIndex].timeInSecs
 
         if self.isRise:
-            if priceIn < self.jumpPrice * 1.05:
+            if priceIn < self.reportPrice * 0.97:
                 for i in range(curIndex+1, len(self.dataList)):
                     if self.dataList[i].lastPrice/priceIn<0.98:
                         return -1
-                    if self.dataList[i].lastPrice/priceIn>1.05:
+                    if self.dataList[i].lastPrice/priceIn>1.03:
                         return 1
                 return 1
         else:
