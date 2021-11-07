@@ -48,8 +48,6 @@ class SuddenChangeHandler:
         self.jumpState = []
         self.__Parse(jsonIn)
 
-
-
         self.lowestTransaction = TransactionBasics.TransactionCountPerSecBase
         self.acceptedTransLimit = TransactionBasics.TransactionLimitPerSecBase
         self.dataList = []
@@ -111,10 +109,8 @@ class SuddenChangeHandler:
 
         for i in range(len(self.riseList) - 1 ):
             if self.riseList[i]*self.riseList[i+1] > 0.0:
-                self.riseList[i+1]=self.riseList[i]
-                self.timeList[i+1]=self.timeList[i]
-                self.riseList.pop()
-                self.timeList.pop()
+                self.riseList.pop(i)
+                self.timeList.pop(i)
                 #TransactionBasics.RiseListSanitizer(self.riseList, self.timeList)
 
 
@@ -219,8 +215,8 @@ class SuddenChangeHandler:
         # if dataRange[0].totalTransactionCount < 0.1:
         #     return
         # # #
-        # if dataRange[0].totalBuy > 0.008 or dataRange[0].totalBuy < 0.0015:
-        #     return
+        if dataRange[0].totalBuy < 0.0015:
+            return
         #
         if dataRange[1].totalBuy < 0.0013:
             return
@@ -231,7 +227,7 @@ class SuddenChangeHandler:
         if dataRange[0].transactionBuyCount > 0.0 and dataRange[-1].transactionBuyCount/dataRange[0].transactionBuyCount < 8.0:
             return
         #
-        if dataRange[0].totalBuy > 0.0 and dataRange[-1].totalBuy/dataRange[0].totalBuy < 20.0:
+        if dataRange[0].totalBuy > 0.0 and dataRange[-1].totalBuy/dataRange[0].totalBuy < 50.0:
             return
 
         firstRatio = dataRange[0].lastPrice / dataRange[0].firstPrice
@@ -287,15 +283,19 @@ class SuddenChangeHandler:
         curTimeDiff = (self.dataList[curIndex].timeInSecs - self.jumpTimeInSeconds)//60
         pattern.SetPeaks(self.riseList, self.timeList, ratio, curTimeDiff)
 
-        if pattern.lastUpRatio < -1.0:
-            return
-
-        if pattern.peaks[-1] < 0.0 and pattern.lastDownRatio < -1.0:
-            return
+        # if pattern.lastUpRatio < -1.0:
+        #     return
+        #
+        # if pattern.peaks[-1] < 0.0 and pattern.lastDownRatio < -1.0:
+        #     return
 
         reverseRatio = 1/ratio
-        if self.maxMinList[0] * reverseRatio < 0.75 or self.maxMinList[0] * reverseRatio > 0.98:
+        if self.maxMinList[0] * reverseRatio < 0.8 or self.maxMinList[0] * reverseRatio > 0.98:
             return
+
+        if self.maxMinList[2] * reverseRatio < 0.7 or self.maxMinList[4] * reverseRatio < 0.6:
+            return
+
 
         moreDetailDataList = []
         self.__DivideDataInSeconds(jsonIn, 1, moreDetailDataList, self.dataList[curIndex].startIndex, self.dataList[curIndex].endIndex+1)

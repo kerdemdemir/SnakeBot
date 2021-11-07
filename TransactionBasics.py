@@ -277,6 +277,12 @@ class TransactionPattern:
         self.buyTimeDiffInSecs = 0
         self.buyInfoEnabled  = False
 
+        self.totalPeakCount15M = 0
+        self.totalPeakCount1Hour = 0
+        self.totalPeakCount6Hour = 0
+        self.totalPeakCount24Hour = 0
+
+
     def SetDetailedTransaction(self, detailedTransactionList, dataRange):
         self.detailedTransactionList = detailedTransactionList
 
@@ -299,6 +305,27 @@ class TransactionPattern:
             self.timeList = copy.deepcopy(timeList)
 
         self.peaks[-1] += ratio
+        self.timeList[-1] += timeDif
+
+        totalTime = 0
+        for curTime in reversed(self.timeList):
+            totalTime += curTime
+            if totalTime < 15 :
+                self.totalPeakCount15M += 1
+                self.totalPeakCount1Hour += 1
+                self.totalPeakCount6Hour += 1
+                self.totalPeakCount24Hour += 1
+            elif totalTime < 60 :
+                self.totalPeakCount1Hour += 1
+                self.totalPeakCount6Hour += 1
+                self.totalPeakCount24Hour += 1
+            elif totalTime < 360:
+                self.totalPeakCount6Hour += 1
+                self.totalPeakCount24Hour += 1
+            elif totalTime < 2160:
+                self.totalPeakCount24Hour += 1
+            else:
+                break
 
         if self.peaks[-1] < 0.0:
             self.lastDownRatio = self.peaks[-1]+self.peaks[-2]
@@ -402,6 +429,12 @@ class TransactionPattern:
         if self.buyInfoEnabled:
             returnList.append(self.buyRatio)
             returnList.append(self.buyTimeDiffInSecs)
+
+        returnList.append(self.totalPeakCount15M)
+        returnList.append(self.totalPeakCount1Hour)
+        returnList.append(self.totalPeakCount6Hour)
+        returnList.append(self.totalPeakCount24Hour)
+
         return returnList
 
     def __repr__(self):
