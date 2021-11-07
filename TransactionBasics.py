@@ -370,7 +370,10 @@ class TransactionPattern:
             self.transactionBuyPowerList.append(elem.totalBuy)
             self.transactionSellPowerList.append(elem.totalSell)
             self.minMaxPriceList.append(elem.maxPrice/elem.minPrice)
-            self.firstLastPriceList.append(elem.lastPrice/elem.firstPrice)
+            if elem.firstPrice == 0.0:
+                self.firstLastPriceList.append(0.0)
+            else:
+                self.firstLastPriceList.append(elem.lastPrice/elem.firstPrice)
             self.totalBuy += elem.totalBuy
             self.totalSell += elem.totalSell
             self.transactionCount += elem.transactionBuyCount

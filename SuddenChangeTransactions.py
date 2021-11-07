@@ -212,9 +212,9 @@ class SuddenChangeHandler:
         copyList = copy.deepcopy(self.dataList[startBin:endBin])
         dataRange = TransactionBasics.ReduceToNGrams(copyList, ngramCount)
         #
-        # if dataRange[0].totalTransactionCount < 0.1:
-        #     return
-        # # #
+        #if dataRange[0].totalTransactionCount < 0.1:
+        #    return
+        # #
         if dataRange[0].totalBuy < 0.0015:
             return
         #
@@ -283,6 +283,10 @@ class SuddenChangeHandler:
         curTimeDiff = (self.dataList[curIndex].timeInSecs - self.jumpTimeInSeconds)//60
         pattern.SetPeaks(self.riseList, self.timeList, ratio, curTimeDiff)
 
+        if pattern.totalPeakCount15M > 3.0:
+            return
+        if pattern.totalPeakCount1Hour > 5.0:
+            return
         # if pattern.lastUpRatio < -1.0:
         #     return
         #
@@ -445,8 +449,8 @@ class SuddenChangeMerger:
                 badLegend = str(np.quantile(badList[:, i], 0.1)) + "," + str(np.quantile(badList[:, i], 0.25)) + "," +  str(np.quantile(badList[:, i], 0.5)) + "," + str(np.quantile(badList[:, i], 0.75)) + "," + str(np.quantile(badList[:, i], 0.9))
             else:
                 badLegend = "empty"
-            #print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend , " ", badLegend)
-            print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend )
+            print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend , " ", badLegend)
+            #print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend )
 
             #plt.savefig('Plots/' + str(self.transactionParam.msec) + "_" + str(i) + "_box.pdf")
             #plt.cla()
