@@ -281,6 +281,8 @@ class TransactionPattern:
         self.totalPeakCount1Hour = 0
         self.totalPeakCount6Hour = 0
         self.totalPeakCount24Hour = 0
+        self.timeToJump = 0
+
 
 
     def SetDetailedTransaction(self, detailedTransactionList, dataRange):
@@ -437,6 +439,7 @@ class TransactionPattern:
         returnList.append(self.totalPeakCount1Hour)
         returnList.append(self.totalPeakCount6Hour)
         returnList.append(self.totalPeakCount24Hour)
+        returnList.append(self.timeToJump)
 
         return returnList
 

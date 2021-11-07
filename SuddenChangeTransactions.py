@@ -281,6 +281,7 @@ class SuddenChangeHandler:
 
         ratio = basePrice/self.jumpPrice
         curTimeDiff = (self.dataList[curIndex].timeInSecs - self.jumpTimeInSeconds)//60
+        pattern.timeToJump = self.reportTimeInSeconds - self.dataList[curIndex].timeInSecs
         pattern.SetPeaks(self.riseList, self.timeList, ratio, curTimeDiff)
 
         if pattern.totalPeakCount15M > 3.0:
