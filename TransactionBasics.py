@@ -116,10 +116,10 @@ def RiseListSanitizer( riseList, timeList ):
             riseList.insert(index, 3.0)
 
 def GetTotalPatternCount(ngrams):
-    return 361
+    return 366
 
 def ReduceToNGrams(listToMerge, ngrams):
-    elemList = [330, 30, 1]
+    elemList = [330, 30, 5, 1]
     startIndex = 0
     newMergeList = []
     for mergeSize in elemList:
@@ -356,12 +356,12 @@ class TransactionPattern:
         else:
             self.marketStateList = []
 
-        if dataList[0].totalBuy != 0.0:
-            self.upDownRangeBuyRatio = dataList[1].totalBuy/dataList[0].totalBuy
-        if dataList[0].totalSell != 0.0:
-            self.upDownRangeSellRatio = dataList[1].totalSell/dataList[0].totalSell
-        if dataList[0].transactionBuyCount != 0.0:
-            self.upDownRangeBuyRatioCount = dataList[1].transactionBuyCount/dataList[0].transactionBuyCount
+        if dataList[1].totalBuy != 0.0:
+            self.upDownRangeBuyRatio = dataList[2].totalBuy/dataList[1].totalBuy
+        if dataList[1].totalSell != 0.0:
+            self.upDownRangeSellRatio = dataList[2].totalSell/dataList[1].totalSell
+        if self.upDownRangeSellRatio != 0.0:
+            self.upDownRangeBuyRatioCount = self.upDownRangeBuyRatio/self.upDownRangeSellRatio
 
 
 

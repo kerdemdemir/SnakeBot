@@ -218,7 +218,10 @@ class SuddenChangeHandler:
         if dataRange[0].totalBuy < 0.0015:
             return
         #
-        if dataRange[1].totalBuy < 0.0013:
+        if dataRange[1].totalBuy < 0.0016:
+            return
+
+        if dataRange[2].totalSell > 0.1 and dataRange[2].totalSell > dataRange[2].totalBuy:
             return
         #
         # if dataRange[1].totalBuy/dataRange[0].totalBuy > 6.0:
@@ -227,18 +230,18 @@ class SuddenChangeHandler:
         if dataRange[0].transactionBuyCount > 0.0 and dataRange[-1].transactionBuyCount/dataRange[0].transactionBuyCount < 8.0:
             return
         #
-        if dataRange[0].totalBuy > 0.0 and dataRange[-1].totalBuy/dataRange[0].totalBuy < 50.0:
+        if dataRange[0].totalBuy > 0.0 and dataRange[-1].totalBuy/dataRange[0].totalBuy < 35.0:
             return
 
         firstRatio = dataRange[0].lastPrice / dataRange[0].firstPrice
-        if firstRatio < 0.99 or firstRatio > 1.04:
+        if firstRatio < 1.006 or firstRatio > 1.04:
             return
 
         firstRatio = dataRange[1].lastPrice / dataRange[1].firstPrice
-        if firstRatio < 0.99 or firstRatio > 1.025:
+        if firstRatio < 0.995 or firstRatio > 1.01:
             return
 
-        firstRatio = dataRange[1].lastPrice / dataRange[1].firstPrice
+        firstRatio = dataRange[-1].lastPrice / dataRange[-1].firstPrice
         if firstRatio < 0.992 or firstRatio > 1.01:
             return
 
@@ -247,10 +250,7 @@ class SuddenChangeHandler:
         detailDataList = []
         self.__DivideDataInSeconds(jsonIn, 100, detailDataList, curPattern.startIndex-1, curPattern.endIndex+1)
         pattern.SetDetailedTransaction(detailDataList, dataRange)
-        if pattern.maxDetailBuyPower < self.acceptedTransLimit:
-            return
-
-        if pattern.detailLen < 3:
+        if pattern.maxDetailBuyPower < 0.1 or pattern.maxDetailBuyPower > 2.0:
             return
 
         basePrice = self.dataList[curIndex].lastPrice
@@ -330,7 +330,7 @@ class SuddenChangeHandler:
         if self.isRise:
             if priceIn < self.reportPrice * 0.97:
                 for i in range(curIndex+1, len(self.dataList)):
-                    if self.dataList[i].lastPrice/priceIn<0.98:
+                    if self.dataList[i].lastPrice/priceIn<0.995:
                         return -1
                     if self.dataList[i].lastPrice/priceIn>1.03:
                         return 1
@@ -450,8 +450,8 @@ class SuddenChangeMerger:
                 badLegend = str(np.quantile(badList[:, i], 0.1)) + "," + str(np.quantile(badList[:, i], 0.25)) + "," +  str(np.quantile(badList[:, i], 0.5)) + "," + str(np.quantile(badList[:, i], 0.75)) + "," + str(np.quantile(badList[:, i], 0.9))
             else:
                 badLegend = "empty"
-            print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend , " ", badLegend)
-            #print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend )
+            #print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend , " ", badLegend)
+            print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend )
 
             #plt.savefig('Plots/' + str(self.transactionParam.msec) + "_" + str(i) + "_box.pdf")
             #plt.cla()
