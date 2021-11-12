@@ -204,7 +204,6 @@ class TransactionData:
             self.firstPrice = otherData.firstPrice
         self.timeInSecs = otherData.timeInSecs
         self.endIndex = otherData.endIndex
-        self.timeInSecs = otherData.timeInSecs
         self.maxPrice = max(self.maxPrice, otherData.maxPrice)
         if otherData.minPrice != 0.0:
             self.minPrice = min(self.minPrice, otherData.minPrice)
@@ -284,6 +283,59 @@ class TransactionPattern:
         self.timeToJump = 0
 
 
+        self.after1MinMin = 1.0
+        self.after1MinLast = 1.0
+
+        self.after3MinMin = 1.0
+        self.after3MinLast = 1.0
+
+        self.after5MinMin = 1.0
+        self.after5MinLast = 1.0
+
+        self.after10MinMin = 1.0
+        self.after10MinLast = 1.0
+
+
+    def UpdatePrice(self, timeDiff, priceRatio ):
+        if timeDiff < 60 :
+            self.after1MinMin = min(self.after1MinMin, priceRatio)
+            self.after3MinMin = min(self.after3MinMin, priceRatio)
+            self.after5MinMin = min(self.after5MinMin, priceRatio)
+            self.after10MinMin = min(self.after10MinMin, priceRatio)
+        elif timeDiff < 180:
+            self.after3MinMin = min(self.after3MinMin, priceRatio)
+            self.after5MinMin = min(self.after5MinMin, priceRatio)
+            self.after10MinMin = min(self.after10MinMin, priceRatio)
+        elif timeDiff < 300:
+            self.after5MinMin = min(self.after5MinMin, priceRatio)
+            self.after10MinMin = min(self.after10MinMin, priceRatio)
+        elif timeDiff < 600:
+            self.after10MinMin = min(self.after10MinMin, priceRatio)
+
+        if timeDiff > 58 and timeDiff < 62 :
+            self.after1MinLast = priceRatio
+        elif timeDiff > 178 and timeDiff < 182 :
+            self.after3MinLast = priceRatio
+        elif timeDiff > 298 and timeDiff < 302:
+            self.after5MinLast = priceRatio
+        elif timeDiff > 598 and timeDiff < 602:
+            self.after10MinLast = priceRatio
+
+    def GoalReached(self, timeDiff, goal):
+        if timeDiff < 60 :
+            self.after1MinLast = goal
+            self.after3MinLast = goal
+            self.after5MinLast = goal
+            self.after10MinLast = goal
+        elif timeDiff < 180:
+            self.after3MinLast = goal
+            self.after5MinLast = goal
+            self.after10MinLast = goal
+        elif timeDiff < 300:
+            self.after5MinLast = goal
+            self.after10MinLast = goal
+        elif timeDiff < 600:
+            self.after10MinLast = goal
 
     def SetDetailedTransaction(self, detailedTransactionList, dataRange):
         self.detailedTransactionList = detailedTransactionList
@@ -356,13 +408,13 @@ class TransactionPattern:
         else:
             self.marketStateList = []
 
-        if dataList[1].totalBuy != 0.0:
-            self.upDownRangeBuyRatio = dataList[2].totalBuy/dataList[1].totalBuy
-        if dataList[1].totalSell != 0.0:
-            self.upDownRangeSellRatio = dataList[2].totalSell/dataList[1].totalSell
-        if self.upDownRangeSellRatio != 0.0:
-            self.upDownRangeBuyRatioCount = self.upDownRangeBuyRatio/self.upDownRangeSellRatio
-
+        if dataList[0].totalBuy != 0.0:
+            self.upDownRangeBuyRatio = dataList[-1].totalBuy/dataList[0].totalBuy
+        if dataList[0].totalSell != 0.0:
+            self.upDownRangeSellRatio = dataList[-1].totalSell/dataList[0].totalSell
+        if dataList[0].transactionBuyCount != 0.0:
+            #self.upDownRangeBuyRatioCount = self.upDownRangeBuyRatio/self.upDownRangeSellRatio
+            self.upDownRangeBuyRatioCount =dataList[-1].transactionBuyCount/dataList[0].transactionBuyCount
 
 
 
@@ -416,6 +468,7 @@ class TransactionPattern:
             returnList.append(self.transactionSellList[i])
             returnList.append(self.transactionBuyPowerList[i])
             returnList.append(self.transactionSellPowerList[i])
+            returnList.append(self.transactionBuyList[i]/self.transactionBuyList[0])
             returnList.append(self.minMaxPriceList[i])
             returnList.append(self.firstLastPriceList[i])
         returnList.append(self.detailLen)
@@ -440,6 +493,15 @@ class TransactionPattern:
         returnList.append(self.totalPeakCount6Hour)
         returnList.append(self.totalPeakCount24Hour)
         returnList.append(self.timeToJump)
+
+        returnList.append(self.after1MinLast )
+        returnList.append(self.after3MinLast )
+        returnList.append(self.after5MinLast )
+        returnList.append(self.after10MinLast)
+        returnList.append(self.after1MinMin )
+        returnList.append(self.after3MinMin )
+        returnList.append(self.after5MinMin )
+        returnList.append(self.after10MinMin)
 
         return returnList
 
