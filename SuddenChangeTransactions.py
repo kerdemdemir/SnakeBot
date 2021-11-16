@@ -217,27 +217,54 @@ class SuddenChangeHandler:
         #if dataRange[0].totalTransactionCount < 0.1:
         #    return
         # #
-        # if dataRange[0].totalBuy < 0.0015:
-        #     return
+
+        if dataRange[0].transactionBuyCount < 0.09 or dataRange[0].transactionBuyCount > 1.2:
+            return
+
+        if dataRange[0].totalBuy < 0.0005 or dataRange[0].totalBuy > 0.012:
+            return
+
+        if dataRange[0].totalSell < 0.0002 or dataRange[0].totalSell > 0.008:
+            return
+
+        if dataRange[1].transactionBuyCount < 0.16 or dataRange[1].transactionBuyCount > 2.05:
+            return
+
+        if dataRange[1].totalBuy < 0.0012 or dataRange[1].totalBuy > 0.023:
+            return
+
+        if dataRange[1].totalSell < 0.00035 or dataRange[1].totalSell > 0.015:
+            return
+
+        if dataRange[2].transactionBuyCount < 0.45 or dataRange[2].transactionBuyCount > 3.02:
+            return
+
+        if dataRange[2].totalBuy < 0.003 or dataRange[2].totalBuy > 0.023:
+            return
+
+        if dataRange[2].totalSell < 0.00013 or dataRange[2].totalSell > 0.017:
+            return
+
+
         # #
         # if dataRange[1].totalBuy < 0.0016:
         #     return
         #
-        if dataRange[1].totalSell > 0.01 and dataRange[1].totalSell > dataRange[1].totalBuy:
-            return
-        elif dataRange[1].totalSell > 0.02:
-            return
-
-        if dataRange[0].totalSell > 0.005 and dataRange[0].totalSell > dataRange[0].totalBuy:
-            return
-        elif dataRange[0].totalSell > 0.01:
-            return
-
-
-        if dataRange[-1].totalSell > 0.01 and dataRange[-1].totalSell > dataRange[-1].totalBuy:
-            return
-        elif dataRange[-1].totalSell > 0.1:
-            return
+        # if dataRange[1].totalSell > 0.01 and dataRange[1].totalSell > dataRange[1].totalBuy:
+        #     return
+        # elif dataRange[1].totalSell > 0.02:
+        #     return
+        #
+        # if dataRange[0].totalSell > 0.005 and dataRange[0].totalSell > dataRange[0].totalBuy:
+        #     return
+        # elif dataRange[0].totalSell > 0.01:
+        #     return
+        #
+        #
+        # if dataRange[-1].totalSell > 0.01 and dataRange[-1].totalSell > dataRange[-1].totalBuy:
+        #     return
+        # elif dataRange[-1].totalSell > 0.1:
+        #     return
         # #
         # # if dataRange[1].totalBuy/dataRange[0].totalBuy > 6.0:
         # #     return
@@ -249,20 +276,25 @@ class SuddenChangeHandler:
             return
 
 
-        if dataRange[0].totalBuy > 0.0 and dataRange[1].totalBuy/dataRange[0].totalBuy < 0.35:
-            return
-
-        if dataRange[0].totalBuy > 0.0 and dataRange[2].totalBuy/dataRange[0].totalBuy < 0.2:
-            return
+        # if dataRange[0].totalBuy > 0.0 and dataRange[1].totalBuy/dataRange[0].totalBuy < 0.35:
+        #     return
+        #
+        # if dataRange[0].totalBuy > 0.0 and dataRange[2].totalBuy/dataRange[0].totalBuy < 0.35:
+        #     return
 
         if dataRange[0].firstPrice != 0.0:
             firstRatio = dataRange[0].lastPrice / dataRange[0].firstPrice
-            if firstRatio < 0.998 or firstRatio > 1.05:
+            if firstRatio < 1.004 or firstRatio > 1.055:
                 return
 
         if dataRange[1].firstPrice != 0.0:
             firstRatio = dataRange[1].lastPrice / dataRange[1].firstPrice
-            if firstRatio < 0.995 or firstRatio > 1.02:
+            if firstRatio < 0.994 or firstRatio > 1.02:
+                return
+
+        if dataRange[2].firstPrice != 0.0:
+            firstRatio = dataRange[2].lastPrice / dataRange[2].firstPrice
+            if firstRatio < 0.99 or firstRatio > 1.016:
                 return
 
         firstRatio = dataRange[-1].lastPrice / dataRange[-1].firstPrice
@@ -468,13 +500,15 @@ class SuddenChangeMerger:
             #df = df.transpose()
             #df.plot.box()
             #mustBuyLegend = str(np.quantile(mustBuyList[:, i], 0.1)) + "," + str(np.quantile(mustBuyList[:, i], 0.5)) + "," + str(np.quantile(mustBuyList[:, i], 0.9))
-            buyLegend = str(np.quantile(buyList[:, i], 0.1)) + "," + str(np.quantile(buyList[:, i], 0.25)) + "," +  str(np.quantile(buyList[:, i], 0.5)) + "," + str(np.quantile(buyList[:, i], 0.75)) + "," + str(np.quantile(buyList[:, i], 0.9))
+            #buyLegend = str(np.quantile(buyList[:, i], 0.1)) + "," + str(np.quantile(buyList[:, i], 0.25)) + "," +  str(np.quantile(buyList[:, i], 0.5)) + "," + str(np.quantile(buyList[:, i], 0.75)) + "," + str(np.quantile(buyList[:, i], 0.9))
+            buyLegend = str(np.quantile(buyList[:, i], 0.1)) + "," + str(np.quantile(buyList[:, i], 0.9))
+
             if len(badList) > 0:
                 badLegend = str(np.quantile(badList[:, i], 0.1)) + "," + str(np.quantile(badList[:, i], 0.25)) + "," +  str(np.quantile(badList[:, i], 0.5)) + "," + str(np.quantile(badList[:, i], 0.75)) + "," + str(np.quantile(badList[:, i], 0.9))
             else:
                 badLegend = "empty"
-            print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend , " ", badLegend)
-            #print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend )
+            #print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend , " ", badLegend)
+            print(str(self.transactionParam.msec) ,"_" , str(i), "_" , buyLegend )
 
             #plt.savefig('Plots/' + str(self.transactionParam.msec) + "_" + str(i) + "_box.pdf")
             #plt.cla()
